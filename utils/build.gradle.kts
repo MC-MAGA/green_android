@@ -19,7 +19,17 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             api(libs.kotlinx.coroutines.core)
+
+            /**  --- Koin  --- */
+            api(project.dependencies.platform(libs.koin.bom))
+            api(libs.koin.core)
+
+            /**  --- Kermit  --- */
             api(libs.kermit)
+            api(libs.kermit.koin)
+
+            /**  --- Okio  --- */
+            api(libs.okio)
         }
 
         commonTest.dependencies {

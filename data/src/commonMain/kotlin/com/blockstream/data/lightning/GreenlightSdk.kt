@@ -3,7 +3,19 @@
 package com.blockstream.data.lightning
 
 import com.blockstream.data.extensions.tryCatchNull
-import com.blockstream.glsdk.*
+import com.blockstream.glsdk.Config
+import com.blockstream.glsdk.LnUrlPayRequest
+import com.blockstream.glsdk.LnUrlWithdrawRequest
+import com.blockstream.glsdk.LnUrlWithdrawRequestData
+import com.blockstream.glsdk.Node
+import com.blockstream.glsdk.NodeBuilder
+import com.blockstream.glsdk.NodeEventListener
+import com.blockstream.glsdk.OnchainReceiveResponse
+import com.blockstream.glsdk.OnchainSendResponse
+import com.blockstream.glsdk.listPayments
+import com.blockstream.glsdk.resolveInput
+import com.blockstream.glsdk.use
+import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
@@ -87,7 +99,7 @@ class GreenlightSdk constructor(private val nodeRpc: Node) {
         }
     }
 
-    companion object : Loggable() {
+    companion object : Loggable(bucket = LogBucket.Lightning) {
 
         fun config(greenlightKeys: GreenlightKeys) =
             Config().withDeveloperCert(greenlightKeys.developerCert ?: throw Exception("No developer cert provided"))

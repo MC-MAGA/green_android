@@ -12,6 +12,7 @@ import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.QuoteMode
 import com.blockstream.data.swap.SubmarineSwapLimits
 import com.blockstream.data.swap.SwapAsset
+import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable
 import com.github.michaelbull.retry.policy.fullJitterBackoff
 import com.github.michaelbull.retry.policy.plus
@@ -753,7 +754,7 @@ class Lwk(
         }
     }
 
-    companion object : Loggable() {
+    companion object : Loggable(bucket = LogBucket.Lwk) {
         const val LWK_NETWORK = "lwk-mainnet"
         const val BOLTZ_BIP85_INDEX = 26589L
         private const val SWAP_TYPE_SUBMARINE = "submarine"

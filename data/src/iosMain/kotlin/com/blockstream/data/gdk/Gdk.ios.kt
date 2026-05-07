@@ -1,7 +1,6 @@
 package com.blockstream.data.gdk
 
 import co.touchlab.kermit.Logger
-import com.blockstream.data.gdk.GdkBinding.Companion.LOGS_SIZE
 import com.blockstream.data.gdk.data.AuthHandlerStatus
 import com.blockstream.data.gdk.data.FeeEstimation
 import com.blockstream.data.gdk.data.LiquidAssets
@@ -263,7 +262,7 @@ private val _gdkNotificationHandler = staticCFunction { context: COpaquePointer?
     Unit
 }
 
-class IOSGdkBinding constructor(private val config: InitConfig) : GdkBinding {
+class IOSGdkBinding constructor(private val config: InitConfig, logger: Logger) : GdkBinding {
     override val logs: StringBuilder = StringBuilder()
     private val _notifyContexts = mutableMapOf<CPointer<GA_session>, StableRef<NotifyContext>>()
     private var _notificationHandler: ((session: GASession, jsonObject: JsonElement) -> Unit)? = null
@@ -1136,7 +1135,7 @@ class IOSGdkBinding constructor(private val config: InitConfig) : GdkBinding {
     }
 }
 
-actual fun getGdkBinding(printGdkMessages: Boolean, config: InitConfig): GdkBinding = IOSGdkBinding(config)
+actual fun getGdkBinding(printGdkMessages: Boolean, config: InitConfig, logger: Logger): GdkBinding = IOSGdkBinding(config, logger)
 
 actual val GA_ERROR: Int = gdk.GA_ERROR
 actual val GA_RECONNECT: Int = gdk.GA_RECONNECT

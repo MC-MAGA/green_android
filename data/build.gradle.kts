@@ -132,10 +132,6 @@ kotlin {
                 api(libs.kotlinx.datetime)
                 api(libs.kotlinx.atomicfu)
 
-                /**  --- Koin  --- */
-                api(project.dependencies.platform(libs.koin.bom))
-                api(libs.koin.core)
-
                 /**  --- Blockstream  --- */
                 api(libs.blockstream.lwk)
                 api(libs.blockstream.glsdk)

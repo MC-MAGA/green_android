@@ -3,8 +3,8 @@ package com.blockstream.data.lwk
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.di.ApplicationScope
 import com.blockstream.data.extensions.launchSafe
+import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable
-import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -49,5 +49,5 @@ class LwkManager constructor(
         }
     }
 
-    companion object : Loggable()
+    companion object : Loggable(bucket = LogBucket.Lwk)
 }

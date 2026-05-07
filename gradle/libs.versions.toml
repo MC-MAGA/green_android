@@ -139,6 +139,7 @@ installreferrer = { module = "com.android.installreferrer:installreferrer", vers
 jackson-datatype-json-org = { module = "com.fasterxml.jackson.datatype:jackson-datatype-json-org", version.ref = "jackson" }
 junit = { module = "junit:junit", version.ref = "junit" }
 kermit = { module = "co.touchlab:kermit", version.ref = "kermit" }
+kermit-koin = { module = "co.touchlab:kermit-koin", version.ref = "kermit" }
 koin-bom = { module = "io.insert-koin:koin-bom", version.ref = "koin-bom" }
 koin-android = { module = "io.insert-koin:koin-android" }
 koin-core = { module = "io.insert-koin:koin-core" }

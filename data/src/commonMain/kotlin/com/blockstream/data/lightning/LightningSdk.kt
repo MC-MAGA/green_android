@@ -12,6 +12,7 @@ import com.blockstream.glsdk.NodeEventListener
 import com.blockstream.glsdk.OnchainReceiveResponse
 import com.blockstream.glsdk.OnchainSendResponse
 import com.blockstream.glsdk.resolveInput
+import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -312,7 +313,7 @@ class LightningSdk(
         withNodeContext(finallyBlock = finallyBlock, block = block)
     }
 
-    companion object : Loggable() {
+    companion object : Loggable(bucket = LogBucket.Lightning) {
         const val GREEN_NOTIFY_PRODUCTION = "https://green-notify.blockstream.com"
         const val GREEN_NOTIFY_DEVELOPMENT = "https://green-notify.dev.blockstream.com"
     }

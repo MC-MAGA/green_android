@@ -1,5 +1,6 @@
 package com.blockstream.data.gdk
 
+import co.touchlab.kermit.Logger
 import com.blockstream.data.gdk.GdkBinding.Companion.LOGS_SIZE
 import com.blockstream.data.gdk.JsonConverter.Companion.JsonDeserializer
 import com.blockstream.data.gdk.data.AuthHandlerStatus
@@ -42,7 +43,7 @@ import com.blockstream.green_gdk.GDK
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 
-class AndroidGdk(printGdkMessages: Boolean, config: InitConfig) : GdkBinding {
+class AndroidGdk(printGdkMessages: Boolean, config: InitConfig, logger: Logger) : GdkBinding {
     override val logs: StringBuilder = StringBuilder()
     private val _dataDir: String = config.datadir
 
@@ -55,6 +56,7 @@ class AndroidGdk(printGdkMessages: Boolean, config: InitConfig) : GdkBinding {
                     maskSensitiveFields = true,
                     appendGdkLogs = {
                         appendGdkLogs(it)
+                        logger.i { it }
                     }
                 )
             ),
@@ -360,7 +362,8 @@ class AndroidGdk(printGdkMessages: Boolean, config: InitConfig) : GdkBinding {
     }
 }
 
-actual fun getGdkBinding(printGdkMessages: Boolean, config: InitConfig): GdkBinding = AndroidGdk(printGdkMessages, config)
+actual fun getGdkBinding(printGdkMessages: Boolean, config: InitConfig, logger: Logger): GdkBinding =
+    AndroidGdk(printGdkMessages, config, logger)
 
 actual val GA_ERROR: Int = GDK.GA_ERROR
 actual val GA_RECONNECT: Int = GDK.GA_RECONNECT

@@ -1,6 +1,5 @@
 package com.blockstream.data.lightning
 
-import com.blockstream.glsdk.*
 import com.blockstream.data.config.AppInfo
 import com.blockstream.data.data.AppConfig
 import com.blockstream.data.di.ApplicationScope
@@ -10,6 +9,11 @@ import com.blockstream.data.gdk.Gdk
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.LoginData
 import com.blockstream.data.platformFileSystem
+import com.blockstream.glsdk.LogEntry
+import com.blockstream.glsdk.LogLevel
+import com.blockstream.glsdk.LogListener
+import com.blockstream.glsdk.setLogger
+import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -121,5 +125,5 @@ class LightningManager constructor(
         }
     }
 
-    companion object : Loggable()
+    companion object : Loggable(bucket = LogBucket.Lightning)
 }

@@ -75,8 +75,8 @@ class JsonConverter(
         return processed
     }
 
-    companion object : Loggable() {
-        const val SkipLogAmountConversions = false
+    companion object : Loggable(bucket = null) {
+        const val SkipLogAmountConversions = true
 
         /**
          * Serialization / Deserialization JSON Options

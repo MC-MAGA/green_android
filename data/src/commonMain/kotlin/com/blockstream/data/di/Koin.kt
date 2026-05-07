@@ -1,9 +1,5 @@
 package com.blockstream.data.di
 
-import co.touchlab.kermit.Logger
-import co.touchlab.kermit.Severity
-import co.touchlab.kermit.chunked
-import co.touchlab.kermit.platformLogWriter
 import com.blockstream.data.data.AppConfig
 import com.blockstream.data.database.Database
 import com.blockstream.data.gdk.Gdk
@@ -19,10 +15,13 @@ import com.blockstream.data.managers.PromoManager
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.managers.SettingsManager
 import com.blockstream.data.managers.WalletSettingsManager
+import com.blockstream.utils.LogBucket
+import com.blockstream.utils.Loggable.Companion.FILE_LOG_QUALIFIER
 import kotlinx.coroutines.MainScope
-import okio.internal.commonToUtf8String
 import org.koin.core.module.Module
 import org.koin.core.module.dsl.singleOf
+import org.koin.core.parameter.parametersOf
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import kotlin.io.encoding.Base64
 
@@ -71,7 +70,13 @@ fun commonModules(appConfig: AppConfig): List<Module> {
             )
             Gdk(
                 settings = get(),
-                gdkBinding = getGdkBinding(printGdkMessages = appConfig.isDebug, config = config)
+                gdkBinding = getGdkBinding(
+                    printGdkMessages = appConfig.isDebug,
+                    config = config,
+                    logger = get(qualifier = named(FILE_LOG_QUALIFIER)) {
+                        parametersOf("GDK", LogBucket.Gdk)
+                    }
+                )
             )
         }
         single {
@@ -89,12 +94,6 @@ fun commonModules(appConfig: AppConfig): List<Module> {
         singleOf(::WalletSettingsManager)
         singleOf(::SessionManager)
         singleOf(::LwkManager)
-
-        // Set minSeverity to Global Logger
-        Logger.setMinSeverity(if (appConfig.isDebug) Severity.Debug else Severity.Info)
-        Logger.setLogWriters(platformLogWriter().chunked())
-
-        factory { (tag: String?) -> if (tag != null) Logger.withTag(tag) else Logger }
     })
 }
 

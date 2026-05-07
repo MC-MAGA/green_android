@@ -2913,7 +2913,9 @@ class GdkSession constructor(
                     confirmations = if (isBump) 1 else 0
                 )
             }
-        )
+        ).also {
+            logger.d { "getUnspentOutputs: ${it.unspentOutputs}" }
+        }
     }
 
     suspend fun getUnspentOutputs(network: Network, privateKey: String): UnspentOutputs {

@@ -1,5 +1,6 @@
 package com.blockstream.data.gdk
 
+import co.touchlab.kermit.Logger
 import com.blockstream.data.gdk.data.AuthHandlerStatus
 import com.blockstream.data.gdk.data.FeeEstimation
 import com.blockstream.data.gdk.data.LiquidAssets
@@ -361,7 +362,7 @@ class Gdk constructor(
     }
 }
 
-expect fun getGdkBinding(printGdkMessages: Boolean, config: InitConfig): GdkBinding
+expect fun getGdkBinding(printGdkMessages: Boolean, config: InitConfig, logger: Logger): GdkBinding
 
 val FeeMinRelay = 0
 val FeeBlockHigh = 1

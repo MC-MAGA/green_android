@@ -19,12 +19,11 @@ import com.blockstream.data.notifications.models.MeldNotificationData
 import org.koin.dsl.module
 import kotlin.uuid.ExperimentalUuidApi
 
-fun initKoinDesktop(appConfig: AppConfig, appInfo: AppInfo, doOnStartup: () -> Unit = {}) {
+fun initKoinDesktop(appConfig: AppConfig, appInfo: AppInfo) {
 
     initKoin(
         appInfo = appInfo,
         appConfig = appConfig,
-        doOnStartup = doOnStartup,
         module {
             single<CountlyBase> {
                 // Dummy
@@ -132,6 +131,10 @@ fun initKoinDesktop(appConfig: AppConfig, appInfo: AppInfo, doOnStartup: () -> U
                     }
 
                     override suspend fun showSwapPaymentSentNotification(wallet: GreenWallet) {
+                        
+                    }
+
+                    override suspend fun showSwapNotification(wallet: GreenWallet) {
                         
                     }
 

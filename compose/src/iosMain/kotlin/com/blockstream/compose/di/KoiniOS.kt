@@ -65,7 +65,6 @@ fun startKoin(doOnStartup: () -> Unit = {}) {
     initKoin(
         appInfo = appInfo,
         appConfig = appConfig,
-        doOnStartup = doOnStartup,
         module {
             single<GreenKeystore> {
                 NoKeystore()
@@ -119,6 +118,10 @@ fun startKoin(doOnStartup: () -> Unit = {}) {
 
                     override suspend fun showSwapPaymentSentNotification(wallet: GreenWallet) {
 
+                    }
+
+                    override suspend fun showSwapNotification(wallet: GreenWallet) {
+                        
                     }
 
                     override suspend fun showLightningPaymentNotification(

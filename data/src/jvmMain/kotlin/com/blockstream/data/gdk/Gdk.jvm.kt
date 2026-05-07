@@ -1,5 +1,6 @@
 package com.blockstream.data.gdk
 
+import co.touchlab.kermit.Logger
 import com.blockstream.data.gdk.data.AuthHandlerStatus
 import com.blockstream.data.gdk.data.FeeEstimation
 import com.blockstream.data.gdk.data.LiquidAssets
@@ -40,7 +41,8 @@ import kotlinx.serialization.json.JsonElement
 
 actual fun getGdkBinding(
     printGdkMessages: Boolean,
-    config: InitConfig
+    config: InitConfig,
+    logger: Logger,
 ): GdkBinding {
     return object : GdkBinding {
         override val logs: StringBuilder = StringBuilder()
