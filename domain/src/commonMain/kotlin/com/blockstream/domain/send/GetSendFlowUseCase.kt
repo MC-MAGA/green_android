@@ -24,12 +24,12 @@ class GetSendFlowUseCase(
     private val boltzUseCase: SwapUseCase,
     private val getSendAssetsUseCase: GetSendAssetsUseCase,
     private val getSendAccountsUseCase: GetSendAccountsUseCase,
-    private val prepareTransactionUseCase: PrepareTransactionUseCase
+    private val prepareTransactionUseCase: PrepareTransactionUseCase,
+    private val session: GdkSession
 ) {
 
     suspend operator fun invoke(
         greenWallet: GreenWallet,
-        session: GdkSession,
         address: String,
         asset: EnrichedAsset? = null,
         account: AccountAsset? = null,
@@ -49,7 +49,7 @@ class GetSendFlowUseCase(
             throw Exception("id_lightning_network_not_enabled")
         }
 
-        val assets = getSendAssetsUseCase(session = session, address = address)
+        val assets = getSendAssetsUseCase(address = address)
 
         val isLightningAddress = assets.any { it.isLightning }
 
@@ -202,7 +202,7 @@ class GetSendFlowUseCase(
                 paymentInstruction = instruction,
             )
 
-            val tx = session.createTransaction(account.account.network, params)
+            val tx = session.createTransaction(account.account, params)
 
             if (tx.error.isNullOrBlank()) {
                 return SendFlow.SendConfirmation(
@@ -238,7 +238,7 @@ class GetSendFlowUseCase(
                     paymentInstruction = instruction,
                 )
 
-                val tx = session.createTransaction(account.account.network, params)
+                val tx = session.createTransaction(account = account.account, params = params)
 
                 if (tx.error.isNullOrBlank()) {
                     return SendFlow.SendLightningConfirmation(

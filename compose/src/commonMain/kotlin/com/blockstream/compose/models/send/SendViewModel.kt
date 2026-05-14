@@ -377,9 +377,7 @@ class SendViewModel(
 
             accountAsset.value?.let { accountAsset ->
 
-                val network = accountAsset.account.network
-
-                val tx = session.createTransaction(network, params)
+                val tx = session.createTransaction(account = accountAsset.account, params = params)
 
                 _isNoteEditable.value = tx.isLightningDescriptionEditable
 
@@ -540,7 +538,7 @@ class SendViewModel(
 
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         _denomination.value = denominatedValue.denomination
         amount.value = denominatedValue.asInput ?: ""
     }

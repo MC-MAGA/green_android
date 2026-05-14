@@ -280,7 +280,7 @@ fun TransactionScreen(
                                 NavigateDestinations.AssetDetails(
                                     greenWallet = viewModel.greenWallet,
                                     assetId = it,
-                                    accountAsset = viewModel.accountAsset.value
+                                    accountAsset = viewModel.transaction.value.account.accountAsset
                                 )
                             )
                         })

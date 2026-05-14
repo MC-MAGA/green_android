@@ -30,7 +30,7 @@ data class Asset constructor(
 
         fun createEmpty(assetId: String) = Asset(name = assetId, assetId = assetId, precision = 0)
 
-        fun create(assetId: String, session: GdkSession) = session.getAsset(assetId) ?: createEmpty(assetId)
+        suspend fun create(assetId: String, session: GdkSession) = session.getAsset(assetId) ?: createEmpty(assetId)
     }
 }
 

@@ -183,7 +183,7 @@ class SendLightningAmountViewModel(
         }
         val account = accountAsset.value ?: return
         doAsync({
-            val tx = session.createTransaction(account.account.network, params)
+            val tx = session.createTransaction(account = account.account, params = params)
             if (!tx.error.isNullOrBlank()) {
                 throw Exception(tx.error)
             }
@@ -248,7 +248,7 @@ class SendLightningAmountViewModel(
         }
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         _denomination.value = denominatedValue.denomination
         amount.value = denominatedValue.asInput ?: ""
     }

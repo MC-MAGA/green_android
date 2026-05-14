@@ -57,7 +57,7 @@ data class UserInput(
     companion object {
 
         @Throws(Exception::class)
-        private fun parse(
+        private suspend fun parse(
             session: GdkSession,
             input: String,
             denomination: Denomination,
@@ -84,8 +84,8 @@ data class UserInput(
                     gdkNumberFormat = gdkNumberFormat(decimals = 2, withDecimalSeparator = true)
                 }
 
-                !assetId.isPolicyAsset(session) -> { // Asset
-                    asset = session.getAsset(assetId!!) ?: Asset.createEmpty(assetId)
+                assetId != null && !assetId.isPolicyAsset(session) -> { // Asset
+                    asset = session.getAsset(assetId) ?: Asset.createEmpty(assetId)
                     userNumberFormat = userNumberFormat(asset.precision, withDecimalSeparator = false, withGrouping = true, locale = locale)
                     gdkNumberFormat = gdkNumberFormat(asset.precision)
                 }
@@ -127,7 +127,7 @@ data class UserInput(
         }
 
         @Throws(Exception::class)
-        fun parseUserInput(
+        suspend fun parseUserInput(
             session: GdkSession,
             input: String?,
             denomination: Denomination? = null,
@@ -144,7 +144,7 @@ data class UserInput(
             )
         }
 
-        fun parseUserInputSafe(
+        suspend fun parseUserInputSafe(
             session: GdkSession,
             input: String?,
             denomination: Denomination? = null,

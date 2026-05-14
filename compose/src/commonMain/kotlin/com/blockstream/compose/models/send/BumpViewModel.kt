@@ -168,7 +168,7 @@ class BumpViewModel(
                 return@doAsync null
             }
 
-            val tx = session.createTransaction(account.network, params)
+            val tx = session.createTransaction(account, params)
 
             _address.value = tx.addressees.firstOrNull()?.address
 

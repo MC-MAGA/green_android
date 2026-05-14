@@ -7,6 +7,7 @@ import com.blockstream.compose.models.settings.WalletSettingsSection
 import com.blockstream.compose.models.sheets.NoteType
 import com.blockstream.data.AddressInputType
 import com.blockstream.data.SupportType
+import com.blockstream.data.comparators.ComparatorEnrichedAssets
 import com.blockstream.data.data.DenominatedValue
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.EnrichedAssetList
@@ -226,7 +227,7 @@ sealed class NavigateDestinations : NavigateDestination() {
                                 session = viewModel.session,
                                 viewModel.session.liquid?.policyAsset
                             ),
-                        ) + (viewModel.session.enrichedAssets.value.takeIf { viewModel.session.liquid != null }
+                        ) + (viewModel.session.networkAssetManager.countlyAssetsFlow.value.takeIf { viewModel.session.liquid != null }
                             ?.filter { !it.isAmp || viewModel.session.hasAmpAccount }?.map {
                                 EnrichedAsset.create(session = viewModel.session, assetId = it.assetId)
                             } ?: listOf()) + listOfNotNull(
@@ -234,7 +235,7 @@ sealed class NavigateDestinations : NavigateDestination() {
                                 .takeIf { viewModel.session.hasAmpAccount },
                             EnrichedAsset.createAnyAsset(session = viewModel.session, isAmp = true)
                                 .takeIf { !viewModel.session.isHwWatchOnly }
-                        ).sortedWith(viewModel.session::sortEnrichedAssets)).let { list ->
+                        ).sortedWith(ComparatorEnrichedAssets(viewModel.session))).let { list ->
                             list.map {
                                 AssetBalance.create(it)
                             }
@@ -254,13 +255,7 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class ArchivedAccounts(val greenWallet: GreenWallet, val navigateToRoot: Boolean = false) : NavigateDestination()
 
     @Serializable
-    data class WalletAssets(val greenWallet: GreenWallet) : NavigateDestination(unique = true)
-
-    @Serializable
     data object Environment : NavigateDestination()
-
-    @Serializable
-    data class AccountOverview(val greenWallet: GreenWallet, val accountAsset: AccountAsset) : NavigateDestination(unique = true)
 
     @Serializable
     data class ChooseAccountType(
@@ -269,10 +264,7 @@ sealed class NavigateDestinations : NavigateDestination() {
         val allowAssetSelection: Boolean = true,
         val popTo: PopTo? = null
     ) : NavigateDestination(unique = true)
-
-    @Serializable
-    data class WatchOnly(val greenWallet: GreenWallet) : NavigateDestination()
-
+    
     @Serializable
     data class ChangePin(val greenWallet: GreenWallet, val isRecoveryConfirmation: Boolean = false) : NavigateDestination()
 
@@ -330,7 +322,7 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class AssetDetails(
         val greenWallet: GreenWallet,
         val assetId: String,
-        val accountAsset: AccountAsset? = null
+        val accountAsset: AccountAsset
     ) : NavigateDestination()
 
     @Serializable
@@ -466,9 +458,6 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class Swap(val greenWallet: GreenWallet, val accountAsset: AccountAsset? = null) : NavigateDestination()
 
     @Serializable
-    data class AccountExchange(val greenWallet: GreenWallet) : NavigateDestination()
-
-    @Serializable
     data class OnOffRamps(val greenWallet: GreenWallet) : NavigateDestination()
 
     @Serializable
@@ -555,9 +544,6 @@ sealed class NavigateDestinations : NavigateDestination() {
     data object JadeGuide : NavigateDestination()
 
     @Serializable
-    data class ChooseAssetAccounts(val greenWallet: GreenWallet) : NavigateDestination()
-
-    @Serializable
     data class Note(val greenWallet: GreenWallet, val note: String, val noteType: NoteType) : NavigateDestination()
 
     @Serializable
@@ -585,9 +571,6 @@ sealed class NavigateDestinations : NavigateDestination() {
         val subtitle: String? = null,
         val entries: MenuEntryList
     ) : NavigateDestination()
-
-    @Serializable
-    data class MainMenu(val isTestnet: Boolean) : NavigateDestination()
 
     @Serializable
     data class FeeRate(

@@ -13,6 +13,7 @@ import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.data.extensions.tryCatch
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -45,17 +46,6 @@ class DenominationExchangeRateViewModel(greenWallet: GreenWallet) :
     override val selectedExchangeAndCurrency: StateFlow<String> =
         _selectedExchangeAndCurrency.asStateFlow()
 
-    private val availablePricing by lazy {
-        session.ifConnected {
-            try {
-                session.availableCurrencies()
-            } catch (e: Exception) {
-                countly.recordException(e)
-                null
-            }
-        } ?: listOf()
-    }
-
     class LocalEvents {
         data class Set(val unit: String? = null, val exchangeAndCurrency: String? = null) : Event
         object Save : Event
@@ -65,6 +55,8 @@ class DenominationExchangeRateViewModel(greenWallet: GreenWallet) :
         session.ifConnected {
             session.settings().filterNotNull().onEach { settings ->
                 _selectedUnit.value = settings.networkUnit(session)
+
+                val availablePricing = tryCatch { session.availableCurrencies() } ?: listOf()
 
                 _exchangeAndCurrencies.value = availablePricing.map {
                     getString(Res.string.id_s_from_s, it.currency, it.exchange)
@@ -101,7 +93,7 @@ class DenominationExchangeRateViewModel(greenWallet: GreenWallet) :
                     unit = Settings.fromNetworkUnit(selectedUnit.value, session),
                     pricing = selectedExchangeAndCurrency.value.let {
                         _exchangeAndCurrencies.value.indexOf(it).takeIf { it >= 0 }?.let {
-                            availablePricing[it]
+                            session.availableCurrencies()[it]
                         } ?: settings.pricing
                     }
                 )

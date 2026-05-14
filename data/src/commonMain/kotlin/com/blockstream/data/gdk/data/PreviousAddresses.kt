@@ -9,7 +9,7 @@ data class PreviousAddresses(
     @SerialName("last_pointer")
     val lastPointer: Int? = null,
     @SerialName("list")
-    val addresses: List<Address> = listOf(),
+    val addresses: List<GdkAddress> = listOf(),
 ) : GreenJson<PreviousAddresses>() {
 
     override fun kSerializer() = serializer()

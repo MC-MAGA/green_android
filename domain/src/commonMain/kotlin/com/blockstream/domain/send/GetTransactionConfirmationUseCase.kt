@@ -192,6 +192,8 @@ class GetTransactionConfirmationUseCase() {
             totalFiat = feeFiat
         } else if (isSentAssetPolicy) {
             val totalPolicy = (transaction.satoshi[account.network.policyAsset] ?: 0).absoluteValue + (transaction.fee ?: 0)
+
+
             total = totalPolicy.toAmountLookOrNa(
                 session = session,
                 assetId = account.network.policyAsset,

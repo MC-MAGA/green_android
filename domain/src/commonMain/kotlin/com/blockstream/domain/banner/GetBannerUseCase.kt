@@ -17,7 +17,7 @@ class GetBannerUseCase() {
                 excludedBanners.contains(it)
             }
 
-            val activeNetworks = sessionOrNull?.activeSessions?.map { it.network }?.toMutableList() ?: mutableListOf()
+            val activeNetworks = sessionOrNull?.activeNetworks?.map { it.network }?.toMutableList() ?: mutableListOf()
             sessionOrNull?.lwkOrNull?.also { activeNetworks.add(Lwk.LWK_NETWORK) }
             sessionOrNull?.lightning?.network?.also { activeNetworks.add(it) }
 

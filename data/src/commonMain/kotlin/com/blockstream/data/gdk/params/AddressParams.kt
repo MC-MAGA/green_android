@@ -1,7 +1,7 @@
 package com.blockstream.data.gdk.params
 
 import com.blockstream.data.gdk.GreenJson
-import com.blockstream.data.gdk.data.Address
+import com.blockstream.data.gdk.data.GdkAddress
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -16,7 +16,7 @@ data class AddressParams constructor(
     @SerialName("asset_id")
     var assetId: String? = null,
     // Those fields are used on Redeposit only
-    val receiveAddress: Address? = null,
+    val receiveAddress: GdkAddress? = null,
 ) : GreenJson<AddressParams>() {
     override fun encodeDefaultsValues() = false
 

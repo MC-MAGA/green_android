@@ -62,8 +62,6 @@ object SideEffects {
         val isSensitive: Boolean = false
     ) : SideEffect
 
-    data class AccountArchived(val account: Account) : SideEffect
-    data class AccountUnarchived(val account: Account) : SideEffect
     data class AccountCreated(val accountAsset: AccountAsset) : SideEffect
     data object AppReview : SideEffect
     data class RequestDeviceInteraction(

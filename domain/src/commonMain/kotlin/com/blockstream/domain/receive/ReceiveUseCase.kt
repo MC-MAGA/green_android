@@ -1,7 +1,6 @@
 package com.blockstream.domain.receive
 
-class ReceiveUseCase constructor(
-    val getReceiveAssetsUseCase: GetReceiveAssetsUseCase,
+class ReceiveUseCase(
     val getReceiveAccountsUseCase: GetReceiveAccountsUseCase,
     val saveAndShareQrCodeUseCase: SaveAndShareQrCodeUseCase,
     val getLightningReceiveAmountStateUseCase: GetLightningReceiveAmountStateUseCase

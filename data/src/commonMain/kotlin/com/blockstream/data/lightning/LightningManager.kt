@@ -119,7 +119,7 @@ class LightningManager constructor(
                     // Remove
                     bridges.remove(lightningSdk.workingDir)
                     // Stop
-                    lightningSdk.stop()
+                    lightningSdk.disconnect()
                 }
             }
         }

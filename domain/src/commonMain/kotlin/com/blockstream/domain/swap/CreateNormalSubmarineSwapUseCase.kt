@@ -11,6 +11,7 @@ import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.lightning.satoshi
 import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.swap.SwapDetails
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import lwk.Bolt11Invoice
 import lwk.LwkException
 import kotlin.uuid.ExperimentalUuidApi
@@ -23,7 +24,10 @@ import kotlin.uuid.Uuid
  * If there is already a stored swap for the provided invoice, this use case will attempt to
  * restore it; otherwise it will create a new one via LWK.
  */
-class CreateNormalSubmarineSwapUseCase(val database: Database) {
+class CreateNormalSubmarineSwapUseCase(
+    val database: Database,
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
+) {
     /**
      * Creates or restores the swap and persists its state in the database.
      *
@@ -53,7 +57,7 @@ class CreateNormalSubmarineSwapUseCase(val database: Database) {
 
         val xPubHashId = session.xPubHashId ?: throw Exception("xPubHashId should not be null")
         val normalizedInput = invoice.replace("lightning:", "")
-        val refundAddress = session.getReceiveAddress(account).address
+        val refundAddress = getReceiveAddressUseCase(session = session, account = account).address
 
         val instruction = try {
             session.lwkOrNull?.inspectPaymentInstruction(normalizedInput)

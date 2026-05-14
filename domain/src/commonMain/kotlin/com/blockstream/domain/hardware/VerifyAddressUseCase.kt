@@ -4,6 +4,7 @@ import com.blockstream.data.CountlyBase
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.Address
+import com.blockstream.data.gdk.data.GdkAddress
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -13,6 +14,8 @@ class VerifyAddressUseCase(private val countly: CountlyBase) {
     suspend operator fun invoke(
         session: GdkSession, account: Account, address: Address
     ) {
+        require(address is GdkAddress)
+
         mutex.withLock {
             countly.verifyAddress(session, account)
 

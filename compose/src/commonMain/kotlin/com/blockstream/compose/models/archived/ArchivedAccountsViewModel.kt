@@ -3,18 +3,18 @@ package com.blockstream.compose.models.archived
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_archived_accounts
-import com.blockstream.data.data.DataState
-import com.blockstream.data.data.GreenWallet
-import com.blockstream.data.extensions.hasHistory
-import com.blockstream.data.gdk.data.Account
-import com.blockstream.data.gdk.data.AccountAssetBalance
-import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.extensions.previewAccountAssetBalance
 import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.data.data.DataState
+import com.blockstream.data.data.GreenWallet
+import com.blockstream.data.gdk.data.Account
+import com.blockstream.data.gdk.data.AccountAssetBalance
+import com.blockstream.data.gdk.data.AccountType
+import com.blockstream.domain.account.HasHistoryUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -23,6 +23,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class ArchivedAccountsViewModelAbstract(
     greenWallet: GreenWallet,
@@ -40,9 +41,11 @@ abstract class ArchivedAccountsViewModelAbstract(
 
 class ArchivedAccountsViewModel(greenWallet: GreenWallet, navigateToRoot: Boolean = false) :
     ArchivedAccountsViewModelAbstract(greenWallet = greenWallet, navigateToRoot = navigateToRoot) {
+
+    private val hasHistoryUseCase: HasHistoryUseCase by inject()
     
-    private val _selectedAccounts = MutableStateFlow<Set<Account>>(emptySet())
-    override val selectedAccounts: StateFlow<Set<Account>> = _selectedAccounts
+    final override val selectedAccounts : StateFlow<Set<Account>>
+        field = MutableStateFlow<Set<Account>>(emptySet())
 
     override val archivedAccounts: StateFlow<DataState<List<AccountAssetBalance>>> =
         session.allAccounts.map { allAccounts ->
@@ -50,7 +53,7 @@ class ArchivedAccountsViewModel(greenWallet: GreenWallet, navigateToRoot: Boolea
                 allAccounts.filter {
                     it.hidden
                 }.filter {
-                    it.hasHistory(session) || !(it.type == AccountType.BIP49_SEGWIT_WRAPPED && it.pointer == 0L) // GDK default account
+                    hasHistoryUseCase(session = session, wallet = greenWallet, account = it) || !(it.type == AccountType.BIP49_SEGWIT_WRAPPED && it.pointer == 0L) // GDK default account
                 }.map {
                     AccountAssetBalance.create(accountAsset = it.accountAsset, session = session)
                 }
@@ -73,28 +76,24 @@ class ArchivedAccountsViewModel(greenWallet: GreenWallet, navigateToRoot: Boolea
     }
     
     override fun toggleAccountSelection(account: Account) {
-        _selectedAccounts.value = if (_selectedAccounts.value.contains(account)) {
-            _selectedAccounts.value - account
+        selectedAccounts.value = if (selectedAccounts.value.contains(account)) {
+            selectedAccounts.value - account
         } else {
-            _selectedAccounts.value + account
+            selectedAccounts.value + account
         }
     }
     
     override fun clearSelection() {
-        _selectedAccounts.value = emptySet()
+        selectedAccounts.value = emptySet()
     }
     
     override fun unarchiveSelected() {
-        if (_selectedAccounts.value.isNotEmpty()) {
+        if (selectedAccounts.value.isNotEmpty()) {
             doAsync({
-                _selectedAccounts.value.forEach { account ->
+                selectedAccounts.value.forEach { account ->
                     session.updateAccount(account = account, isHidden = false, userInitiated = true)
                 }
             }, onSuccess = {
-                session.activeAccount.value?.also {
-                    setActiveAccount(it)
-                }
-                
                 //val count = _selectedAccounts.value.size
                 //val message = getString(Res.string.id_d_accounts_unarchived_successfully, count)
                 //postSideEffect(SideEffects.Snackbar(StringHolder.create(message)))

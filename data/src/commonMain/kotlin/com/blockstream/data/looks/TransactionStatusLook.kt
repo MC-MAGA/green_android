@@ -59,7 +59,7 @@ data class TransactionStatusLook(
         }
 
     companion object {
-        fun create(session: GdkSession, transaction: Transaction): TransactionStatusLook {
+        suspend fun create(session: GdkSession, transaction: Transaction): TransactionStatusLook {
 
             return TransactionStatusLook(
                 confirmations = transaction.getConfirmationsMax(session),

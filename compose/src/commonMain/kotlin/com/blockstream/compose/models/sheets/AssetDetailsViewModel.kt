@@ -11,28 +11,26 @@ import blockstream_green.common.generated.resources.id_no_registered_name_for_th
 import blockstream_green.common.generated.resources.id_precision
 import blockstream_green.common.generated.resources.id_ticker
 import blockstream_green.common.generated.resources.id_total_balance
+import com.blockstream.compose.extensions.nameStringHolderOrNull
+import com.blockstream.compose.extensions.previewAccountAsset
+import com.blockstream.compose.extensions.previewWallet
+import com.blockstream.compose.models.GreenViewModel
+import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.extensions.isPolicyAsset
 import com.blockstream.data.extensions.networkForAsset
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.utils.toAmountLookOrNa
-import com.blockstream.compose.extensions.nameStringHolderOrNull
-import com.blockstream.compose.extensions.previewAccountAsset
-import com.blockstream.compose.extensions.previewWallet
-import com.blockstream.compose.models.GreenViewModel
-import com.blockstream.compose.utils.StringHolder
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
-import kotlinx.coroutines.flow.map
 
 abstract class AssetDetailsViewModelAbstract(
     greenWallet: GreenWallet,
-    accountAsset: AccountAsset? = null
+    accountAsset: AccountAsset
 ) : GreenViewModel(
     greenWalletOrNull = greenWallet,
     accountAssetOrNull = accountAsset
@@ -43,7 +41,7 @@ abstract class AssetDetailsViewModelAbstract(
 class AssetDetailsViewModel(
     greenWallet: GreenWallet,
     assetId: String,
-    accountAsset: AccountAsset?
+    accountAsset: AccountAsset
 ) : AssetDetailsViewModelAbstract(greenWallet = greenWallet, accountAsset = accountAsset) {
     override fun screenName(): String = "AssetDetails"
 
@@ -54,8 +52,7 @@ class AssetDetailsViewModel(
         if (session.isConnected) {
             combine(
                 session.block(assetId.networkForAsset(session) ?: session.defaultNetwork),
-                (accountAsset?.let { session.accountAssets(it.account) }
-                    ?: session.walletAssets.map { it.data() }.filterNotNull())
+                session.accountAssets(accountAsset.account)
             ) { block, assets ->
 
                 _data.value = buildList {

@@ -1,6 +1,8 @@
 package com.blockstream.compose.extensions
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.produceState
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -257,7 +259,10 @@ fun String?.assetIcon(session: GdkSession? = null, isLightning: Boolean = false)
             painterResource(it)
         }
     } else {
-        session?.networkAssetManager?.getAssetIcon(this, session)?.toPainter() ?: painterResource(Res.drawable.unknown)
+        val iconBytes by produceState(initialValue = session?.networkAssetManager?.getAssetIconOrNull(this@assetIcon), this, session) {
+            value = session?.networkAssetManager?.getAssetIcon(this@assetIcon, session)
+        }
+        iconBytes.toPainter() ?: painterResource(Res.drawable.unknown)
     }
 }
 

@@ -10,7 +10,7 @@ import kotlinx.serialization.json.decodeFromJsonElement
 @Serializable
 data class UnspentOutputs(
     @SerialName("unspent_outputs")
-    val unspentOutputs: Map<String, List<JsonElement>>
+    val unspentOutputs: Map<String, List<JsonElement>> = mapOf()
 ) : GreenJson<UnspentOutputs>() {
     override fun keepJsonElement() = true
 

@@ -4,6 +4,7 @@ import com.blockstream.data.gdk.JsonConverter.Companion.JsonDeserializer
 import com.blockstream.data.gdk.data.AuthHandlerStatus
 import com.blockstream.data.gdk.data.DeviceRequiredData
 import com.blockstream.data.gdk.data.Network
+import com.blockstream.data.gdk.data.TwoFactorConfig
 import com.blockstream.data.gdk.device.DeviceResolver
 import com.blockstream.data.gdk.device.GdkHardwareWallet
 import com.blockstream.utils.Loggable
@@ -39,11 +40,11 @@ interface BcurResolver {
 }
 
 class AuthHandler constructor(
-    private val session: GdkSession,
     private var gaAuthHandler: GAAuthHandler,
     private val network: Network,
     private val gdkHwWallet: GdkHardwareWallet?,
-    private val gdk: GdkBinding
+    private val gdk: GdkBinding,
+    private val getTwoFactorConfig: (suspend () -> TwoFactorConfig?)
 ) {
     var isCompleted = false
         private set
@@ -106,9 +107,7 @@ class AuthHandler constructor(
                                     resolveCode(runBlocking {
                                         it.getTwoFactorCode(
                                             network = network,
-                                            enable2faCallMethod = session.getTwoFactorConfig(
-                                                network = network
-                                            )?.enabledMethods?.let { it.size == 1 && it.firstOrNull() == "sms" } ?: false,
+                                            enable2faCallMethod = getTwoFactorConfig()?.enabledMethods?.let { it.size == 1 && it.firstOrNull() == "sms" } ?: false,
                                             authHandlerStatus = authHandlerStatus
                                         ).await()
                                     })

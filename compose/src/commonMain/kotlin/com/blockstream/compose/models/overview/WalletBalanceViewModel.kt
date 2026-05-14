@@ -9,15 +9,21 @@ import com.blockstream.compose.events.Event
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.models.IPostEvent
+import com.blockstream.domain.wallet.GetWalletAssetsUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
+import org.koin.core.component.inject
+import org.koin.core.parameter.parametersOf
+import kotlin.getValue
 
 interface IWalletBalance : IPostEvent {
     val hideAmounts: StateFlow<Boolean>
@@ -26,6 +32,12 @@ interface IWalletBalance : IPostEvent {
 
 open class WalletBalanceViewModel(greenWallet: GreenWallet) :
     GreenViewModel(greenWalletOrNull = greenWallet), IWalletBalance {
+
+    protected val getWalletAssetsUseCase: GetWalletAssetsUseCase by inject {
+        parametersOf(session)
+    }
+
+    protected val refreshState = MutableStateFlow(0)
 
     override val hideAmounts: StateFlow<Boolean> = settingsManager.appSettingsStateFlow.map {
         it.hideAmounts
@@ -45,8 +57,12 @@ open class WalletBalanceViewModel(greenWallet: GreenWallet) :
     override fun bootstrap() {
         super.bootstrap()
 
+        refreshState.onEach {
+            getWalletAssetsUseCase(Unit)
+        }.launchIn(this)
+
         combine(
-            session.walletAssets,
+            getWalletAssetsUseCase.observe(),
             hideAmounts,
             session.settings()
         ) { walletAssets, _, _ ->

@@ -75,7 +75,7 @@ data class LightningNodeState(
 
 sealed class LightningEvent {
     object Synced : LightningEvent()
-    data class NewBlock(val block: UInt) : LightningEvent()
+    data class NewBlock(val block: Int) : LightningEvent()
     data class InvoicePaid(val paymentHash: String, val paymentAmountSatoshi: Long?) : LightningEvent()
 }
 

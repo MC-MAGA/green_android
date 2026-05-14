@@ -1,7 +1,9 @@
 package com.blockstream.data.extensions
 
+import co.touchlab.kermit.Logger
 import com.blockstream.data.BTC_POLICY_ASSET
 import com.blockstream.data.LN_BTC_POLICY_ASSET
+import com.blockstream.data.backend.NetworkBackend
 import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.database.Database
@@ -12,12 +14,16 @@ import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Network
+import com.blockstream.data.gdk.data.Networks
+import com.blockstream.data.gdk.data.Transaction
+import com.blockstream.data.gdk.params.TransactionParams
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.utils.getBitcoinOrLiquidUnit
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.coroutines.CoroutineContext
 import kotlin.coroutines.EmptyCoroutineContext
 
@@ -75,7 +81,7 @@ fun AccountType?.title(): String = when (this) {
     else -> "Unknown"
 }
 
-fun Account.needs2faActivation(session: GdkSession): Boolean {
+suspend fun Account.needs2faActivation(session: GdkSession): Boolean {
     if (isSinglesig || isAmp || session.isWatchOnlyValue) {
         return false
     }
@@ -83,7 +89,7 @@ fun Account.needs2faActivation(session: GdkSession): Boolean {
     return network.needs2faActivation(session = session)
 }
 
-fun Network.needs2faActivation(session: GdkSession): Boolean {
+suspend fun Network.needs2faActivation(session: GdkSession): Boolean {
     return try {
         !session.isWatchOnlyValue && session.getTwoFactorConfig(network = this)?.anyEnabled == false
     } catch (e: Exception) {
@@ -101,7 +107,7 @@ fun Account.hasTwoFactorReset(session: GdkSession): Boolean {
 }
 
 fun List<Account>.filterForAsset(assetId: String, session: GdkSession): List<Account> {
-    val enrichedAsset = session.getEnrichedAssets(assetId)
+    val enrichedAsset = session.networkAssetManager.getCountlyAsset(assetId)
     return filter { account ->
         when {
             enrichedAsset?.isAmp == true -> account.type == AccountType.AMP_ACCOUNT
@@ -113,9 +119,12 @@ fun List<Account>.filterForAsset(assetId: String, session: GdkSession): List<Acc
 
 fun String?.isBitcoinPolicyAsset(): Boolean = (this == null || this == BTC_POLICY_ASSET)
 fun String?.isLightningPolicyAsset(): Boolean = (this == LN_BTC_POLICY_ASSET)
-fun String?.isPolicyAsset(network: Network?): Boolean = (this == null || this == network?.policyAsset)
-fun String?.isPolicyAsset(session: GdkSession): Boolean =
-    isBitcoinPolicyAsset() || isLightningPolicyAsset() || session.gdkSessions.keys.any { isPolicyAsset(it) }
+
+fun String?.isNetworkPolicyAsset(network: Network?): Boolean = network != null && this == network.policyAsset
+
+fun String?.isPolicyAsset(network: Network): Boolean = this == network.policyAsset || (network.isBitcoin && isBitcoinPolicyAsset())
+fun String?.isPolicyAsset(session: GdkSession): Boolean = session.networkBackends.keys.any { isPolicyAsset(it) }
+fun String?.isPolicyAsset(networkBackends: List<NetworkBackend>): Boolean = networkBackends.any { isPolicyAsset(it.network) }
 
 // If no Bitcoin network is available, fallback to Liquid
 fun String?.networkForAsset(session: GdkSession): Network? = when {
@@ -126,12 +135,12 @@ fun String?.networkForAsset(session: GdkSession): Network? = when {
     }
 }
 
-fun String?.assetTicker(
+suspend fun String?.assetTicker(
     session: GdkSession,
     denomination: Denomination? = null
 ) = assetTickerOrNull(session = session, denomination = denomination) ?: ""
 
-fun String?.assetTickerOrNull(
+suspend fun String?.assetTickerOrNull(
     session: GdkSession,
     denomination: Denomination? = null
 ): String? {
@@ -142,13 +151,14 @@ fun String?.assetTickerOrNull(
     }
 }
 
-fun Account.hasHistory(session: GdkSession): Boolean {
-    return bip44Discovered == true || isFunded(session) || session.accountTransactions(this).value.isNotEmpty()
+@Deprecated("Use the USeCAse")
+suspend fun Account.hasHistory(session: GdkSession): Boolean {
+    return bip44Discovered == true || isFunded(session) || session.accountBackend(this).getTransactions().transactions.isNotEmpty()
 }
 
-fun Account.hasUnconfirmedTransactions(session: GdkSession): Boolean {
-    return session.accountTransactions(this).value.data()?.any { transaction ->
-        transaction.getConfirmations(session) == 0L
+suspend fun GdkSession.hasUnconfirmedTransactions(transactions: List<Transaction>?): Boolean {
+    return transactions?.any { transaction ->
+        transaction.getConfirmations(this) == 0L
     } == true
 }
 
@@ -162,17 +172,21 @@ fun String.getAssetNameOrNull(session: GdkSession?): String? {
             if (session?.isTestnet == true) "Testnet $it" else it
         }
     } else {
-        session.liquid?.let { session.getAsset(this)?.name }
+        session.liquid?.let {
+            runBlocking {
+                session.getAsset(this@getAssetNameOrNull)?.name
+            }
+        }
     }
 }
 
 @Deprecated("Use EnrichedAsset")
-fun String.getAssetName(session: GdkSession): String {
+suspend fun String.getAssetName(session: GdkSession): String {
     return getAssetNameOrNull(session) ?: this
 }
 
 @Deprecated("Use EnrichedAsset")
-fun String.getAssetTicker(session: GdkSession): String? {
+suspend fun String.getAssetTicker(session: GdkSession): String? {
     return if (this.isPolicyAsset(session)) {
         if (this == BTC_POLICY_ASSET) {
             "BTC"

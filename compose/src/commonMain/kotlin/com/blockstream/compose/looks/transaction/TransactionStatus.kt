@@ -10,7 +10,7 @@ sealed interface TransactionStatus {
         get() = this is Unconfirmed || this is Confirmed
 
     companion object {
-        fun create(transaction: Transaction, session: GdkSession): TransactionStatus {
+        suspend fun create(transaction: Transaction, session: GdkSession): TransactionStatus {
             val confirmations = transaction.getConfirmations(session)
             return when {
                 transaction.isRefundableSwap -> {

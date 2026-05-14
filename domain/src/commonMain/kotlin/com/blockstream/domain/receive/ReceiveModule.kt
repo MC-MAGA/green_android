@@ -5,10 +5,11 @@ import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val receiveModule = module {
-    singleOf(::GetReceiveAssetsUseCase)
     singleOf(::GetReceiveAccountsUseCase)
     singleOf(::ReceiveUseCase)
     singleOf(::SaveAndShareQrCodeUseCase)
     singleOf(::GetLightningReceiveAmountStateUseCase)
+    singleOf(::GetReceiveAddressUseCase)
     factoryOf(::GetReceiveAmountUseCase)
+    factoryOf(::GetReceiveAssetsUseCase)
 }

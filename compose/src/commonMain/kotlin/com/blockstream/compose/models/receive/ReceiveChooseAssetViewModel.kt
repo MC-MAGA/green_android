@@ -13,6 +13,7 @@ import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountAssetList
+import com.blockstream.domain.receive.GetReceiveAssetsUseCase
 import com.blockstream.domain.receive.ReceiveUseCase
 import com.blockstream.domain.swap.SwapUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -20,6 +21,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.inject
+import org.koin.core.parameter.parametersOf
 
 abstract class ReceiveChooseAssetViewModelAbstract(
     greenWallet: GreenWallet, accountAssetOrNull: AccountAsset? = null
@@ -38,6 +40,11 @@ class ReceiveChooseAssetViewModel(
 ) : ReceiveChooseAssetViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAssetOrNull) {
 
     internal val receiveUseCase: ReceiveUseCase by inject()
+
+    internal val getReceiveAssetsUseCase: GetReceiveAssetsUseCase by inject {
+        parametersOf(session)
+    }
+
     internal val boltzUseCase: SwapUseCase by inject()
 
     private val _assets: MutableStateFlow<List<EnrichedAsset>> = MutableStateFlow(listOf())
@@ -55,7 +62,7 @@ class ReceiveChooseAssetViewModel(
         }
 
         doAsync({
-            _assets.value = receiveUseCase.getReceiveAssetsUseCase(session = session)
+            _assets.value = getReceiveAssetsUseCase()
             _isSwapsEnabled.value = boltzUseCase.isSwapsEnabledUseCase(wallet = greenWallet)
         })
     }

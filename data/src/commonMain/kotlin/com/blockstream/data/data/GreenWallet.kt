@@ -106,12 +106,6 @@ data class GreenWallet constructor(
             wallet = wallet.copy(active_network = value)
         }
 
-    var activeAccount
-        get() = wallet.active_account
-        set(value) {
-            wallet = wallet.copy(active_account = value)
-        }
-
     var askForBip39Passphrase
         get() = wallet.ask_bip39_passphrase
         set(value) {
@@ -194,7 +188,6 @@ data class GreenWallet constructor(
             name: String,
             xPubHashId: String = "",
             activeNetwork: String = "",
-            activeAccount: Long = 0,
             watchOnlyUsername: String? = null,
             isRecoveryConfirmed: Boolean = true,
             isTestnet: Boolean = false,
@@ -207,7 +200,7 @@ data class GreenWallet constructor(
                 name = name,
                 xpub_hash_id = xPubHashId,
                 active_network = activeNetwork,
-                active_account = activeAccount,
+                active_account = 0,
                 is_recovery_confirmed = isRecoveryConfirmed,
                 is_testnet = isTestnet,
                 is_hardware = isHardware,

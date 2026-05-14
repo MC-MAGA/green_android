@@ -84,6 +84,7 @@ import gdk.GA_get_subaccount
 import gdk.GA_get_subaccounts
 import gdk.GA_get_system_message
 import gdk.GA_get_thread_error_details
+import gdk.GA_get_transaction_details
 import gdk.GA_get_transactions
 import gdk.GA_get_twofactor_config
 import gdk.GA_get_unspent_outputs

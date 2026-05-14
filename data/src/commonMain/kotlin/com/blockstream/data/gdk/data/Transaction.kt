@@ -244,12 +244,16 @@ data class Transaction constructor(
         return currentBlock - blockHeight + 1
     }
 
-    fun getConfirmations(session: GdkSession): Long {
+    suspend fun getConfirmations(session: GdkSession): Long {
         return getConfirmations(session.block(network).value.height)
     }
 
-    fun getConfirmationsMax(session: GdkSession): Long {
+    suspend fun getConfirmationsMax(session: GdkSession): Long {
         return getConfirmations(session.block(network).value.height).coerceAtMost((if (network.isLiquid) 3 else 7))
+    }
+
+    fun getConfirmationsMax(currentBlock: Long): Long {
+        return getConfirmations(currentBlock).coerceAtMost((if (network.isLiquid) 3 else 7))
     }
 
     fun getUnblindedString() =

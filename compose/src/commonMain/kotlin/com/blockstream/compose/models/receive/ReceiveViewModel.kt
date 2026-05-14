@@ -59,6 +59,7 @@ import com.blockstream.data.utils.formatAuto
 import com.blockstream.data.utils.toAmountLookOrNa
 import com.blockstream.domain.hardware.VerifyAddressUseCase
 import com.blockstream.domain.receive.GetLightningReceiveAmountStateUseCase
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.domain.receive.GetReceiveAmountUseCase
 import com.blockstream.domain.receive.SaveAndShareQrCodeUseCase
 import com.blockstream.domain.swap.SwapUseCase
@@ -129,12 +130,15 @@ abstract class ReceiveViewModelAbstract(greenWallet: GreenWallet, accountAssetOr
 
 class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
     ReceiveViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAsset) {
+
     internal val verifyAddressUseCase: VerifyAddressUseCase by inject()
     internal val boltzUseCase: SwapUseCase by inject()
     internal val getReceiveAmountUseCase: GetReceiveAmountUseCase by inject {
         parametersOf(session, accountAsset)
     }
     internal val getLightningReceiveAmountStateUseCase: GetLightningReceiveAmountStateUseCase by inject()
+
+    internal val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
 
     private val _receiveAddress = MutableStateFlow<String?>(null)
     private val _receiveAddressUri = MutableStateFlow<String?>(null)
@@ -609,7 +613,7 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
             _address.value = null
         } else {
             doAsync({
-                session.getReceiveAddress(account)
+                getReceiveAddressUseCase(session, account)
             }, mutex = _generateAddressLock, onSuccess = {
                 _address.value = it
                 updateAddress(it.address)
@@ -822,7 +826,7 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
         }
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         amount.value = denominatedValue.asInput(session) ?: ""
         _denomination.value = denominatedValue.denomination
     }

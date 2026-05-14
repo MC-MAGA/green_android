@@ -442,17 +442,6 @@ fun WalletSettingsScreen(
                         )
                     }
 
-                    WalletSetting.WatchOnly -> {
-                        Setting(
-                            title = stringResource(Res.string.id_wallet_details),
-                            imageVector = PhosphorIcons.Regular.CaretRight,
-                            modifier = Modifier.clickable {
-                                viewModel.postEvent(LocalEvents.WatchOnly)
-                            },
-                            testTag = "wallet_details"
-                        )
-                    }
-
                     is WalletSetting.AutoLogoutTimeout -> {
                         Setting(
                             title = stringResource(Res.string.id_auto_logout_timeout),

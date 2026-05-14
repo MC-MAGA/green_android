@@ -16,8 +16,12 @@ import com.blockstream.domain.promo.GetPromoUseCase
 import com.blockstream.domain.receive.receiveModule
 import com.blockstream.domain.send.sendModule
 import com.blockstream.domain.swap.swapModule
+import com.blockstream.domain.transaction.GetAccountTransactionsUseCase
 import com.blockstream.domain.transaction.GetWalletTransactionsUseCase
+import com.blockstream.domain.wallet.GetWalletAssetsUseCase
 import com.blockstream.domain.wallet.walletModule
+import org.koin.core.module.dsl.factoryOf
+import org.koin.core.module.dsl.singleOf
 import org.koin.dsl.module
 
 val domainModule = module {
@@ -28,37 +32,17 @@ val domainModule = module {
     includes(receiveModule)
     includes(walletModule)
     includes(accountModule)
-    single {
-        GetWalletTransactionsUseCase()
-    }
-    single {
-        LightningNodeIdUseCase(get())
-    }
-    single {
-        VerifyAddressUseCase(get())
-    }
-    single {
-        CreateCryptoQuoteUseCase(get())
-    }
-    single {
-        CreateCryptoWidgetUseCase(get())
-    }
-    single {
-        DefaultValuesUseCase(get())
-    }
-    single {
-        MeldUseCase(get(), get(), get())
-    }
-    factory {
-        ObserveBitcoinPriceHistory(get())
-    }
-    factory {
-        GetLastSuccessfulPurchaseExchange(get())
-    }
-    single {
-        GetBannerUseCase()
-    }
-    single {
-        GetPromoUseCase(get(), get(), get())
-    }
+    singleOf(::LightningNodeIdUseCase)
+    singleOf(::VerifyAddressUseCase)
+    singleOf(::CreateCryptoQuoteUseCase)
+    singleOf(::CreateCryptoWidgetUseCase)
+    singleOf(::DefaultValuesUseCase)
+    singleOf(::MeldUseCase)
+    singleOf(::GetBannerUseCase)
+    singleOf(::GetPromoUseCase)
+    factoryOf(::GetWalletTransactionsUseCase)
+    factoryOf(::GetAccountTransactionsUseCase)
+    factoryOf(::ObserveBitcoinPriceHistory)
+    factoryOf(::GetLastSuccessfulPurchaseExchange)
+    factoryOf(::GetWalletAssetsUseCase)
 }

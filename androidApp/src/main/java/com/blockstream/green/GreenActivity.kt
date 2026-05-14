@@ -136,7 +136,6 @@ class GreenActivity : AppCompatActivity() {
 
                         val wallet = GreenWallet.createWallet(
                             name = name ?: network.replaceFirstChar { n -> n.titlecase() },
-                            activeNetwork = network,
                             isTestnet = Network.isTestnet(network)
                         ).also {
                             database.insertWallet(it)

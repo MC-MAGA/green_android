@@ -10,14 +10,15 @@ import com.blockstream.data.extensions.isPolicyAsset
 import com.blockstream.data.extensions.networkForAsset
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Balance
+import kotlinx.coroutines.runBlocking
 
 // Use it for GDK purposes
 // Lowercase & replace μbtc -> ubtc
-fun getUnit(session: GdkSession) = session.getSettings()?.unit ?: BTC_UNIT
+fun getUnit(session: GdkSession) = session.settings().value?.unit ?: BTC_UNIT
 
 // Use it for UI purposes
 fun getFiatCurrency(session: GdkSession): String {
-    return session.getSettings()?.pricing?.currency?.getFiatUnit(session) ?: "n/a"
+    return session.settings().value?.pricing?.currency?.getFiatUnit(session) ?: "n/a"
 }
 
 fun String.getFiatUnit(session: GdkSession): String {
@@ -31,7 +32,7 @@ fun getBitcoinOrLiquidUnit(
     denomination: Denomination? = null
 ): String {
     val network = assetId.networkForAsset(session)
-    var unit = denomination?.denomination ?: session.getSettings(network)?.unit ?: "n/a"
+    var unit = denomination?.denomination ?: runBlocking { session.getSettings(network)?.unit } ?: "n/a"
 
     if (network?.isTestnet == true) {
         unit = when (unit) {
@@ -89,7 +90,7 @@ fun Long.feeRateWithUnit(): String {
         }
 }
 
-fun Balance?.toAmountLook(
+suspend fun Balance?.toAmountLook(
     session: GdkSession,
     assetId: String? = null,
     withUnit: Boolean = true,

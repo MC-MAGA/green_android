@@ -3,6 +3,15 @@ package com.blockstream.compose.models.add
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_add_new_account
+import com.blockstream.compose.events.Event
+import com.blockstream.compose.events.Events
+import com.blockstream.compose.extensions.previewWallet
+import com.blockstream.compose.looks.AccountTypeLook
+import com.blockstream.compose.models.jade.JadeQrOperation
+import com.blockstream.compose.navigation.NavData
+import com.blockstream.compose.navigation.NavigateDestinations
+import com.blockstream.compose.sideeffects.SideEffect
+import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.data.BTC_POLICY_ASSET
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
@@ -10,21 +19,12 @@ import com.blockstream.data.data.PopTo
 import com.blockstream.data.data.Redact
 import com.blockstream.data.data.SetupArgs
 import com.blockstream.data.devices.DeviceModel
-import com.blockstream.data.extensions.hasHistory
 import com.blockstream.data.extensions.ifConnected
-import com.blockstream.compose.extensions.previewWallet
-import com.blockstream.data.extensions.tryCatchNull
+import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.AssetBalance
 import com.blockstream.data.gdk.data.Network
-import com.blockstream.compose.events.Event
-import com.blockstream.compose.events.Events
-import com.blockstream.compose.looks.AccountTypeLook
-import com.blockstream.compose.models.jade.JadeQrOperation
-import com.blockstream.compose.navigation.NavData
-import com.blockstream.compose.navigation.NavigateDestinations
-import com.blockstream.compose.sideeffects.SideEffect
-import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.domain.account.HasHistoryUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class ChooseAccountTypeViewModelAbstract(
     greenWallet: GreenWallet, assetId: String?, popTo: PopTo?, val allowAssetSelection: Boolean = true,
@@ -52,6 +53,8 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
         popTo = popTo,
         allowAssetSelection = allowAssetSelection
     ) {
+    private val hasHistoryUseCase: HasHistoryUseCase by inject()
+
     override val asset: MutableStateFlow<AssetBalance> =
         MutableStateFlow(initAsset ?: EnrichedAsset.Empty.let { AssetBalance.create(it) })
 
@@ -199,7 +202,7 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
         }
     }
 
-    private fun chooseAccountType(accountType: AccountType) = tryCatchNull {
+    private suspend fun chooseAccountType(accountType: AccountType) = tryCatch {
         val network = networkForAccountType(accountType, asset.value.asset)
 
         var sideEffect: SideEffect? = null
@@ -255,9 +258,9 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
         }
     }
 
-    private fun isAccountAlreadyArchived(network: Network, accountType: AccountType): Boolean {
+    private suspend fun isAccountAlreadyArchived(network: Network, accountType: AccountType): Boolean {
         return session.allAccounts.value.find {
-            it.hidden && it.network == network && it.type == accountType && (network.isMultisig || it.hasHistory(session))
+            it.hidden && it.network == network && it.type == accountType && (network.isMultisig || hasHistoryUseCase.invoke(session = session, wallet = greenWallet, account = it))
         } != null
     }
 }

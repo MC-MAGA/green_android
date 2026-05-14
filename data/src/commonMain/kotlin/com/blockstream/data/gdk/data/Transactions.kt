@@ -8,7 +8,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class Transactions(
     @SerialName("transactions")
-    val transactions: List<Transaction> = listOf(),
+    val transactions: List<Transaction> = listOf()
 ) : GreenJson<Transactions>() {
     override fun keepJsonElement() = true
 

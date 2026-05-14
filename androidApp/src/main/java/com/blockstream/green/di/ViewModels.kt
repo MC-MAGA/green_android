@@ -18,7 +18,6 @@ import com.blockstream.compose.models.devices.DeviceScanViewModel
 import com.blockstream.compose.models.devices.ImportPubKeyViewModel
 import com.blockstream.compose.models.devices.JadeGenuineCheckViewModel
 import com.blockstream.compose.models.devices.JadeGuideViewModel
-import com.blockstream.compose.models.exchange.AccountExchangeViewModel
 import com.blockstream.compose.models.exchange.OnOffRampsViewModel
 import com.blockstream.compose.models.home.HomeViewModel
 import com.blockstream.compose.models.jade.JadeQRViewModel
@@ -34,9 +33,7 @@ import com.blockstream.compose.models.onboarding.phone.EnterRecoveryPhraseViewMo
 import com.blockstream.compose.models.onboarding.phone.PinViewModel
 import com.blockstream.compose.models.onboarding.watchonly.WatchOnlyMultisigViewModel
 import com.blockstream.compose.models.onboarding.watchonly.WatchOnlySinglesigViewModel
-import com.blockstream.compose.models.overview.AccountOverviewViewModel
 import com.blockstream.compose.models.overview.SecurityViewModel
-import com.blockstream.compose.models.overview.WalletAssetsViewModel
 import com.blockstream.compose.models.overview.WalletOverviewViewModel
 import com.blockstream.compose.models.promo.PromoViewModel
 import com.blockstream.compose.models.receive.ReceiveViewModel
@@ -60,7 +57,6 @@ import com.blockstream.compose.models.settings.TwoFactorAuthenticationViewModel
 import com.blockstream.compose.models.settings.TwoFactorSetupViewModel
 import com.blockstream.compose.models.settings.WalletSettingsViewModel
 import com.blockstream.compose.models.settings.WatchOnlyCredentialsSettingsViewModel
-import com.blockstream.compose.models.settings.WatchOnlyViewModel
 import com.blockstream.compose.models.sheets.AnalyticsViewModel
 import com.blockstream.compose.models.sheets.AssetDetailsViewModel
 import com.blockstream.compose.models.sheets.JadeFirmwareUpdateViewModel
@@ -95,7 +91,6 @@ val viewModels = module {
     viewModelOf(::RecoveryCheckViewModel)
     viewModelOf(::LnUrlAuthViewModel)
     viewModelOf(::LnUrlWithdrawViewModel)
-    viewModelOf(::WatchOnlyViewModel)
     viewModelOf(::XpubViewModel)
     viewModelOf(::TransactionViewModel)
     viewModelOf(::TransactionDetailsViewModel)
@@ -103,7 +98,6 @@ val viewModels = module {
     viewModelOf(::ReviewAddAccountViewModel)
     viewModelOf(::Account2of3ViewModel)
     viewModelOf(::TwoFactorAuthenticationViewModel)
-    viewModelOf(::WalletAssetsViewModel)
     viewModelOf(::ArchivedAccountsViewModel)
     viewModelOf(::JadeGuideViewModel)
     viewModelOf(::AddressesViewModel)
@@ -114,7 +108,6 @@ val viewModels = module {
     viewModelOf(::Bip39PassphraseViewModel)
     viewModelOf(::ReceiveViewModel)
     viewModelOf(::RecoveryHelpViewModel)
-    viewModelOf(::AccountOverviewViewModel)
     viewModelOf(::DenominationExchangeRateViewModel)
     viewModelOf(::RequestAmountViewModel)
     viewModelOf(::TwoFactorSetupViewModel)
@@ -145,16 +138,13 @@ val viewModels = module {
         PromoViewModel(get(), getOrNull())
     }
     viewModel {
-        AssetDetailsViewModel(get(), get(), getOrNull())
+        AssetDetailsViewModel(get(), get(), get())
     }
     viewModel {
         SendConfirmViewModel(get(), get(), getOrNull())
     }
     viewModel {
         SendLightningConfirmViewModel(get(), get(), get(), getOrNull(), getOrNull())
-    }
-    viewModel {
-        AccountExchangeViewModel(get(), getOrNull())
     }
     viewModel {
         SendViewModel(get(), get(), get(), get())

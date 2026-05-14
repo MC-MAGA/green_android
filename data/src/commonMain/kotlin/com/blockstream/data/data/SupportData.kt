@@ -25,12 +25,13 @@ data class SupportData(
             throwable: Throwable? = null,
             paymentHash: String? = null,
             network: Network? = null,
-            session: GdkSession? = null
+            session: GdkSession? = null,
+            supportId: String? = null,
         ): SupportData {
             return SupportData(
                 subject = subject,
                 error = throwable?.message,
-                supportId = session?.supportId(),
+                supportId = session?.supportId() ?: supportId,
                 paymentHash = paymentHash,
                 zendeskSecurityPolicy = network?.zendeskValue,
                 zendeskHardwareWallet = session?.gdkHwWallet?.model?.zendeskValue,

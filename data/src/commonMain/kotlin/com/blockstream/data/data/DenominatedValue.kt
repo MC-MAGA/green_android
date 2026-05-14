@@ -12,6 +12,7 @@ import com.blockstream.data.gdk.GreenJson
 import com.blockstream.data.gdk.data.Balance
 import com.blockstream.data.utils.getBitcoinOrLiquidUnit
 import com.blockstream.data.utils.toAmountLook
+import kotlinx.coroutines.runBlocking
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -36,7 +37,7 @@ data class DenominatedValue constructor(
         }
     }
 
-    fun asLook(session: GdkSession): String? {
+    suspend fun asLook(session: GdkSession): String? {
         return balance?.toAmountLook(
             session = session,
             assetId = assetId,
@@ -47,7 +48,7 @@ data class DenominatedValue constructor(
         )
     }
 
-    fun asInput(session: GdkSession): String? {
+    suspend fun asInput(session: GdkSession): String? {
         return balance?.toAmountLook(
             session = session,
             assetId = assetId,
@@ -91,7 +92,7 @@ data class DenominatedValue constructor(
             )
         }
 
-        fun createDefault(session: GdkSession): DenominatedValue {
+        suspend fun createDefault(session: GdkSession): DenominatedValue {
             return DenominatedValue(
                 balance = null,
                 assetId = null,
@@ -143,11 +144,11 @@ sealed class Denomination {
         getBitcoinOrLiquidUnit(session = session, assetId = assetId, denomination = this)
     }
 
-    fun assetTicker(session: GdkSession, assetId: String?): String = if (this is FIAT) {
+    fun assetTicker(session: GdkSession, assetId: String?): String = runBlocking { if (this@Denomination is FIAT) {
         denomination
     } else {
-        assetId.assetTickerOrNull(session = session, denomination = this) ?: assetId?.substring(0 until 6) ?: ""
-    }
+        assetId.assetTickerOrNull(session = session, denomination = this@Denomination) ?: assetId?.substring(0 until 6) ?: ""
+    }}
 
     val isFiat
         get() = this is FIAT
@@ -168,7 +169,7 @@ sealed class Denomination {
         }
 
         fun fiat(session: GdkSession): Denomination? {
-            return session.getSettings()?.pricing?.currency?.let { FIAT(it) }
+            return session.settings().value?.pricing?.currency?.let { FIAT(it) }
         }
 
         fun fiatOrNull(session: GdkSession, isFiat: Boolean): Denomination? {
@@ -180,7 +181,7 @@ sealed class Denomination {
         }
 
         fun default(session: GdkSession): Denomination {
-            return session.ifConnected { byUnit((session.getSettings()?.unit ?: BTC_UNIT)) } ?: BTC
+            return session.ifConnected { byUnit((session.settings().value?.unit ?: BTC_UNIT)) } ?: BTC
         }
 
         fun defaultOrFiat(session: GdkSession, isFiat: Boolean): Denomination {

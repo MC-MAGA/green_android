@@ -5,6 +5,8 @@ import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Pricing
 import com.blockstream.data.gdk.data.Settings
 import com.blockstream.data.utils.UserInput
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.test.runTest
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -31,11 +33,11 @@ class JsonConverterUnitTest {
                 fiat, fiat
             )
         )
-        whenever(session.getSettings(anyOrNull())).thenReturn(settings)
+        whenever(session.settings(anyOrNull())).thenReturn(MutableStateFlow(settings))
     }
 
     @Test
-    fun test_valuesInBTC() {
+    fun test_valuesInBTC() = runTest {
         val tests = mapOf(
             "123" to "123",
             "123.1" to "123.1",
@@ -70,7 +72,7 @@ class JsonConverterUnitTest {
     }
 
     @Test
-    fun test_valuesInSat() {
+    fun test_valuesInSat() = runTest {
         val tests = mapOf(
             "123" to "123",
             "123" to "123.1",
@@ -107,7 +109,7 @@ class JsonConverterUnitTest {
     }
 
     @Test
-    fun test_valuesInFiat() {
+    fun test_valuesInFiat() = runTest {
         initMock("EUR")
 
         val tests = mapOf(
@@ -148,27 +150,30 @@ class JsonConverterUnitTest {
     }
 
     @Test
-    fun test_invalid_inputs() {
+    fun test_invalid_inputs() = runTest {
         Assert.assertEquals("", UserInput.parseUserInputSafe(session, null).amount)
         Assert.assertEquals("", UserInput.parseUserInputSafe(session, "abc").amount)
         Assert.assertEquals("", UserInput.parseUserInputSafe(session, "123abc").amount)
     }
 
     @Test
-    fun test_invalid_inputs_throws() {
-        Assert.assertThrows(Exception::class.java) {
-            UserInput.parseUserInput(session, null)
-        }
-        Assert.assertThrows(Exception::class.java) {
-            UserInput.parseUserInput(session, "abc")
-        }
-        Assert.assertThrows(Exception::class.java) {
-            UserInput.parseUserInput(session, "123abc")
+    fun test_invalid_inputs_throws() = runTest {
+        assertThrows { UserInput.parseUserInput(session, null) }
+        assertThrows { UserInput.parseUserInput(session, "abc") }
+        assertThrows { UserInput.parseUserInput(session, "123abc") }
+    }
+
+    private suspend fun assertThrows(block: suspend () -> Unit) {
+        try {
+            block()
+            Assert.fail("Expected an exception to be thrown")
+        } catch (ignored: Exception) {
+            // expected
         }
     }
 
     @Test
-    fun test_grouping() {
+    fun test_grouping() = runTest {
         Assert.assertEquals("123123.1", UserInput.parseUserInputSafe(session, "123,123.10", locale = dotLocale).amount)
         Assert.assertEquals("123123.1", UserInput.parseUserInputSafe(session, "123.123,10", locale = commaLocale).amount)
     }

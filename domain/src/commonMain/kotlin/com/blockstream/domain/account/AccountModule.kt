@@ -6,4 +6,5 @@ import org.koin.dsl.module
 val accountModule = module {
     singleOf(::CreateAccountUseCase)
     singleOf(::RemoveAccountUseCase)
+    singleOf(::HasHistoryUseCase)
 }

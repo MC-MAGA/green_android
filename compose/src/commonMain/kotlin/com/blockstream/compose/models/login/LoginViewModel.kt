@@ -824,20 +824,6 @@ class LoginViewModel constructor(
                 }
             }
 
-            // Change active account if necessary (account archived)
-            if (greenWallet.activeNetwork != (session.activeAccount.value?.networkId ?: "") ||
-                greenWallet.activeAccount != (session.activeAccount.value?.pointer ?: 0)
-            ) {
-                greenWallet.also {
-                    it.activeNetwork = session.activeAccount.value?.networkId ?: session.defaultNetwork.id
-                    it.activeAccount = session.activeAccount.value?.pointer ?: 0
-
-                    if (!it.isEphemeral) {
-                        database.updateWallet(it)
-                    }
-                }
-            }
-
             // Reset counter
             loginCredentials?.also {
                 database.replaceLoginCredential(it.copy(counter = 0))

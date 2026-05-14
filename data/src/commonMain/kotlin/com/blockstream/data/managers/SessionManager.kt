@@ -149,10 +149,12 @@ class SessionManager constructor(
         gdk.setNotificationHandler { gaSession: GASession, jsonObject: Any ->
             try {
                 gdkSessions.forEach {
-                    it.onNewNotification(
-                        gaSession,
-                        JsonDeserializer.decodeFromJsonElement(jsonObject as JsonElement)
-                    )
+                    scope.launch {
+                        it.onNewNotification(
+                            gaSession,
+                            JsonDeserializer.decodeFromJsonElement(jsonObject as JsonElement)
+                        )
+                    }
                 }
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -288,7 +290,7 @@ class SessionManager constructor(
         }
     }
 
-    fun upgradeOnBoardingSessionToFullSession(woSession: GdkSession, device: GreenDevice) {
+    suspend fun upgradeOnBoardingSessionToFullSession(woSession: GdkSession, device: GreenDevice) {
         onBoardingSession?.let {
             woSession.watchOnlyToFullSession(device = device, gdkSession = it)
             onBoardingSession = null

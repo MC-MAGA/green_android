@@ -30,7 +30,7 @@ class GetReceiveAccountsUseCase {
      * @return a list of [AccountAsset] entries for eligible accounts; may be empty.
      * @throws Exception when the asset's network is not recognized ("No supported network").
      */
-    operator fun invoke(session: GdkSession, asset: EnrichedAsset): List<AccountAsset> {
+    operator suspend fun invoke(session: GdkSession, asset: EnrichedAsset): List<AccountAsset> {
         return session.accounts.value.filter { account ->
             when {
                 asset.isBitcoin -> account.isBitcoin

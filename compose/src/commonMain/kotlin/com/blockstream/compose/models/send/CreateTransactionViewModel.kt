@@ -38,6 +38,7 @@ import com.blockstream.data.gdk.params.BroadcastTransactionParams
 import com.blockstream.data.gdk.params.CreateTransactionParams
 import com.blockstream.data.utils.ifNotNull
 import com.blockstream.data.utils.toAmountLook
+import com.blockstream.domain.send.GetSendFlowUseCase
 import com.blockstream.domain.send.SendUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.delay
@@ -60,6 +61,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.jsonObject
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.inject
+import org.koin.core.parameter.parametersOf
 
 @Serializable
 sealed class PendingAction {
@@ -72,6 +74,9 @@ abstract class CreateTransactionViewModelAbstract(
 ) : GreenViewModel(greenWalletOrNull = greenWallet, accountAssetOrNull = accountAssetOrNull) {
 
     protected val sendUseCase: SendUseCase by inject()
+    protected val getSendFlowUseCase: GetSendFlowUseCase by inject() {
+        parametersOf(session)
+    }
 
     var pendingAction: PendingAction? = null
 
@@ -414,12 +419,12 @@ abstract class CreateTransactionViewModelAbstract(
 
                 if (!isAtomicSwap) {
                     // Sign transaction
-                    transaction = session.signTransaction(account.network, transaction)
+                    transaction = session.signTransaction(account = account, createTransaction = transaction)
                 }
 
                 // Broadcast or just sign
                 if (broadcast) {
-                    if (isAtomicSwap || transaction.isSweep()) {
+                    if (network.isSinglesig || isAtomicSwap || transaction.isSweep()) {
                         session.broadcastTransaction(
                             network = network,
                             broadcastTransaction = BroadcastTransactionParams(
@@ -429,15 +434,9 @@ abstract class CreateTransactionViewModelAbstract(
                         )
                     } else {
 
-                        // Set memo without recreating the transaction
-                        val signedTransaction =
-                            JsonObject(transaction.jsonElement!!.jsonObject.toMutableMap().apply {
-                                this["memo"] =
-                                    JsonPrimitive(
-                                        note.value.takeIf { it.isNotBlank() }?.trim()
-                                            ?: ""
-                                    )
-                            })
+                        val signedTransaction = JsonObject(transaction.jsonElement!!.jsonObject.toMutableMap().apply {
+                            this["memo"] = JsonPrimitive(note.value.takeIf { it.isNotBlank() }?.trim() ?: "")
+                        })
 
                         session.sendTransaction(
                             account = account,
@@ -507,7 +506,7 @@ abstract class CreateTransactionViewModelAbstract(
                 postSideEffect(
                     SideEffects.Dialog(
                         title = StringHolder.create("Signed Transaction"),
-                        message = StringHolder.create(it.signedTransaction ?: it.transaction)
+                        message = StringHolder.create(it.signedTransaction)
                     )
                 )
             }

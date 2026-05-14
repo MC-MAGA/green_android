@@ -5,6 +5,7 @@ import com.blockstream.data.LBTC_POLICY_ASSET
 import com.blockstream.data.LN_BTC_POLICY_ASSET
 import com.blockstream.data.extensions.isBitcoinPolicyAsset
 import com.blockstream.data.extensions.isLightningPolicyAsset
+import com.blockstream.data.extensions.isNetworkPolicyAsset
 import com.blockstream.data.extensions.isPolicyAsset
 import com.blockstream.data.extensions.networkForAsset
 import com.blockstream.data.gdk.GdkSession
@@ -12,6 +13,8 @@ import com.blockstream.data.gdk.GreenJson
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.Entity
 import com.blockstream.data.gdk.data.Network
+import com.blockstream.data.managers.AssetsProvider
+import com.blockstream.data.managers.NetworkAssetManager
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -46,7 +49,7 @@ data class EnrichedAsset constructor(
             when {
                 assetId.isBitcoinPolicyAsset() -> "Bitcoin"
                 assetId.isLightningPolicyAsset() -> "Lightning Bitcoin"
-                assetId.isPolicyAsset(session.liquid) -> "Liquid Bitcoin"
+                assetId.isNetworkPolicyAsset(session.liquid) -> "Liquid Bitcoin"
                 else -> throw Exception("No supported network")
             }.let {
                 if (session.isTestnet) "Testnet $it" else it
@@ -62,7 +65,7 @@ data class EnrichedAsset constructor(
         return if (assetId.isPolicyAsset(session)) {
             when {
                 assetId.isBitcoinPolicyAsset() || assetId.isLightningPolicyAsset() -> "BTC"
-                assetId.isPolicyAsset(session.liquid) -> "LBTC"
+                assetId.isNetworkPolicyAsset(session.liquid) -> "LBTC"
                 else -> throw Exception("No supported network")
             }.let {
                 if (session.isTestnet) "TEST-$it" else it
@@ -98,7 +101,7 @@ data class EnrichedAsset constructor(
 
     fun isPolicyAsset(session: GdkSession) = assetId.isPolicyAsset(session)
 
-    fun isLiquidPolicyAsset(session: GdkSession) = !isAnyAsset && assetId.isPolicyAsset(session.liquid)
+    fun isLiquidPolicyAsset(session: GdkSession) = !isAnyAsset && assetId.isNetworkPolicyAsset(session.liquid)
 
     fun isLiquidNetwork(session: GdkSession) = assetId.networkForAsset(session)?.isLiquid == true
 
@@ -111,24 +114,29 @@ data class EnrichedAsset constructor(
         val PreviewBTC by lazy { EnrichedAsset(assetId = BTC_POLICY_ASSET, name = "Bitcoin", ticker = "BTC") }
         val PreviewLBTC by lazy { EnrichedAsset(assetId = LBTC_POLICY_ASSET, name = "Liquid Bitcoin", ticker = "LBTC") }
 
-        fun createOrNull(session: GdkSession, assetId: String?): EnrichedAsset? {
+        suspend fun createOrNull(session: GdkSession, assetId: String?): EnrichedAsset? {
             return create(session, assetId ?: return null)
         }
 
         fun create(account: Account): EnrichedAsset = EnrichedAsset(assetId = account.network.policyAsset)
 
-        fun create(session: GdkSession, network: Network): EnrichedAsset = create(session = session, assetId = network.policyAsset)
+        suspend fun create(session: GdkSession, network: Network): EnrichedAsset = create(session = session, assetId = network.policyAsset)
 
-        fun create(session: GdkSession, assetId: String): EnrichedAsset {
+        suspend fun create(session: GdkSession, assetId: String): EnrichedAsset {
+            return create(session.networkAssetManager, session, assetId)
+        }
+
+        suspend fun create(networkAssetManager: NetworkAssetManager, assetsProvider: AssetsProvider, assetId: String): EnrichedAsset {
             if (assetId == LN_BTC_POLICY_ASSET) {
                 return (create(
-                    session = session,
+                    networkAssetManager = networkAssetManager,
+                    assetsProvider = assetsProvider,
                     assetId = BTC_POLICY_ASSET
                 ).copy(assetId = LN_BTC_POLICY_ASSET, name = "Lightning Bitcoin"))
             }
 
-            val asset = session.getAsset(assetId)
-            val enrichedAsset = session.getEnrichedAssets(assetId)
+            val asset = networkAssetManager.getAsset(assetId, assetsProvider)
+            val enrichedAsset = networkAssetManager.getCountlyAsset(assetId)
 
             return EnrichedAsset(
                 assetId = assetId,
@@ -142,7 +150,7 @@ data class EnrichedAsset constructor(
             )
         }
 
-        fun createAnyAsset(session: GdkSession, isAmp: Boolean): EnrichedAsset? {
+        suspend fun createAnyAsset(session: GdkSession, isAmp: Boolean): EnrichedAsset? {
             val assetId = session.liquid?.policyAsset ?: return null
             val asset = session.getAsset(assetId)
 

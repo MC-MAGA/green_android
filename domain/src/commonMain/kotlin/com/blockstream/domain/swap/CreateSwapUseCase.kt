@@ -6,6 +6,7 @@ import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.lightning.satoshi
 import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.SwapDetails
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 
 /**
  * Orchestrates the creation of various swap types: Chain, Normal Submarine, or Reverse Submarine.
@@ -16,7 +17,8 @@ import com.blockstream.data.swap.SwapDetails
 class CreateSwapUseCase(
     private val createChainSwapUseCase: CreateChainSwapUseCase,
     private val createReverseSubmarineSwapUseCase: CreateReverseSubmarineSwapUseCase,
-    private val createNormalSubmarineSwapUseCase: CreateNormalSubmarineSwapUseCase
+    private val createNormalSubmarineSwapUseCase: CreateNormalSubmarineSwapUseCase,
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
 ) {
 
     /**
@@ -64,7 +66,7 @@ class CreateSwapUseCase(
                     toAccount = to.account,
                     quote = quote,
                     amount = amountNotNull,
-                    address = session.getReceiveAddress(to.account).address
+                    address = getReceiveAddressUseCase(session, to.account).address
                 )
             }
 

@@ -8,7 +8,6 @@ import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.data.toLoginCredentials
 import com.blockstream.data.database.Database
 import com.blockstream.data.extensions.cleanup
-import com.blockstream.data.extensions.hasHistory
 import com.blockstream.data.extensions.richWatchOnly
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
@@ -26,7 +25,8 @@ class CreateAccountUseCase(
     private val greenKeystore: GreenKeystore,
     private val countly: CountlyBase,
     private val lightningNodeIdUseCase: LightningNodeIdUseCase,
-    private val saveGreenlightMnemonicAndCredentialsUseCase: SaveGreenlightMnemonicAndCredentialsUseCase
+    private val saveGreenlightMnemonicAndCredentialsUseCase: SaveGreenlightMnemonicAndCredentialsUseCase,
+    private val hasHistoryUseCase: HasHistoryUseCase
 ) : Loggable() {
 
     suspend operator fun invoke(
@@ -107,11 +107,11 @@ class CreateAccountUseCase(
                 null
             } else {
                 session.allAccounts.value.find {
-                    it.hidden && it.network == network && it.type == accountType && !it.hasHistory(
-                        session
-                    )
+                    it.hidden && it.network == network && it.type == accountType && !hasHistoryUseCase.invoke(session = session, wallet = wallet, account = it)
                 }
             }
+
+
 
             // Check if account unarchive is needed
             if (noHistoryArchivedAccount != null) {
@@ -120,7 +120,7 @@ class CreateAccountUseCase(
                 session.createAccount(
                     network = network,
                     params = params,
-                    hardwareWalletResolver = DeviceResolver.Companion.createIfNeeded(
+                    hardwareWalletResolver = DeviceResolver.createIfNeeded(
                         session.gdkHwWallet,
                         hwInteraction
                     )

@@ -213,8 +213,7 @@ open class GreenViewModel constructor(
     }
 
     protected val _denomination by lazy {
-        MutableStateFlow(sessionOrNull?.ifConnected { Denomination.default(session) }
-            ?: Denomination.BTC)
+        MutableStateFlow(sessionOrNull?.ifConnected { Denomination.default(session)} ?: Denomination.BTC)
     }
 
     val denomination: StateFlow<Denomination> by lazy { _denomination.asStateFlow() }
@@ -403,9 +402,6 @@ open class GreenViewModel constructor(
 
             is Events.SetAccountAsset -> {
                 accountAsset.value = event.accountAsset
-                if (event.setAsActive) {
-                    setActiveAccount(event.accountAsset.account)
-                }
             }
 
             is Events.RenameAccount -> {
@@ -414,10 +410,6 @@ open class GreenViewModel constructor(
 
             is Events.ArchiveAccount -> {
                 updateAccount(account = event.account, isHidden = true)
-            }
-
-            is Events.RemoveAccount -> {
-                removeAccount(account = event.account)
             }
 
             is EventWithSideEffect -> {
@@ -737,30 +729,14 @@ open class GreenViewModel constructor(
 
     private fun updateAccount(
         account: Account,
-        isHidden: Boolean,
-        navigateToRoot: Boolean = false
+        isHidden: Boolean
     ) {
         doAsync({
             session.updateAccount(account = account, isHidden = isHidden, userInitiated = true)
         }, onSuccess = {
             if (isHidden) {
-                // Update active account from Session if it was archived
-                session.activeAccount.value?.also {
-                    setActiveAccount(it)
-                }
-
-                postSideEffect(SideEffects.AccountArchived(account = account))
                 postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_account_has_been_archived)))
-
-                // This only have effect on AccountOverview
                 postSideEffect(SideEffects.NavigateToRoot())
-            } else {
-                // Make it active
-                setActiveAccount(account)
-                postSideEffect(SideEffects.AccountUnarchived(account = account))
-                if (navigateToRoot) {
-                    postSideEffect(SideEffects.NavigateToRoot())
-                }
             }
         })
     }
@@ -769,29 +745,7 @@ open class GreenViewModel constructor(
         if (account.isLightning) {
             doAsync({
                 removeAccountUseCase(session = session, wallet = greenWallet, account = account)
-            }, onSuccess = {
-                // Update active account from Session if it was archived
-                // setActiveAccount(session.activeAccount.value!!)
-                // postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_account_has_been_removed)))
-
-                // This only have effect on AccountOverview
-                // postSideEffect(SideEffects.NavigateToRoot())
             })
-        }
-    }
-
-    internal fun setActiveAccount(account: Account) {
-        session.setActiveAccount(account)
-
-        greenWallet.also {
-            it.activeNetwork = account.networkId
-            it.activeAccount = account.pointer
-
-            if (!it.isEphemeral) {
-                viewModelScope.launch(context = logException(countly)) {
-                    database.updateWallet(it)
-                }
-            }
         }
     }
 
@@ -848,30 +802,15 @@ open class GreenViewModel constructor(
                     }
 
                     else -> {
-                        session.activeAccount.value?.also { activeAccount ->
-                            var account = activeAccount
-
-                            // Different network
-                            if (!account.network.isSameNetwork(checkedInput.first)) {
-                                session.allAccounts.value.find {
-                                    it.network.isSameNetwork(
-                                        checkedInput.first
-                                    )
-                                }?.also {
-                                    account = it
-                                }
-                            }
-
-                            postSideEffect(
-                                SideEffects.NavigateTo(
-                                    NavigateDestinations.SendAddress(
-                                        greenWallet = greenWallet,
-                                        address = data,
-                                        addressType = if (isQr) AddressInputType.SCAN else AddressInputType.BIP21
-                                    )
+                        postSideEffect(
+                            SideEffects.NavigateTo(
+                                NavigateDestinations.SendAddress(
+                                    greenWallet = greenWallet,
+                                    address = data,
+                                    addressType = if (isQr) AddressInputType.SCAN else AddressInputType.BIP21
                                 )
                             )
-                        }
+                        )
                     }
                 }
 
@@ -916,7 +855,7 @@ open class GreenViewModel constructor(
     }
 
     protected open suspend fun denominatedValue(): DenominatedValue? = null
-    protected open fun setDenominatedValue(denominatedValue: DenominatedValue) {}
+    protected open suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {}
     protected open fun errorReport(exception: Throwable): SupportData? {
         return null
     }
@@ -1116,9 +1055,7 @@ open class GreenViewModel constructor(
             val wallet = GreenWallet.createWallet(
                 name = generateWalletName(settingsManager),
                 xPubHashId = loginData.networkHashId, // Use networkHashId as the watch-only is linked to a specific network
-                activeNetwork = session.activeAccount.value?.networkId
-                    ?: session.defaultNetwork.id,
-                activeAccount = session.activeAccount.value?.pointer ?: 0,
+                activeNetwork = session.defaultNetwork.id,
                 watchOnlyUsername = if (network.isSinglesig) "" else watchOnlyCredentials.username, // empty string helps us hide the username and still identify it as a wo
                 isTestnet = network.isTestnet,
                 isHardware = deviceModel != null,

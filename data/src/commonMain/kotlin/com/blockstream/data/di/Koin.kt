@@ -11,6 +11,7 @@ import com.blockstream.data.lightning.LightningManager
 import com.blockstream.data.lwk.LwkManager
 import com.blockstream.data.managers.AssetManager
 import com.blockstream.data.managers.LifecycleManager
+import com.blockstream.data.managers.NetworkAssetManager
 import com.blockstream.data.managers.PromoManager
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.managers.SettingsManager
@@ -19,6 +20,7 @@ import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable.Companion.FILE_LOG_QUALIFIER
 import kotlinx.coroutines.MainScope
 import org.koin.core.module.Module
+import org.koin.core.module.dsl.factoryOf
 import org.koin.core.module.dsl.singleOf
 import org.koin.core.parameter.parametersOf
 import org.koin.core.qualifier.named
@@ -42,9 +44,6 @@ fun commonModules(appConfig: AppConfig): List<Module> {
         }
         single {
             getWally()
-        }
-        single {
-            AssetManager
         }
         single {
             LifecycleManager(get(), get())
@@ -94,6 +93,8 @@ fun commonModules(appConfig: AppConfig): List<Module> {
         singleOf(::WalletSettingsManager)
         singleOf(::SessionManager)
         singleOf(::LwkManager)
+        singleOf(::AssetManager)
+        factoryOf(::NetworkAssetManager)
     })
 }
 

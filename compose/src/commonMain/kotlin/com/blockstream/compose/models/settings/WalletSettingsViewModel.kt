@@ -57,12 +57,11 @@ import com.blockstream.data.data.TwoFactorSetupAction
 import com.blockstream.data.devices.DeviceModel
 import com.blockstream.data.extensions.biometricsMnemonic
 import com.blockstream.data.extensions.biometricsPinData
-import com.blockstream.data.extensions.hasHistory
 import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.indexOfOrNull
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.extensions.logException
-import com.blockstream.data.extensions.tryCatchNull
+import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Network
@@ -77,6 +76,7 @@ import com.blockstream.data.usecases.SetPinUseCase
 import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.account.CreateAccountUseCase
+import com.blockstream.domain.account.HasHistoryUseCase
 import com.blockstream.domain.swap.IsSwapAvailableUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
@@ -125,8 +125,8 @@ class WalletSettingsViewModel(
     private val createAccountUseCase: CreateAccountUseCase by inject()
     private val setBiometricsUseCase: SetBiometricsUseCase by inject()
     private val setPinUseCase: SetPinUseCase by inject()
-
     private val isSwapAvailableUseCase: IsSwapAvailableUseCase by inject()
+    private val hasHistoryUseCase: HasHistoryUseCase by inject()
 
     private val _items = MutableStateFlow(listOf<WalletSetting>())
     override val items = _items.asStateFlow()
@@ -137,7 +137,6 @@ class WalletSettingsViewModel(
 
     class LocalEvents {
         object DenominationExchangeRate : Events.EventSideEffect(sideEffect = SideEffects.OpenDenominationExchangeRate)
-        object WatchOnly : Event
         object ChangePin : Event
         object SetupEmailRecovery : Event
         object RequestRecoveryTransactions : Event
@@ -244,7 +243,7 @@ class WalletSettingsViewModel(
         }
     }
 
-    private suspend fun build(settings: Settings?, twoFactorConfig: TwoFactorConfig?): List<WalletSetting> {
+    private suspend fun build(settings: Settings?, twoFactorConfig: TwoFactorConfig?): List<WalletSetting> = tryCatch {
         val list = mutableListOf<WalletSetting>()
 
         if (section == WalletSettingsSection.TwoFactor && twoFactorConfig != null) {
@@ -431,8 +430,8 @@ class WalletSettingsViewModel(
             )
         }
 
-        return list
-    }
+        list
+    } ?: emptyList()
 
     override suspend fun handleEvent(event: Event) {
         super.handleEvent(event)
@@ -484,10 +483,6 @@ class WalletSettingsViewModel(
                     network = networkForAccountType(AccountType.LIGHTNING, EnrichedAsset.Empty),
                     mnemonic = event.lightningMnemonic,
                 )
-            }
-
-            is LocalEvents.WatchOnly -> {
-                postSideEffect(SideEffects.NavigateTo(NavigateDestinations.WatchOnly(greenWallet = greenWallet)))
             }
 
             is LocalEvents.CreateNewAccount -> {
@@ -706,7 +701,7 @@ class WalletSettingsViewModel(
         })
     }
 
-    private fun chooseAccountType(accountType: AccountType, asset: EnrichedAsset? = null) = tryCatchNull {
+    private suspend fun chooseAccountType(accountType: AccountType, asset: EnrichedAsset? = null) = tryCatch {
         val network = networkForAccountType(accountType, asset)
 
         var sideEffect: SideEffect? = null
@@ -788,9 +783,9 @@ class WalletSettingsViewModel(
         }
     }
 
-    private fun isAccountAlreadyArchived(network: Network, accountType: AccountType): Boolean {
+    private suspend fun isAccountAlreadyArchived(network: Network, accountType: AccountType): Boolean {
         return session.allAccounts.value.find {
-            it.hidden && it.network == network && it.type == accountType && (network.isMultisig || it.hasHistory(session))
+            it.hidden && it.network == network && it.type == accountType && (network.isMultisig || hasHistoryUseCase(session = session, wallet = greenWallet, account = it))
         } != null
     }
 
@@ -971,7 +966,6 @@ class WalletSettingsViewModelPreview(
                     currency = "USD",
                     exchange = "BITFINEX"
                 ),
-                WalletSetting.WatchOnly,
                 WalletSetting.Text(getString(Res.string.id_security)),
                 WalletSetting.TwoFactorAuthentication,
                 WalletSetting.PgpKey(enabled = false),

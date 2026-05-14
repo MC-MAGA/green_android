@@ -48,9 +48,6 @@ class NewWalletUseCase(
         val wallet = GreenWallet.createWallet(
             name = generateWalletName(settingsManager),
             xPubHashId = loginData.xpubHashId,
-            activeNetwork = session.activeAccount.value?.networkId
-                ?: session.defaultNetwork.network,
-            activeAccount = session.activeAccount.value?.pointer ?: 0,
             isRecoveryConfirmed = false,
             isTestnet = session.defaultNetwork.isTestnet
         )

@@ -22,22 +22,29 @@ import com.blockstream.data.data.DataState
 import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
+import com.blockstream.data.data.TransactionList
 import com.blockstream.data.extensions.hasUnconfirmedTransactions
 import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.launchSafe
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountBalance
+import com.blockstream.data.gdk.data.Transaction
+import com.blockstream.data.gdk.data.Transactions
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.swap.IsSwapAvailableUseCase
 import com.blockstream.domain.swap.IsSwapsEnabledUseCase
+import com.blockstream.domain.transaction.GetAccountTransactionsUseCase
 import com.blockstream.utils.Loggable
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
@@ -47,6 +54,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.inject
+import org.koin.core.parameter.parametersOf
 
 abstract class AssetAccountDetailsViewModelAbstract(
     greenWallet: GreenWallet, accountAssetOrNull: AccountAsset? = null
@@ -59,6 +67,7 @@ abstract class AssetAccountDetailsViewModelAbstract(
 
     abstract val accountBalance: StateFlow<AccountBalance>
 
+    abstract val isLoadingMore: StateFlow<Boolean>
     abstract val transactions: StateFlow<DataState<List<TransactionLook>>>
 
     abstract val totalBalance: StateFlow<String>
@@ -118,6 +127,10 @@ class AssetAccountDetailsViewModel(
     greenWallet: GreenWallet, accountAsset: AccountAsset
 ) : AssetAccountDetailsViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAsset) {
 
+    private val getAccountTransactionsUseCase: GetAccountTransactionsUseCase by inject {
+        parametersOf(session, accountAsset)
+    }
+
     private val isSwapAvailableUseCase: IsSwapAvailableUseCase by inject()
 
     override val asset: EnrichedAsset = accountAsset.asset
@@ -160,18 +173,24 @@ class AssetAccountDetailsViewModel(
         }
     } else null) ?: emptyFlow()).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), null)
 
-    private val _totalBalance = MutableStateFlow("")
-    override val totalBalance: StateFlow<String> = _totalBalance
+    final override val totalBalance: StateFlow<String>
+        field = MutableStateFlow("")
 
-    private val _totalBalanceFiat = MutableStateFlow<String?>(null)
-    override val totalBalanceFiat: StateFlow<String?> = _totalBalanceFiat
+    final override val totalBalanceFiat: StateFlow<String?>
+        field = MutableStateFlow<String?>(null)
+
+    final override val isLoadingMore : StateFlow<Boolean>
+        field = MutableStateFlow(false)
+
+    private val transactionsFlow : Flow<DataState<TransactionList>> = getAccountTransactionsUseCase.observe().filterNotNull()
 
     init {
         session.ifConnected {
             combine(
                 accounts,
+                transactionsFlow,
                 isWatchOnly
-            ) { accounts, isWatchOnly ->
+            ) { accounts, transactions, isWatchOnly ->
                 viewModelScope.launch {
                     val updatedAccount = accounts.find { it.id == accountAsset.account.id } ?: accountAsset.account
 
@@ -188,6 +207,7 @@ class AssetAccountDetailsViewModel(
                         actions = getMenuActions(
                             account = updatedAccount,
                             accountAsset = accountAsset,
+                            transactions = transactions.data()?.transactions,
                             isWatchOnly = isWatchOnly,
                             isArchiveEnabled = isArchiveEnabled
                         )
@@ -198,18 +218,22 @@ class AssetAccountDetailsViewModel(
             accountBalance.onEach {
                 updateTotalBalance()
             }.launchIn(viewModelScope)
-
-            session.getTransactions(account = account, isReset = true, isLoadMore = false)
         }
 
         bootstrap()
+
+        viewModelScope.launch {
+            getAccountTransactionsUseCase.invoke(
+                GetAccountTransactionsUseCase.Params(isReset = true)
+            )
+        }
     }
 
     private val _transactions: StateFlow<DataState<List<TransactionLook>>> = combine(
-        session.accountTransactions(account), session.settings()
+        transactionsFlow, session.settings()
     ) { transactions, _ ->
         transactions.mapSuccess {
-            it.map { transaction ->
+            it.transactions.map { transaction ->
                 TransactionLook.create(
                     transaction = transaction, session = session
                 )
@@ -228,20 +252,22 @@ class AssetAccountDetailsViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataState.Loading)
 
-    override val hasMoreTransactions: StateFlow<Boolean> = session.accountTransactionsPager(account)
+    override val hasMoreTransactions: StateFlow<Boolean> = transactionsFlow.map {
+        it.data()?.hasMore == true
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), false)
 
     private fun updateTotalBalance() {
         viewModelScope.launch {
             val isHidden = hideAmounts.value
             accountAsset.value?.let { accountAsset ->
-                _totalBalance.value = if (isHidden) "*****" else accountAsset.balance(session).toAmountLook(
+                totalBalance.value = if (isHidden) "*****" else accountAsset.balance(session).toAmountLook(
                     session = session, assetId = accountAsset.assetId, withUnit = true, withGrouping = true, withMinimumDigits = false
                 ) ?: ""
 
-                _totalBalanceFiat.value = if (isHidden) "*****" else accountAsset.balance(session).toAmountLook(
+                totalBalanceFiat.value = if (isHidden) "*****" else accountAsset.balance(session).toAmountLook(
                     session = session, assetId = accountAsset.assetId, withUnit = true, denomination = Denomination.fiat(session)
                 )?.let { fiatBalance ->
-                    _totalBalance.value.takeIf { it.isNotBlank() && it != fiatBalance }?.let {
+                    totalBalance.value.takeIf { it.isNotBlank() && it != fiatBalance }?.let {
                         fiatBalance
                     }
                 }
@@ -250,14 +276,25 @@ class AssetAccountDetailsViewModel(
     }
 
     override fun loadMoreTransactions() {
-        session.getTransactions(account = account, isReset = false, isLoadMore = true)
+        if (isLoadingMore.value) return
+        viewModelScope.launch {
+            isLoadingMore.value = true
+            try {
+                getAccountTransactionsUseCase.invoke(GetAccountTransactionsUseCase.Params(isLoadMore = true))
+                // Wait for the UI to receive new items.
+                delay(1000)
+            } finally {
+                isLoadingMore.value = false
+            }
+        }
     }
 
     private suspend fun getMenuActions(
         account: Account,
         accountAsset: AccountAsset?,
         isWatchOnly: Boolean,
-        isArchiveEnabled: Boolean
+        isArchiveEnabled: Boolean,
+        transactions: List<Transaction>?
     ): List<NavAction> {
 
         if (account.isLightning) {
@@ -304,7 +341,7 @@ class AssetAccountDetailsViewModel(
                 title = getString(Res.string.id_archive_account),
                 icon = Res.drawable.box_arrow_down,
                 isMenuEntry = true,
-                enabled = !account.isFunded(session) && !account.hasUnconfirmedTransactions(session),
+                enabled = !account.isFunded(session) && !session.hasUnconfirmedTransactions(transactions),
                 onClick = {
                     postEvent(Events.ArchiveAccount(account))
                 }

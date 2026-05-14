@@ -54,8 +54,7 @@ object Events {
     data class DeviceRequestResponse(val data: String?) : Event
     data class RenameAccount(val account: Account, val name: String) : Event
     data class ArchiveAccount(val account: Account) : Event
-    data class RemoveAccount(val account: Account) : Event
-    data class SetAccountAsset(val accountAsset: AccountAsset, val setAsActive: Boolean = false) : Event
+    data class SetAccountAsset(val accountAsset: AccountAsset) : Event
     data class SetBarcodeScannerResult(val scannedText: String) : Event
     data class ProvideCipher(
         val platformCipher: PlatformCipher? = null,

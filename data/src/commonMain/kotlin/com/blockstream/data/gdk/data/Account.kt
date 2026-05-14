@@ -1,8 +1,11 @@
 package com.blockstream.data.gdk.data
 
+import com.blockstream.data.backend.NetworkBackend
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.GreenJson
+import com.blockstream.data.managers.AssetsProvider
+import com.blockstream.data.managers.NetworkAssetManager
 import com.blockstream.data.serializers.AccountTypeSerializer
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -36,9 +39,13 @@ data class Account constructor(
 
     override fun kSerializer() = serializer()
 
-    fun setup(session: GdkSession, network: Network) {
+    suspend fun setup(networkAssetManager: NetworkAssetManager, assetsProvider: AssetsProvider, network: Network) {
         networkInjected = network
-        policyAsset = EnrichedAsset.create(session = session, network = network)
+        policyAsset = EnrichedAsset.create(
+            networkAssetManager = networkAssetManager,
+            assetsProvider= assetsProvider,
+            assetId = network.policyAsset
+        )
     }
 
     fun balance(session: GdkSession) = session.accountAssets(this).value.policyAsset
@@ -162,7 +169,7 @@ data class Account constructor(
         }
     }
 
-    private val bip32Pointer: Long
+    val bip32Pointer: Long
         get() = when (type) {
             AccountType.BIP44_LEGACY,
             AccountType.BIP49_SEGWIT_WRAPPED,
@@ -190,9 +197,6 @@ data class Account constructor(
     fun isFunded(session: GdkSession): Boolean {
         return session.accountAssets(this).value.assets.values.sum() > 0
     }
-
-    val accountBalance
-        get() = AccountBalance.create(this)
 
     val accountAssetBalance
         get() = AccountAssetBalance.create(this.accountAsset)

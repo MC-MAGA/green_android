@@ -12,8 +12,8 @@ data class ProcessedTransactionDetails constructor(
     val txHash: String? = null,
     @SerialName("send_all")
     val isSendAll: Boolean = false,
-    @SerialName("transaction")
-    val transaction: String? = null,
+//    @SerialName("transaction")
+//    val transaction: String? = null,
     @SerialName("signed_transaction")
     val signedTransaction: String? = null,
     @SerialName("psbt")

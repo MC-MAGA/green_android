@@ -91,7 +91,7 @@ fun TransactScreen(viewModel: TransactViewModelAbstract) {
             val listState: LazyListState = rememberLazyListState()
             val reachedBottom: Boolean by remember { derivedStateOf { listState.reachedBottom() } }
 
-            val hasMore by viewModel.hasMore.collectAsStateWithLifecycle()
+            val hasMore by viewModel.hasMoreTransactions.collectAsStateWithLifecycle()
             val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
 
             LaunchedEffect(reachedBottom, hasMore, isLoadingMore) {

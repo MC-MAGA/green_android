@@ -1,20 +1,25 @@
 package com.blockstream.compose.screens.assetaccounts
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -62,14 +67,15 @@ fun AssetAccountDetailsScreen(
         val isSendEnabled by viewModel.isSendEnabled.collectAsStateWithLifecycle()
         val isSwapAvailable = viewModel.isSwapAvailable
         val hasMoreTransactions by viewModel.hasMoreTransactions.collectAsStateWithLifecycle()
+        val isLoadingMore by viewModel.isLoadingMore.collectAsStateWithLifecycle()
         val lightningInfo by viewModel.lightningInfo.collectAsStateWithLifecycle()
         
         val innerPadding = LocalInnerPadding.current
         val listState: LazyListState = rememberLazyListState()
         val reachedBottom: Boolean by remember { derivedStateOf { listState.reachedBottom() } }
         
-        LaunchedEffect(reachedBottom) {
-            if (reachedBottom && hasMoreTransactions && transactions.isSuccess()) {
+        LaunchedEffect(reachedBottom, hasMoreTransactions, isLoadingMore) {
+            if (reachedBottom && hasMoreTransactions && transactions.isSuccess() && !isLoadingMore) {
                 viewModel.loadMoreTransactions()
             }
         }
@@ -155,6 +161,24 @@ fun AssetAccountDetailsScreen(
                         transactionLook = transactionLook
                     ) {
                         viewModel.postEvent(Events.Transaction(transaction = it.transaction))
+                    }
+                }
+            }
+
+            if (isLoadingMore) {
+                item(key = "PaginationLoading") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier
+                                .size(24.dp),
+                            strokeWidth = 2.dp,
+                            color = MaterialTheme.colorScheme.primary
+                        )
                     }
                 }
             }

@@ -9,7 +9,7 @@ data class AddressLook(val address: String, val index: Long, val txCount: String
         fun create(address: Address, network: Network): AddressLook {
             return AddressLook(
                 address = address.address,
-                index = address.pointer,
+                index = address.index,
                 txCount = "${address.txCount ?: 0}",
                 canSign = network.canSignMessage
             )

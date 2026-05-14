@@ -32,7 +32,6 @@ import blockstream_green.common.generated.resources.id_continue
 import blockstream_green.common.generated.resources.id_welcome_to_blockstream
 import blockstream_green.common.generated.resources.id_you_dont_have_any_assets_yet
 import blockstream_green.common.generated.resources.id_your_wallet_has_been_created
-import com.blockstream.data.data.ScanResult
 import com.blockstream.compose.components.GreenAlert
 import com.blockstream.compose.components.GreenAsset
 import com.blockstream.compose.components.GreenButton
@@ -45,7 +44,6 @@ import com.blockstream.compose.components.WalletBalance
 import com.blockstream.compose.dialogs.AppRateDialog
 import com.blockstream.compose.dialogs.ArchivedAccountsDialog
 import com.blockstream.compose.dialogs.DenominationExchangeDialog
-import com.blockstream.compose.events.Events
 import com.blockstream.compose.extensions.itemsSpaced
 import com.blockstream.compose.managers.askForNotificationPermissions
 import com.blockstream.compose.models.SimpleGreenViewModel
@@ -54,10 +52,7 @@ import com.blockstream.compose.models.overview.WalletOverviewViewModel
 import com.blockstream.compose.models.overview.WalletOverviewViewModelAbstract
 import com.blockstream.compose.models.settings.DenominationExchangeRateViewModel
 import com.blockstream.compose.navigation.LocalInnerPadding
-import com.blockstream.compose.navigation.NavigateDestinations
-import com.blockstream.compose.navigation.getResult
 import com.blockstream.compose.screens.overview.components.BitcoinPriceChart
-import com.blockstream.compose.sheets.MainMenuEntry
 import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.compose.theme.bodyLarge
 import com.blockstream.compose.theme.bodyMedium
@@ -90,40 +85,6 @@ fun WalletOverviewScreen(
     }
 
     askForNotificationPermissions(viewModel)
-
-    NavigateDestinations.MainMenu.getResult<MainMenuEntry> {
-        when (it) {
-            MainMenuEntry.SCAN -> {
-                viewModel.postEvent(
-                    NavigateDestinations.Camera(
-                        isDecodeContinuous = true, parentScreenName = viewModel.screenName()
-                    )
-                )
-            }
-
-            MainMenuEntry.ACCOUNT_TRANSFER -> {
-                viewModel.postEvent(NavigateDestinations.AccountExchange(greenWallet = viewModel.greenWallet))
-            }
-
-            MainMenuEntry.REDEPOSIT -> {
-                viewModel.postEvent(
-                    NavigateDestinations.Redeposit(
-                        greenWallet = viewModel.greenWallet,
-                        accountAsset = viewModel.session.activeAccount.value!!.accountAsset,
-                        isRedeposit2FA = false
-                    )
-                )
-            }
-
-            MainMenuEntry.BUY_SELL -> {
-                viewModel.postEvent(NavigateDestinations.OnOffRamps(greenWallet = viewModel.greenWallet))
-            }
-        }
-    }
-
-    NavigateDestinations.Camera.getResult<ScanResult> {
-        viewModel.postEvent(Events.HandleUserInput(it.result, isQr = true))
-    }
 
     denominationExchangeRateViewModel?.also {
         DenominationExchangeDialog(viewModel = it) {

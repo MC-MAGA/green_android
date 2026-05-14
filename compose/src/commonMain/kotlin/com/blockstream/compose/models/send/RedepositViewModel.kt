@@ -23,16 +23,19 @@ import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.extensions.launchSafe
 import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.data.AccountAsset
+import com.blockstream.data.gdk.data.GdkAddress
 import com.blockstream.data.gdk.data.PendingTransaction
 import com.blockstream.data.gdk.params.AddressParams
 import com.blockstream.data.gdk.params.CreateTransactionParams
 import com.blockstream.data.gdk.params.toJsonElement
 import com.blockstream.data.utils.feeRateWithUnit
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class RedepositViewModelAbstract(
     greenWallet: GreenWallet,
@@ -53,6 +56,8 @@ class RedepositViewModel(
     accountAsset: AccountAsset,
     private val isRedeposit2FA: Boolean
 ) : RedepositViewModelAbstract(greenWallet = greenWallet, accountAsset = accountAsset) {
+
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
 
     init {
         viewModelScope.launch {
@@ -121,13 +126,13 @@ class RedepositViewModel(
             )
         } else {
             val addressee = unspentOutputs.unspentOutputs.keys.map { key ->
-                session.getReceiveAddress(account).let {
+                getReceiveAddressUseCase(session, account).let {
                     AddressParams(
                         address = it.address,
                         satoshi = 0,
                         isGreedy = true,
                         assetId = key.takeIf { account.isLiquid },
-                        receiveAddress = it
+                        receiveAddress = it as GdkAddress
                     )
                 }
             }
@@ -152,12 +157,11 @@ class RedepositViewModel(
             }
 
             accountAsset.value?.let { accountAsset ->
-                val network = accountAsset.account.network
 
                 val tx = if (isRedeposit2FA) session.createRedepositTransaction(
-                    network = network,
+                    account = accountAsset.account,
                     params = params
-                ) else session.createTransaction(network = network, params = params)
+                ) else session.createTransaction(account = accountAsset.account, params = params)
                     .let { transaction ->
                         // Copy userPath/subType from receiveAddress so that we can validate the address later in Jade
                         transaction.copy(outputs = transaction.outputs.map { output ->

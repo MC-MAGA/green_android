@@ -29,6 +29,7 @@ import com.blockstream.compose.models.send.CreateTransactionViewModelAbstract
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.sideeffects.OpenBrowserType
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,7 +39,9 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class OnOffRampsViewModelAbstract(
     greenWallet: GreenWallet
@@ -69,6 +72,8 @@ abstract class OnOffRampsViewModelAbstract(
 class OnOffRampsViewModel(greenWallet: GreenWallet) :
     OnOffRampsViewModelAbstract(greenWallet = greenWallet) {
 
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
+
     private val hideWalletBackupAlert = MutableStateFlow(false)
 
     override val showRecoveryConfirmation: StateFlow<Boolean> =
@@ -83,29 +88,21 @@ class OnOffRampsViewModel(greenWallet: GreenWallet) :
     override val isSandboxEnvironment: MutableStateFlow<Boolean> =
         MutableStateFlow(appInfo.isDevelopment)
 
-    private val availableBuyAssets = session.ifConnected {
-        listOfNotNull(
-            session.bitcoin?.policyAsset,
-            // session.liquid?.policyAsset.takeIf { appInfo.isDevelopmentOrDebug },
-        ).map {
-            AssetBalance.create(EnrichedAsset.create(session = session, assetId = it))
-        }
-    } ?: listOf()
-
     override val isBuy: MutableStateFlow<Boolean> = MutableStateFlow(true)
 
-    override val buyAssets: StateFlow<List<AssetBalance>> = MutableStateFlow(availableBuyAssets)
+    final override val buyAssets: StateFlow<List<AssetBalance>>
+        field = MutableStateFlow(listOf())
 
     private val _buyAccounts: MutableStateFlow<List<AccountAssetBalance>> =
         MutableStateFlow(listOf())
     override val buyAccounts: StateFlow<List<AccountAssetBalance>> = _buyAccounts
 
     override val buyAsset: MutableStateFlow<AssetBalance?> =
-        MutableStateFlow(availableBuyAssets.firstOrNull())
+        MutableStateFlow(null)
 
     override val buyAccount: MutableStateFlow<AccountAssetBalance?> =
         MutableStateFlow(session.ifConnected {
-            (listOfNotNull(session.activeAccount.value) + session.accounts.value).firstOrNull { it.network.policyAsset == buyAsset.value?.assetId }?.accountAssetBalance
+            session.accounts.value.firstOrNull { it.network.policyAsset == buyAsset.value?.assetId }?.accountAssetBalance
         })
 
     override val amount: MutableStateFlow<String> = MutableStateFlow("")
@@ -127,6 +124,16 @@ class OnOffRampsViewModel(greenWallet: GreenWallet) :
         }
 
         session.ifConnected {
+            viewModelScope.launch {
+                val availableBuyAssets =
+                    listOfNotNull(
+                        session.bitcoin?.policyAsset,
+                        // session.liquid?.policyAsset.takeIf { appInfo.isDevelopmentOrDebug },
+                    ).map { AssetBalance.create(EnrichedAsset.create(session = session, assetId = it)) }
+
+                buyAssets.value = availableBuyAssets
+                buyAsset.value = availableBuyAssets.firstOrNull()
+            }
 
             // Check if account match the assetId
             buyAccount.onEach {
@@ -262,8 +269,11 @@ class OnOffRampsViewModel(greenWallet: GreenWallet) :
 
             }.launchIn(this)
 
-            // Default to Fiat denomination
-            _denomination.value = Denomination.defaultOrFiat(session, isFiat = true)
+
+            viewModelScope.launch {
+                // Default to Fiat denomination
+                _denomination.value = Denomination.defaultOrFiat(session, isFiat = true)
+            }
         }
 
         bootstrap()
@@ -292,7 +302,7 @@ class OnOffRampsViewModel(greenWallet: GreenWallet) :
                 if (isSandboxEnvironment.value) MELD_DEVELOPMENT_KEY else MELD_PRODUCTION_KEY
 
             if (isBuy.value) {
-                val address = session.getReceiveAddressAsString(buyAccount.value!!.account)
+                val address = getReceiveAddressUseCase(session, buyAccount.value!!.account).address
                 val ticker = buyAsset.value?.asset?.ticker(session)
 
                 val balance = amount.value.takeIf { it.isNotBlank() }?.let {
@@ -337,7 +347,7 @@ class OnOffRampsViewModel(greenWallet: GreenWallet) :
         }
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         _denomination.value = denominatedValue.denomination
         amount.value = denominatedValue.asInput ?: ""
     }

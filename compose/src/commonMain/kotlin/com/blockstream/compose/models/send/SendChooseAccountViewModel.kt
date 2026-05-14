@@ -99,9 +99,8 @@ class SendChooseAccountViewModel(
     override fun selectAccount(account: AccountAssetBalance) {
         doAsync({
 
-            val sendFlow = sendUseCase.getSendFlowUseCase(
+            val sendFlow = getSendFlowUseCase(
                 greenWallet = greenWallet,
-                session = session,
                 address = address,
                 asset = asset,
                 account = account.accountAsset

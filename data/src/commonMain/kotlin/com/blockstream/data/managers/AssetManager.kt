@@ -1,12 +1,15 @@
 package com.blockstream.data.managers
 
+import com.blockstream.data.CountlyBase
 import com.blockstream.data.gdk.data.LiquidAssets
 import com.blockstream.data.gdk.params.AssetsParams
 import com.blockstream.data.gdk.params.GetAssetsParams
+import org.koin.core.component.KoinComponent
+import org.koin.core.component.get
 
 interface AssetsProvider {
-    fun refreshAssets(params: AssetsParams)
-    fun getAssets(params: GetAssetsParams): LiquidAssets?
+    suspend fun refreshAssets(params: AssetsParams)
+    suspend fun getAssets(params: GetAssetsParams): LiquidAssets?
 }
 
 /*
@@ -14,9 +17,13 @@ interface AssetsProvider {
  * App Cache: cached data from apk
  * GDK Cache: cached data from a previous successful fetch
  */
-object AssetManager {
-    private val liquidAssetManager by lazy { NetworkAssetManager() }
-    private val liquidTestnetAssetManager by lazy { NetworkAssetManager() }
+class AssetManager(private val countly: CountlyBase) {
+    private val liquidAssetManager by lazy {
+        NetworkAssetManager(true, countly)
+    }
+    private val liquidTestnetAssetManager by lazy {
+        NetworkAssetManager(false, countly)
+    }
 
     fun getNetworkAssetManager(isMainnet: Boolean): NetworkAssetManager {
         return if (isMainnet) {

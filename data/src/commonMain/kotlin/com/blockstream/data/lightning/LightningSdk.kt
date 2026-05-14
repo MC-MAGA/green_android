@@ -30,7 +30,7 @@ enum class ConnectStatus {
     Connect, Failed
 }
 
-class LightningSdk(
+class LightningSdk constructor(
     private val appInfo: AppInfo,
     val workingDir: String,
     private val greenlightKeys: GreenlightKeys,
@@ -49,12 +49,6 @@ class LightningSdk(
 
     val eventSharedFlow: SharedFlow<LightningEvent>
         field = MutableSharedFlow<LightningEvent>(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    val swapInfoStateFlow: StateFlow<List<Pair<LightningSwapInfo, Boolean>>>
-        field = MutableStateFlow<List<Pair<LightningSwapInfo, Boolean>>>(listOf())
-
-    val reverseSwapInfoStateFlow: StateFlow<List<LightningReverseSwapInfo>>
-        field = MutableStateFlow<List<LightningReverseSwapInfo>>(listOf())
 
     private var inputTypeCache: Pair<String, LightningInputType>? = null
 
@@ -98,7 +92,7 @@ class LightningSdk(
         }
     }
 
-    suspend fun stop() = withNodeContextCatch {
+    suspend fun disconnect() = withNodeContextCatch {
         greenlightSdkOrNull?.disconnect()
         greenlightSdkOrNull = null
     }
@@ -119,7 +113,7 @@ class LightningSdk(
             logger.d { "NodeState: $it" }
             nodeInfoStateFlow.value = it
             // Emit New Block as a way to identify established connection
-            eventSharedFlow.tryEmit(LightningEvent.NewBlock(it.blockHeight))
+            eventSharedFlow.emit(LightningEvent.NewBlock(it.blockHeight.toInt()))
         }
     }
 
@@ -127,11 +121,11 @@ class LightningSdk(
         // glsdk pulls state on demand; nothing to sync explicitly.
     }
 
-    suspend fun balanceOnChannel(): Long? = withNodeContextCatch {
+    suspend fun balanceOnChannel(): Long = withNodeContextCatch {
         updateNodeState().channelsBalanceSatoshi().also {
             logger.d { "Balance (channel): $it" }
         }
-    }
+    } ?: 0
 
     suspend fun balanceCombined(): Long? = withNodeContextCatch {
         updateNodeState().let {
@@ -147,7 +141,7 @@ class LightningSdk(
             ?: parseBoltOrLNUrl(input)
     }
 
-    private suspend fun parseBoltOrLNUrl(input: String?): LightningInputType? = withNodeContextCatch {
+    private suspend fun parseBoltOrLNUrl(input: String?): LightningInputType? = try {
         if (!input.isNullOrBlank()) {
             resolveInput(input).toLightningInputType()?.also {
                 inputTypeCache = input to it
@@ -155,7 +149,7 @@ class LightningSdk(
         } else {
             null
         }
-    }
+    } catch (_: kotlin.Exception) { null }
 
     suspend fun getTransactions(): List<LightningPayment>? = withNodeContextCatch {
         greenlightSdk.listPayments().also {
@@ -292,6 +286,7 @@ class LightningSdk(
             try {
                 block()
             } catch (e: Exception) {
+                e.printStackTrace()
                 throw exceptionWithNodeId(e)
             } finally {
                 finallyBlock?.also { bl ->

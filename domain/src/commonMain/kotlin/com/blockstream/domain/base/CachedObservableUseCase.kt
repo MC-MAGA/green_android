@@ -2,6 +2,8 @@ package com.blockstream.domain.base
 
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * A use case that performs network operations and caches results in memory.
@@ -53,7 +55,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
  * - Provides synchronous access to cached data via getCurrent()
  * - Supports manual cache invalidation
  */
-abstract class CachedObservableUseCase<in P, R> : ObservableUseCase<P, R>() {
+abstract class CachedObservableUseCase<P, R> : ObservableUseCase<P, R>() {
     
     private val dataState = MutableStateFlow<R?>(null)
 
@@ -61,8 +63,8 @@ abstract class CachedObservableUseCase<in P, R> : ObservableUseCase<P, R>() {
         dataState.value = data
     }
 
-    fun get(): Flow<R?> {
-        return dataState
+    open fun get(): StateFlow<R?> {
+        return dataState.asStateFlow()
     }
     
     /**

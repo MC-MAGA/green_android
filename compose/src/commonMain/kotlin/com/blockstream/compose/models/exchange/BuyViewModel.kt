@@ -36,6 +36,7 @@ import com.blockstream.data.utils.UserInput
 import com.blockstream.domain.hardware.VerifyAddressUseCase
 import com.blockstream.domain.meld.GetLastSuccessfulPurchaseExchange
 import com.blockstream.domain.meld.MeldUseCase
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.network.dataOrThrow
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Job
@@ -156,6 +157,8 @@ abstract class BuyViewModelAbstract(
 class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? = null) :
     BuyViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = initialAccountAsset) {
 
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
+
     private val hideWalletBackupAlert = MutableStateFlow(false)
 
     override val showRecoveryConfirmation: StateFlow<Boolean> =
@@ -180,11 +183,10 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
     override val amountHint = _amountHint
 
     init {
-        // Default to Fiat denomination
-        _denomination.value = Denomination.defaultOrFiat(session, isFiat = true)
-
-
         viewModelScope.launch {
+            // Default to Fiat denomination
+            _denomination.value = Denomination.defaultOrFiat(session, isFiat = true)
+
             getLastSuccessfulPurchaseExchange(GetLastSuccessfulPurchaseExchange.Params(greenWallet.xPubHashId))
         }
 
@@ -199,9 +201,7 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
                     )
                 )
             } else {
-                val activeAccountId =
-                    (accountAsset.value?.account?.id ?: session.activeAccount.value?.id)
-                accountAsset.value = accounts.find { it.id == activeAccountId }?.accountAsset
+                accountAsset.value = accounts.find { it.id == accountAsset.value?.account?.id }?.accountAsset
                     ?: accounts.first().accountAsset
             }
 
@@ -243,7 +243,7 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
 
         accountAsset.filterNotNull().onEach {
             doAsync({
-                session.getReceiveAddress(it.account)
+                getReceiveAddressUseCase(session, it.account)
             }, onSuccess = {
                 address.value = it
             }, onError = {
@@ -389,7 +389,7 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
         }
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         _denomination.value = denominatedValue.denomination
         amount.value = denominatedValue.asInput ?: ""
     }

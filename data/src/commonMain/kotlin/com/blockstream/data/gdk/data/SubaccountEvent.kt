@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class SubaccountEvent(
     @SerialName("pointer")
-    val pointer: Int = 0,
+    val pointer: Long = 0,
     @SerialName("event_type")
     val eventType: String = "",
 ) {

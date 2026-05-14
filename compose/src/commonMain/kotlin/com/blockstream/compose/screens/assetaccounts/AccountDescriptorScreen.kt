@@ -83,26 +83,28 @@ fun AccountDescriptorScreen(
                 style = titleSmall
             )
 
-            Descriptor(
-                title = viewModel.account.name,
-                icon = painterResource(viewModel.account.network.icon()),
-                descriptor = descriptor,
-                onCopy = {
-                    platformManager.copyToClipboard(content = descriptor)
-                },
-                onQr = {
-                    scope.launch {
-                        viewModel.postEvent(
-                            NavigateDestinations.Qr(
-                                greenWallet = viewModel.greenWallet,
-                                title = getString(Res.string.id_output_descriptors),
-                                subtitle = viewModel.account.name,
-                                data = descriptor
+            descriptor?.also { descriptor ->
+                Descriptor(
+                    title = viewModel.account.name,
+                    icon = painterResource(viewModel.account.network.icon()),
+                    descriptor = descriptor,
+                    onCopy = {
+                        platformManager.copyToClipboard(content = descriptor)
+                    },
+                    onQr = {
+                        scope.launch {
+                            viewModel.postEvent(
+                                NavigateDestinations.Qr(
+                                    greenWallet = viewModel.greenWallet,
+                                    title = getString(Res.string.id_output_descriptors),
+                                    subtitle = viewModel.account.name,
+                                    data = descriptor
+                                )
                             )
-                        )
+                        }
                     }
-                }
-            )
+                )
+            }
         }
     }
 }

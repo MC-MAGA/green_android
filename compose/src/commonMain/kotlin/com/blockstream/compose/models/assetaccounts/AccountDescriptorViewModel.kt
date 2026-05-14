@@ -9,6 +9,8 @@ import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.navigation.NavData
+import com.blockstream.data.extensions.ifConnected
+import com.blockstream.data.extensions.ifConnectedSuspend
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -19,7 +21,7 @@ abstract class AccountDescriptorViewModelAbstract(
     accountAsset: AccountAsset
 ) : GreenViewModel(greenWalletOrNull = greenWallet, accountAssetOrNull = accountAsset) {
     override fun screenName(): String = "AccountDescriptor"
-    abstract val descriptor: StateFlow<String>
+    abstract val descriptor: StateFlow<String?>
 }
 
 class AccountDescriptorViewModel(
@@ -27,9 +29,8 @@ class AccountDescriptorViewModel(
     accountAsset: AccountAsset
 ) : AccountDescriptorViewModelAbstract(greenWallet = greenWallet, accountAsset = accountAsset) {
 
-    override val descriptor: StateFlow<String> = MutableStateFlow(
-        account.outputDescriptors ?: ""
-    )
+    final override val descriptor: StateFlow<String?>
+        field = MutableStateFlow(null)
 
     init {
         viewModelScope.launch {
@@ -37,6 +38,10 @@ class AccountDescriptorViewModel(
                 title = getString(Res.string.id_watchonly),
                 subtitle = account.name
             )
+
+            session.ifConnectedSuspend {
+                descriptor.value = session.getAccountDescriptors(account)
+            }
         }
 
         bootstrap()

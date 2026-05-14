@@ -253,7 +253,6 @@ class DeviceInfoViewModel(deviceId: String) : DeviceInfoViewModelAbstract(device
                         xPubHashId = walletHashId,
                         name = walletName,
                         activeNetwork = network.id,
-                        activeAccount = 0,
                         isHardware = true,
                         isTestnet = network.isTestnet,
                     )

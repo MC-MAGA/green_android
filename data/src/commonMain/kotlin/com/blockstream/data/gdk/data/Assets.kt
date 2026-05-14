@@ -1,6 +1,5 @@
 package com.blockstream.data.gdk.data
 
-import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.gdk.GdkSession
 
 data class Assets constructor(val assetsOrNull: Map<String, Long>? = null) {
@@ -17,18 +16,11 @@ data class Assets constructor(val assetsOrNull: Map<String, Long>? = null) {
     val policyAsset
         get() = policyAssetOrNull ?: 0
 
-    // Expect the first asset to be the policy BTC or LBTC
-    val policyId
-        get() = assets.keys.firstOrNull()
-
     val hasFunds: Boolean
         get() = assets.values.sum() > 0
 
     val size
         get() = assets.size
-
-    val withFunds
-        get() = assets.filterValues { it > 0 }
 
     fun isEmpty() = assets.isEmpty()
 
@@ -38,13 +30,15 @@ data class Assets constructor(val assetsOrNull: Map<String, Long>? = null) {
 
     fun balance(assetId: String) = balanceOrNull(assetId) ?: 0
 
-    fun containsAsset(assetId: String) = assets.containsKey(assetId)
-
-    fun toEnrichedAssets(session: GdkSession) = assetsOrNull?.mapKeys {
-        EnrichedAsset.create(session = session, assetId = it.key)
+    operator fun plus(other: Assets): Assets {
+        val combined = LinkedHashMap(assets)
+        other.assets.forEach { (assetId, value) ->
+            combined[assetId] = (combined[assetId] ?: 0) + value
+        }
+        return Assets(combined)
     }
 
-    fun toAccountAsset(account: Account, session: GdkSession): List<AccountAsset> {
+    suspend fun toAccountAsset(account: Account, session: GdkSession): List<AccountAsset> {
         return assets.keys.map {
             AccountAsset.fromAccountAsset(account, it, session)
         }

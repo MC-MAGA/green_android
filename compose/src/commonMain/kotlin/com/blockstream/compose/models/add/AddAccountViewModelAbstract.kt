@@ -70,7 +70,7 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
             )
 
             // or setActiveAccount
-            postEvent(Events.SetAccountAsset(accountAsset, setAsActive = true))
+            postEvent(Events.SetAccountAsset(accountAsset))
             postSideEffect(SideEffects.AccountCreated(accountAsset))
 
             postSideEffect(SideEffects.NavigateToRoot(popTo = popTo))

@@ -36,7 +36,6 @@ abstract class AssetAccountListViewModelAbstract(
     abstract val asset: StateFlow<EnrichedAsset?>
     abstract val totalBalance: StateFlow<String>
     abstract val totalBalanceFiat: StateFlow<String?>
-    abstract val transactions: StateFlow<DataState<List<TransactionLook>>>
 }
 
 class AssetAccountListViewModel(
@@ -64,13 +63,11 @@ class AssetAccountListViewModel(
 
     init {
         viewModelScope.launch {
-            val asset = session.walletAssets.value.data()?.assets?.get(assetId)?.let {
-                EnrichedAsset.create(session, assetId)
-            }
+            val asset = EnrichedAsset.create(session, assetId)
 
             _asset.value = asset
             _navData.value = NavData(
-                title = asset?.name(session)?.toString() ?: assetId,
+                title = asset.name(session),
             )
         }
         viewModelScope.launch {
@@ -108,30 +105,6 @@ class AssetAccountListViewModel(
 
         bootstrap()
     }
-
-    private val _transactions: StateFlow<DataState<List<TransactionLook>>> = combine(
-        session.walletTransactions.filter { session.isConnected }, session.settings()
-    ) { transactions, _ ->
-        transactions.mapSuccess { transactionList ->
-            transactionList.filter { transaction ->
-                transaction.satoshi.containsKey(assetId)
-            }.map { transaction ->
-                TransactionLook.create(
-                    transaction = transaction, session = session, disableHideAmounts = true
-                )
-            }
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataState.Loading)
-
-    override val transactions: StateFlow<DataState<List<TransactionLook>>> = combine(
-        hideAmounts, _transactions
-    ) { hideAmounts, transactionsLooks ->
-        if (transactionsLooks is DataState.Success && hideAmounts) {
-            DataState.Success(transactionsLooks.data.map { it.asMasked })
-        } else {
-            transactionsLooks
-        }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataState.Loading)
 
     private fun updateTotalBalance(accountBalances: List<AccountAssetBalance>) {
         viewModelScope.launch {
@@ -183,7 +156,6 @@ class AssetAccountListViewModelPreview(
     override val asset: StateFlow<EnrichedAsset?> = MutableStateFlow(EnrichedAsset.PreviewBTC)
     override val totalBalance: StateFlow<String> = MutableStateFlow("0.0002821 BTC")
     override val totalBalanceFiat: StateFlow<String?> = MutableStateFlow("US$ 2,321.00")
-    override val transactions: StateFlow<DataState<List<TransactionLook>>> = MutableStateFlow(DataState.Empty)
 
     companion object {
         fun preview() = AssetAccountListViewModelPreview(

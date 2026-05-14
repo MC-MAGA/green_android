@@ -27,6 +27,7 @@ import com.blockstream.data.gdk.params.CreateTransactionParams
 import com.blockstream.data.gdk.params.toJsonElement
 import com.blockstream.data.utils.feeRateWithUnit
 import com.blockstream.data.utils.toAmountLook
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,6 +41,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class SweepViewModelAbstract(
     greenWallet: GreenWallet,
@@ -62,6 +64,8 @@ abstract class SweepViewModelAbstract(
 
 class SweepViewModel(greenWallet: GreenWallet, privateKey: String?, accountAssetOrNull: AccountAsset?) :
     SweepViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAssetOrNull) {
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
+
     override val privateKey: MutableStateFlow<String> = MutableStateFlow(privateKey ?: "")
 
     private val _amount: MutableStateFlow<String?> = MutableStateFlow(null)
@@ -148,7 +152,7 @@ class SweepViewModel(greenWallet: GreenWallet, privateKey: String?, accountAsset
         }
 
         return AddressParams(
-            address = session.getReceiveAddress(account).address,
+            address = getReceiveAddressUseCase(session, account).address,
             satoshi = 0,
             isGreedy = true
         ).let { params ->
@@ -178,7 +182,7 @@ class SweepViewModel(greenWallet: GreenWallet, privateKey: String?, accountAsset
             }
 
             val network = _network.value!!
-            val tx = session.createTransaction(network, params)
+            val tx = session.createTransaction(account = account, params = params)
 
             val receiveAddress = params.addresseesAsParams?.firstOrNull()?.address
             (tx.outputs.firstOrNull()?.takeIf { it.address == receiveAddress }?.satoshi?.takeIf { it > 0L } ?: // from outputs

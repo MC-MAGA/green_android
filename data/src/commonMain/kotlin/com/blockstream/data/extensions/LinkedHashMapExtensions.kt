@@ -1,6 +1,6 @@
 package com.blockstream.data.extensions
 
-fun <K, V> MutableMap<K, V>.toSortedLinkedHashMap(comparator: Comparator<K>): LinkedHashMap<K, V> {
+fun <K, V> Map<K, V>.toSortedLinkedHashMap(comparator: Comparator<K>): LinkedHashMap<K, V> {
     val sorted = linkedMapOf<K, V>()
 
     keys.sortedWith(comparator).forEach { k ->

@@ -31,6 +31,7 @@ import com.blockstream.data.lightning.LightningFees
 import com.blockstream.data.lightning.onchainBalanceSatoshi
 import com.blockstream.data.utils.feeRateWithUnit
 import com.blockstream.data.utils.toAmountLook
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -47,6 +48,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class RecoverFundsViewModelAbstract(
     greenWallet: GreenWallet,
@@ -84,6 +86,8 @@ class RecoverFundsViewModel(
     isEmptyChannels = isEmptyChannels,
     onChainAddress = onChainAddress
 ) {
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
+
     // private var _preparedOnchainSend: PreparedOnchainSend? = null
     override val manualAddress: MutableStateFlow<String> = MutableStateFlow("")
 
@@ -275,7 +279,7 @@ class RecoverFundsViewModel(
     }
 
     private suspend fun address() =
-        if (showManualAddress.value) manualAddress.value else session.getReceiveAddress(account).address
+        if (showManualAddress.value) manualAddress.value else getReceiveAddressUseCase(session, account).address
 
     private fun minFee(): Long = recommendedFees.value?.minimumFee?.toLong() ?: 0
 
@@ -471,8 +475,8 @@ class RecoverFundsViewModel(
     private fun doAction() {
         doAsync({
             val address =
-                if (showManualAddress.value) manualAddress.value else session.getReceiveAddress(
-                    account
+                if (showManualAddress.value) manualAddress.value else getReceiveAddressUseCase(
+                    session, account
                 ).address
 
             if (this@RecoverFundsViewModel.isEmptyChannels) {

@@ -6,6 +6,7 @@ import com.blockstream.data.database.Database
 import com.blockstream.data.extensions.boltzMnemonic
 import com.blockstream.data.lwk.LwkManager
 import com.blockstream.data.managers.SessionManager
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.jade.Loggable
 import kotlinx.coroutines.delay
 
@@ -22,7 +23,8 @@ class HandleSwapEventsUseCase(
     private val greenKeystore: GreenKeystore,
     private val lwkManager: LwkManager,
     private val sessionManager: SessionManager,
-    private val getWalletFromSwapUseCase: GetWalletFromSwapUseCase
+    private val getWalletFromSwapUseCase: GetWalletFromSwapUseCase,
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
 ) : Loggable() {
 
     /**
@@ -55,8 +57,8 @@ class HandleSwapEventsUseCase(
             val btcAcc = accounts.firstOrNull { it.isBitcoin }
             val lqAcc = accounts.firstOrNull { it.isLiquid }
 
-            val bitcoinAddress = btcAcc?.let { session.getReceiveAddressAsString(it) }
-            val liquidAddress = lqAcc?.let { session.getReceiveAddressAsString(it) }
+            val bitcoinAddress = btcAcc?.let { getReceiveAddressUseCase(session, it).address }
+            val liquidAddress = lqAcc?.let { getReceiveAddressUseCase(session, it).address }
 
             // Flag the swap as pending so LWK picks it up for background processing
             database.setSwapPending(swapId)

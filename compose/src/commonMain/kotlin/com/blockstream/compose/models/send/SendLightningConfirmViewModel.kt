@@ -167,7 +167,7 @@ class SendLightningConfirmViewModel(
             countly.startSendTransaction()
             countly.startFailedTransaction()
 
-            val tx = session.createTransaction(account.network, pending.params)
+            val tx = session.createTransaction(account = account, params = pending.params)
             session.sendLightningTransaction(params = tx, comment = note.value)
         }, preAction = {
             _onProgressSending.value = true

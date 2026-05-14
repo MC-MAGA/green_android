@@ -1,19 +1,17 @@
 package com.blockstream.compose.models.sheets
 
 import androidx.lifecycle.viewModelScope
-import com.blockstream.data.data.GreenWallet
-import com.blockstream.data.gdk.data.AccountAsset
-import com.blockstream.data.gdk.data.Transaction
 import com.blockstream.compose.extensions.details
 import com.blockstream.compose.extensions.previewAccountAsset
 import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.utils.StringHolder
+import com.blockstream.data.data.GreenWallet
+import com.blockstream.data.gdk.data.AccountAsset
+import com.blockstream.data.gdk.data.Transaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 
@@ -42,23 +40,16 @@ class TransactionDetailsViewModel(greenWallet: GreenWallet, initialTransaction: 
 
     init {
         if (session.isConnected) {
-            combine(
-                session.walletTransactions,
-                session.accountTransactions(initialTransaction.account),
-                session.block(initialTransaction.account.network)
-            ) { walletTransactions, accountTransactions, _ ->
-                // Be sure to find the correct tx not just by hash but also with the correct type (cross-account transactions)
-                walletTransactions.data()
-                    ?.find { it.txHash == initialTransaction.txHash && it.txType == initialTransaction.txType }
-                    ?: accountTransactions.data()?.find { it.txHash == initialTransaction.txHash }
-            }.filterNotNull().onEach {
-                _transaction.value = it
+            session.networkBackend(network = initialTransaction.network).blockStateFlow.onEach {
+                session.accountBackend(initialTransaction.account).getTransaction(id = initialTransaction.txHash)?.also {
+                    _transaction.value = it
+                }
+            }.launchIn(viewModelScope)
+
+            _transaction.onEach {
+                _data.value = _transaction.value.details(session = session, database = database)
             }.launchIn(viewModelScope)
         }
-
-        _transaction.onEach {
-            _data.value = _transaction.value.details(session = session, database = database)
-        }.launchIn(viewModelScope)
 
         bootstrap()
     }

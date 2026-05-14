@@ -49,9 +49,8 @@ class SendChooseAssetViewModel(
 
     override fun selectAsset(asset: EnrichedAsset) {
         doAsync({
-            val sendFlow = sendUseCase.getSendFlowUseCase(
+            val sendFlow = getSendFlowUseCase(
                 greenWallet = greenWallet,
-                session = session,
                 address = address,
                 asset = asset
             )

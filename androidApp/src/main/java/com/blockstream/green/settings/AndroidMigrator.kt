@@ -102,8 +102,7 @@ class AndroidMigrator(
                 activeNetwork = network.id,
                 isRecoveryPhraseConfirmed = true,
                 isHardware = false,
-                isTestnet = network.isTestnet,
-                activeAccount = networkPreferences.getInt(ACTIVE_SUBACCOUNT, 0).toLong()
+                isTestnet = network.isTestnet
             )
 
             wallet.id = walletDao.insertWallet(wallet)
@@ -369,6 +368,5 @@ class AndroidMigrator(
         const val TOR_ENABLED = "tor_enabled"
         const val TRUSTED_ADDRESS = "trusted_address"
         const val SPV_ENABLED = "spv_enabled"
-        const val ACTIVE_SUBACCOUNT = "active_subaccount"
     }
 }

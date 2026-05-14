@@ -7,6 +7,7 @@ import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.SwapDetails
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.jade.Loggable
 
 /**
@@ -17,7 +18,8 @@ import com.blockstream.jade.Loggable
  * settlement or refunding by background processes.
  */
 class CreateChainSwapUseCase(
-    private val database: Database
+    private val database: Database,
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
 ) {
     /**
      * Executes the chain swap creation.
@@ -48,10 +50,10 @@ class CreateChainSwapUseCase(
 
         val lockup = if (fromAccount.isBitcoin) {
             require(toAccount.isLiquid)
-            session.lwk.btcToLbtc(amount = amount, refundAddress = session.getReceiveAddress(fromAccount).address, claimAddress = address)
+            session.lwk.btcToLbtc(amount = amount, refundAddress = getReceiveAddressUseCase(session, fromAccount).address, claimAddress = address)
         } else if (fromAccount.isLiquid) {
             require(toAccount.isBitcoin)
-            session.lwk.lbtcToBtc(amount = amount, refundAddress = session.getReceiveAddress(fromAccount).address, claimAddress = address)
+            session.lwk.lbtcToBtc(amount = amount, refundAddress = getReceiveAddressUseCase(session, fromAccount).address, claimAddress = address)
         } else {
             throw Exception("Invalid account type")
         }

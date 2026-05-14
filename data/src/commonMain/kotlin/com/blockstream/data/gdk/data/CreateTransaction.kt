@@ -43,6 +43,8 @@ data class CreateTransaction constructor(
     val isLightningDescriptionEditable: Boolean = false, // synthesized
     @SerialName("previous_transaction")
     val previousTransaction: Transaction? = null, // Bump
+    @SerialName("pset")
+    val pset: String? = null, // Lwk PSET
 ) : GreenJson<CreateTransaction>() {
     override fun keepJsonElement() = true
 

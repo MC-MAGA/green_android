@@ -146,7 +146,7 @@ fun Output.Companion.fromLnUrlPay(requestData: LnUrlPayData, input: String, sato
     )
 }
 
-fun Transaction.Companion.fromPayment(payment: LightningPayment): Transaction {
+fun Transaction.Companion.fromPayment(payment: LightningPayment, account: Account): Transaction {
     val extras = buildMap {
         when (val details = payment.details) {
             is LightningPaymentDetails.ClosedChannel -> {
@@ -178,6 +178,8 @@ fun Transaction.Companion.fromPayment(payment: LightningPayment): Transaction {
     val closedDetails = payment.details as? LightningPaymentDetails.ClosedChannel
 
     return Transaction(
+        accountInjected = account,
+        confirmationsMaxInjected = Long.MAX_VALUE,
         blockHeight = blockHeight,
         canRBF = false,
         createdAtTs = payment.paymentTime * 1_000_000,

@@ -3,14 +3,12 @@ package com.blockstream.compose.models.overview
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_home
-import com.blockstream.data.lightning.LightningHealthStatus
 import com.blockstream.compose.events.Event
 import com.blockstream.compose.events.Events
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.extensions.previewAccountAsset
 import com.blockstream.compose.extensions.previewAssetBalance
 import com.blockstream.compose.extensions.previewWallet
-import com.blockstream.compose.looks.transaction.TransactionLook
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffect
@@ -22,19 +20,20 @@ import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.extensions.filterForAsset
-import com.blockstream.data.extensions.hasHistory
 import com.blockstream.data.extensions.ifConnected
+import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.fcm.FcmCommon
-import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountAssetBalance
 import com.blockstream.data.gdk.data.AssetBalance
 import com.blockstream.data.gdk.data.Settings
 import com.blockstream.data.gdk.data.WalletEvents
+import com.blockstream.data.lightning.LightningHealthStatus
 import com.blockstream.data.utils.AppReviewHelper
 import com.blockstream.domain.bitcoinpricehistory.ObserveBitcoinPriceHistory
 import com.blockstream.domain.notifications.RegisterFCMToken
 import com.blockstream.utils.Loggable
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -50,6 +49,7 @@ import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.inject
 
@@ -61,7 +61,6 @@ abstract class WalletOverviewViewModelAbstract(
     abstract val alerts: StateFlow<List<AlertType>>
     abstract val showWalletOnboarding: MutableStateFlow<Boolean>
     abstract val assets: StateFlow<DataState<List<AssetBalance>>>
-    abstract val activeAccount: StateFlow<Account?>
     abstract val accounts: StateFlow<List<AccountAssetBalance>>
     abstract val archivedAccounts: StateFlow<Int>
     abstract val bitcoinChartData: StateFlow<DataState<BitcoinChartData>?>
@@ -106,6 +105,7 @@ abstract class WalletOverviewViewModelAbstract(
 class WalletOverviewViewModel(
     greenWallet: GreenWallet, showWalletOnboarding: Boolean = true
 ) : WalletOverviewViewModelAbstract(greenWallet = greenWallet) {
+
     private var refreshBitcoinPriceState = MutableStateFlow(0)
 
     private val observeBitcoinPriceHistory: ObserveBitcoinPriceHistory by inject()
@@ -141,8 +141,6 @@ class WalletOverviewViewModel(
     override fun segmentation(): HashMap<String, Any> =
         countly.sessionSegmentation(session = session)
 
-    override val activeAccount: StateFlow<Account?> = session.activeAccount
-
     override val hideAmounts: StateFlow<Boolean> = settingsManager.appSettingsStateFlow.map {
         it.hideAmounts
     }.stateIn(
@@ -153,7 +151,7 @@ class WalletOverviewViewModel(
         MutableStateFlow(showWalletOnboarding)
 
     override val assets: StateFlow<DataState<List<AssetBalance>>> =
-        combine(session.walletAssets, hideAmounts) { assets, hideAmounts ->
+        combine(getWalletAssetsUseCase.observe(), hideAmounts) { assets, hideAmounts ->
             assets.mapSuccess { assets ->
                 assets.assets.map {
                     AssetBalance.create(
@@ -173,25 +171,16 @@ class WalletOverviewViewModel(
         denomination
     ) { accounts, setting, _, _, _ ->
         // Set denomination directly from settings as sometimes the settings/network is not changed yet
-        accounts.map {
-            AccountAssetBalance.create(
-                accountAsset = it.accountAsset,
-                session = session,
-                denomination = setting?.unit?.let { Denomination.byUnit(it) })
-        }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, listOf())
-
-    private val _transaction: StateFlow<DataState<TransactionLook?>> = combine(
-        session.walletTransactions.filter { session.isConnected }, session.settings()
-    ) { transactions, _ ->
-        transactions.mapSuccess {
-            it.firstOrNull()?.let {
-                TransactionLook.create(
-                    transaction = it, session = session, disableHideAmounts = true
+        accounts.mapNotNull {
+            tryCatch {
+                AccountAssetBalance.create(
+                    accountAsset = it.accountAsset,
+                    session = session,
+                    denomination = setting?.unit?.let { Denomination.byUnit(it) }
                 )
             }
         }
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), DataState.Loading)
+    }.stateIn(viewModelScope + Dispatchers.Default, SharingStarted.Eagerly, listOf())
 
     private val _systemMessage: MutableStateFlow<AlertType?> = MutableStateFlow(null)
     private val _twoFactorState: MutableStateFlow<AlertType?> = MutableStateFlow(null)
@@ -228,7 +217,7 @@ class WalletOverviewViewModel(
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), listOf())
 
     override val archivedAccounts: StateFlow<Int> = session.allAccounts.map {
-        it.filter { it.hidden && it.hasHistory(session) }.size
+        it.filter { it.hidden }.size
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), 0)
 
     override val bitcoinChartData = observeBitcoinPriceHistory.observe()
@@ -339,6 +328,7 @@ class WalletOverviewViewModel(
 
             is LocalEvents.Refresh -> {
                 sessionOrNull?.refresh()
+                refreshState.value++
                 refetchBitcoinPriceHistory()
             }
 
@@ -365,11 +355,7 @@ class WalletOverviewViewModelPreview(val isEmpty: Boolean = false, val isHardwar
 
     override val balancePrimary: StateFlow<String?> = MutableStateFlow("1.00000 BTC")
 
-    // override val balanceSecondary: StateFlow<String?> = MutableStateFlow("90.000 USD")
-
     override val hideAmounts: StateFlow<Boolean> = MutableStateFlow(false)
-
-    override val activeAccount: StateFlow<Account?> = MutableStateFlow(null)
 
     override val assets: StateFlow<DataState<List<AssetBalance>>> = MutableStateFlow(
         DataState.successOrEmpty(

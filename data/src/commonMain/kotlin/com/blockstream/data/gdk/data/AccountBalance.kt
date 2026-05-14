@@ -31,12 +31,6 @@ data class AccountBalance constructor(
     val accountAsset: AccountAsset
         get() = account.accountAsset
 
-    val asMasked: AccountBalance
-        get() = copy(
-            balance = "*****",
-            balanceExchange = "*****"
-        )
-
     companion object {
 
         fun create(account: Account) = AccountBalance(account = account)
@@ -52,14 +46,6 @@ data class AccountBalance constructor(
                 denomination = denomination,
                 createOnlyIfBalance = false
             )!!
-        }
-
-        suspend fun createIfBalance(
-            account: Account,
-            session: GdkSession?,
-            denomination: Denomination? = null
-        ): AccountBalance? {
-            return create(account = account, session = session, denomination = denomination, createOnlyIfBalance = true)
         }
 
         private suspend fun create(

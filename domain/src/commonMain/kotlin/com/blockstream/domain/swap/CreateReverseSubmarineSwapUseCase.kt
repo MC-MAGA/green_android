@@ -5,6 +5,7 @@ import com.blockstream.data.data.SwapType
 import com.blockstream.data.database.Database
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import lwk.InvoiceResponse
 
 /**
@@ -15,7 +16,8 @@ import lwk.InvoiceResponse
  * transaction. The swap metadata is persisted in the database for tracking by background workers.
  */
 class CreateReverseSubmarineSwapUseCase(
-    private val database: Database
+    private val database: Database,
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
 ) {
     /**
      * Generates a reverse swap invoice via LWK and persists the metadata to the database.
@@ -40,7 +42,7 @@ class CreateReverseSubmarineSwapUseCase(
         val xPubHashId = session.xPubHashId ?: throw Exception("xPubHashId should not be null")
 
         val invoice = session.lwk.createReverseSubmarineSwap(
-            address = session.getReceiveAddress(account).address,
+            address = getReceiveAddressUseCase(session, account).address,
             amount = amount,
             description = description
         )

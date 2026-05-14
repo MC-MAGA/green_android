@@ -14,6 +14,7 @@ import com.blockstream.data.usecases.SetBiometricsUseCase
 import com.blockstream.data.usecases.SetPinUseCase
 import com.blockstream.data.utils.generateWalletName
 import com.blockstream.domain.lightning.LightningNodeIdUseCase
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 
 class RestoreWalletUseCase(
     private val database: Database,
@@ -25,7 +26,8 @@ class RestoreWalletUseCase(
     private val setBiometricsUseCase: SetBiometricsUseCase,
     private val lightningNodeIdUseCase: LightningNodeIdUseCase,
     private val saveGreenlightMnemonicAndCredentialsUseCase: SaveGreenlightMnemonicAndCredentialsUseCase,
-    private val saveDerivedBoltzMnemonicUseCase: SaveDerivedBoltzMnemonicUseCase
+    private val saveDerivedBoltzMnemonicUseCase: SaveDerivedBoltzMnemonicUseCase,
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
 ) {
 
     suspend operator fun invoke(
@@ -56,9 +58,6 @@ class RestoreWalletUseCase(
             wallet = GreenWallet.createWallet(
                 name = generateWalletName(settingsManager),
                 xPubHashId = session.xPubHashId ?: "",
-                activeNetwork = session.activeAccount.value?.networkId
-                    ?: session.defaultNetwork.id,
-                activeAccount = session.activeAccount.value?.pointer ?: 0,
                 isTestnet = setupArgs.isTestnet == true,
             )
 
@@ -74,11 +73,11 @@ class RestoreWalletUseCase(
             saveDerivedBoltzMnemonicUseCase.invoke(session = session, wallet = wallet)
 
             val bitcoinAddress = session.accounts.value.firstOrNull { it.isBitcoin }?.let {
-                session.getReceiveAddressAsString(it)
+                getReceiveAddressUseCase(session, it).address
             }
 
             val liquidAddress = session.accounts.value.firstOrNull { it.isLiquid }?.let {
-                session.getReceiveAddressAsString(it)
+                getReceiveAddressUseCase(session, it).address
             }
 
             session.initLwkIfNeeded(wallet = wallet, bitcoinAddress = bitcoinAddress, liquidAddress = liquidAddress)

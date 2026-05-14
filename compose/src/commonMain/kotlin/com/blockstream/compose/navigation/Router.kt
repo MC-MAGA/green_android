@@ -39,7 +39,6 @@ import com.blockstream.compose.models.devices.DeviceScanViewModel
 import com.blockstream.compose.models.devices.ImportPubKeyViewModel
 import com.blockstream.compose.models.devices.JadeGenuineCheckViewModel
 import com.blockstream.compose.models.devices.JadeGuideViewModel
-import com.blockstream.compose.models.exchange.AccountExchangeViewModel
 import com.blockstream.compose.models.exchange.BuyViewModel
 import com.blockstream.compose.models.exchange.OnOffRampsViewModel
 import com.blockstream.compose.models.home.HomeViewModel
@@ -59,10 +58,8 @@ import com.blockstream.compose.models.onboarding.phone.EnterRecoveryPhraseViewMo
 import com.blockstream.compose.models.onboarding.phone.PinViewModel
 import com.blockstream.compose.models.onboarding.watchonly.WatchOnlyMultisigViewModel
 import com.blockstream.compose.models.onboarding.watchonly.WatchOnlySinglesigViewModel
-import com.blockstream.compose.models.overview.AccountOverviewViewModel
 import com.blockstream.compose.models.overview.SecurityViewModel
 import com.blockstream.compose.models.overview.TransactViewModel
-import com.blockstream.compose.models.overview.WalletAssetsViewModel
 import com.blockstream.compose.models.overview.WalletOverviewViewModel
 import com.blockstream.compose.models.promo.PromoViewModel
 import com.blockstream.compose.models.receive.ReceiveChooseAccountViewModel
@@ -92,7 +89,6 @@ import com.blockstream.compose.models.settings.TwoFactorSetupViewModel
 import com.blockstream.compose.models.settings.WalletSettingsSection
 import com.blockstream.compose.models.settings.WalletSettingsViewModel
 import com.blockstream.compose.models.settings.WatchOnlyCredentialsSettingsViewModel
-import com.blockstream.compose.models.settings.WatchOnlyViewModel
 import com.blockstream.compose.models.sheets.AnalyticsViewModel
 import com.blockstream.compose.models.sheets.AssetDetailsViewModel
 import com.blockstream.compose.models.sheets.JadeFirmwareUpdateViewModel
@@ -125,7 +121,6 @@ import com.blockstream.compose.screens.devices.DeviceListScreen
 import com.blockstream.compose.screens.devices.DeviceScanScreen
 import com.blockstream.compose.screens.devices.ImportPubKeyScreen
 import com.blockstream.compose.screens.devices.JadeGenuineCheckScreen
-import com.blockstream.compose.screens.exchange.AccountExchangeScreen
 import com.blockstream.compose.screens.exchange.BuyScreen
 import com.blockstream.compose.screens.exchange.OnOffRampsScreen
 import com.blockstream.compose.screens.jade.JadePinUnlockScreen
@@ -144,10 +139,8 @@ import com.blockstream.compose.screens.onboarding.phone.EnterRecoveryPhraseScree
 import com.blockstream.compose.screens.onboarding.phone.PinScreen
 import com.blockstream.compose.screens.onboarding.watchonly.WatchOnlyMultisigScreen
 import com.blockstream.compose.screens.onboarding.watchonly.WatchOnlySinglesigScreen
-import com.blockstream.compose.screens.overview.AccountOverviewScreen
 import com.blockstream.compose.screens.overview.SecurityScreen
 import com.blockstream.compose.screens.overview.TransactScreen
-import com.blockstream.compose.screens.overview.WalletAssetsScreen
 import com.blockstream.compose.screens.overview.WalletOverviewScreen
 import com.blockstream.compose.screens.promo.PromoScreen
 import com.blockstream.compose.screens.receive.ReceiveChooseAccountScreen
@@ -174,7 +167,6 @@ import com.blockstream.compose.screens.settings.SwapsSettingsScreen
 import com.blockstream.compose.screens.settings.TwoFactorAuthenticationScreen
 import com.blockstream.compose.screens.settings.TwoFactorSetupScreen
 import com.blockstream.compose.screens.settings.WalletSettingsScreen
-import com.blockstream.compose.screens.settings.WatchOnlyScreen
 import com.blockstream.compose.screens.support.SupportScreen
 import com.blockstream.compose.screens.swap.SwapScreen
 import com.blockstream.compose.screens.transaction.TransactionScreen
@@ -190,7 +182,6 @@ import com.blockstream.compose.sheets.Bip39PassphraseBottomSheet
 import com.blockstream.compose.sheets.BuyQuotesBottomSheet
 import com.blockstream.compose.sheets.Call2ActionBottomSheet
 import com.blockstream.compose.sheets.CameraBottomSheet
-import com.blockstream.compose.sheets.ChooseAssetAccountBottomSheet
 import com.blockstream.compose.sheets.CountriesBottomSheet
 import com.blockstream.compose.sheets.DenominationBottomSheet
 import com.blockstream.compose.sheets.DeviceInteractionBottomSheet
@@ -200,7 +191,6 @@ import com.blockstream.compose.sheets.FeeRateBottomSheet
 import com.blockstream.compose.sheets.JadeFirmwareUpdateBottomSheet
 import com.blockstream.compose.sheets.LightningFeeInfoBottomSheet
 import com.blockstream.compose.sheets.LightningNodeBottomSheet
-import com.blockstream.compose.sheets.MainMenuBottomSheet
 import com.blockstream.compose.sheets.MeldCountriesBottomSheet
 import com.blockstream.compose.sheets.MenuBottomSheetView
 import com.blockstream.compose.sheets.NewJadeConnectedBottomSheet
@@ -385,15 +375,6 @@ fun Router(
                     )
                 })
             }
-            appComposable<NavigateDestinations.AccountOverview> {
-                val args = it.toRoute<NavigateDestinations.AccountOverview>()
-                AccountOverviewScreen(viewModel {
-                    AccountOverviewViewModel(
-                        greenWallet = args.greenWallet,
-                        accountAsset = args.accountAsset
-                    )
-                })
-            }
             appComposable<NavigateDestinations.Transaction> {
                 val args = it.toRoute<NavigateDestinations.Transaction>()
                 TransactionScreen(viewModel {
@@ -483,14 +464,6 @@ fun Router(
                         section = WalletSettingsSection.ChangePin,
                         network = null,
                         isRecoveryConfirmation = args.isRecoveryConfirmation
-                    )
-                })
-            }
-            appComposable<NavigateDestinations.WatchOnly> {
-                val args = it.toRoute<NavigateDestinations.WatchOnly>()
-                WatchOnlyScreen(viewModel {
-                    WatchOnlyViewModel(
-                        greenWallet = args.greenWallet
                     )
                 })
             }
@@ -617,14 +590,6 @@ fun Router(
                         invoice = args.invoice,
                         amountSatoshi = args.amountSatoshi,
                         denomination = args.denomination
-                    )
-                })
-            }
-            appComposable<NavigateDestinations.AccountExchange> {
-                val args = it.toRoute<NavigateDestinations.AccountExchange>()
-                AccountExchangeScreen(viewModel {
-                    AccountExchangeViewModel(
-                        greenWallet = args.greenWallet
                     )
                 })
             }
@@ -755,12 +720,6 @@ fun Router(
                     ReEnable2FAViewModel(
                         greenWallet = args.greenWallet
                     )
-                })
-            }
-            appComposable<NavigateDestinations.WalletAssets> {
-                val args = it.toRoute<NavigateDestinations.WalletAssets>()
-                WalletAssetsScreen(viewModel {
-                    WalletAssetsViewModel(greenWallet = args.greenWallet)
                 })
             }
             appComposable<NavigateDestinations.JadePinUnlock> {
@@ -959,18 +918,6 @@ fun Router(
                         DenominationViewModel(
                             greenWallet = args.greenWallet,
                             denominatedValue = args.denominatedValue
-                        )
-                    },
-                    onDismissRequest = navController.onDismissRequest()
-                )
-            }
-            appBottomSheet<NavigateDestinations.ChooseAssetAccounts> {
-                val args = it.toRoute<NavigateDestinations.ChooseAssetAccounts>()
-                ChooseAssetAccountBottomSheet(
-                    viewModel = viewModel {
-                        SimpleGreenViewModel(
-                            greenWalletOrNull = args.greenWallet,
-                            screenName = "ChooseAssetAndAccount"
                         )
                     },
                     onDismissRequest = navController.onDismissRequest()
@@ -1312,13 +1259,6 @@ fun Router(
                     onSelect = { position, menuEntry ->
                         NavigateDestinations.Menu.setResult(position)
                     },
-                    onDismissRequest = navController.onDismissRequest()
-                )
-            }
-            appBottomSheet<NavigateDestinations.MainMenu> {
-                val args = it.toRoute<NavigateDestinations.MainMenu>()
-                MainMenuBottomSheet(
-                    isTestnet = args.isTestnet,
                     onDismissRequest = navController.onDismissRequest()
                 )
             }

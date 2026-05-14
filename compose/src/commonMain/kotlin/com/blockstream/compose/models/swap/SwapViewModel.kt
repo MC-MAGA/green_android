@@ -35,6 +35,7 @@ import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.feeRateWithUnit
 import com.blockstream.data.utils.ifNotNull
 import com.blockstream.data.utils.toAmountLook
+import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.jade.Loggable
 import kotlinx.coroutines.Dispatchers
@@ -103,6 +104,7 @@ class SwapViewModel(
     accountAssetOrNull = accountAssetOrNull
 ) {
     private val swapUseCase: SwapUseCase by inject()
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
 
     override val uiState: MutableStateFlow<SwapUiState> = MutableStateFlow(SwapUiState())
 
@@ -297,7 +299,7 @@ class SwapViewModel(
             greenWallet = greenWallet,
             session = session,
             accountAsset = accountAsset.value!!,
-            address = session.getReceiveAddress(accountAsset.value!!.account).address,
+            address = getReceiveAddressUseCase(session, accountAsset.value!!.account).address,
             amount = uiState.value.amountFrom,
             denomination = denomination.value,
             feeRate = getFeeRate()
@@ -308,7 +310,7 @@ class SwapViewModel(
         viewModelScope.launchSafe {
             val account = uiState.value.from?.account
             if (params != null && account != null) {
-                val tx = session.createTransaction(account.network, params)
+                val tx = session.createTransaction(account = account, params = params)
 
                 tx.fee?.takeIf { it != 0L || tx.error.isNullOrBlank() }.also {
                     _feePriority.value = calculateFeePriority(
@@ -370,7 +372,7 @@ class SwapViewModel(
                 feeRate = getFeeRate()
             )
 
-            val tx = session.createTransaction(from.account.network, params)
+            val tx = session.createTransaction(account = from.account, params = params)
 
             if (tx.error.isNotBlank()) {
                 throw Exception(tx.error)
@@ -419,7 +421,7 @@ class SwapViewModel(
 
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         _denomination.value = denominatedValue.denomination
         uiState.update { uiState ->
             if (uiState.quoteMode.isSend) {

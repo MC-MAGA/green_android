@@ -5,6 +5,8 @@ import com.blockstream.data.database.Database
 import com.blockstream.data.extensions.getSafeQueryParameter
 import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.GdkSession
+import com.blockstream.domain.base.firstSettled
+import com.blockstream.domain.wallet.GetWalletAssetsUseCase
 import com.eygraber.uri.toKmpUriOrNull
 
 /**
@@ -31,7 +33,11 @@ import com.eygraber.uri.toKmpUriOrNull
  * Thread-safety: this use case performs read-only operations against session state and is safe to
  * call from coroutines.
  */
-class GetSendAssetsUseCase(val database: Database) {
+class GetSendAssetsUseCase(
+    private val database: Database,
+    private val getWalletAssetsUseCase: GetWalletAssetsUseCase,
+    private val session: GdkSession
+) {
 
     /**
      * Resolves the set of assets relevant to the given send [address].
@@ -47,12 +53,11 @@ class GetSendAssetsUseCase(val database: Database) {
      * - Liquid branch builds the list from `session.walletAssets`, filters for positive balances,
      *   and then filters to assets that actually belong to the session's Liquid network.
      *
-     * @param session current wallet/session context used for parsing and asset lookups
      * @param address a raw address/payment request/URI string (on-chain, Liquid, or Lightning)
      * @return a non-empty list of candidate assets, or throws if the input is invalid
      * @throws Exception with message `id_invalid_address` when the input cannot be parsed
      */
-    suspend operator fun invoke(session: GdkSession, address: String): List<EnrichedAsset> {
+    suspend operator fun invoke(address: String): List<EnrichedAsset> {
         val network = session.parseInput(address)?.first
 
         val assets = if (network != null) {
@@ -60,7 +65,7 @@ class GetSendAssetsUseCase(val database: Database) {
 
             if (network.isLightning) {
                 // Prevent double spending even when paid using Magic hint routing
-                if (database.isInvoicePaid(invoice = address.replace("lightning:", ""))) {
+                if (database.isInvoicePaid(invoice = address.replace("lightning:", "", ignoreCase = true))) {
                     throw Exception("id_invoice_already_paid")
                 }
             }
@@ -72,7 +77,7 @@ class GetSendAssetsUseCase(val database: Database) {
                     listOf(EnrichedAsset.create(session = session, assetId = assetId))
                 } else {
                     // Find assets from your liquid accounts
-                    session.walletAssets.value.data()?.assets?.filter { it.value > 0 }?.map {
+                    getWalletAssetsUseCase.firstSettled().data()?.assets?.filter { it.value > 0 }?.map {
                         EnrichedAsset.create(session = session, assetId = it.key)
                     }?.filter {
                         it.isLiquidNetwork(session)

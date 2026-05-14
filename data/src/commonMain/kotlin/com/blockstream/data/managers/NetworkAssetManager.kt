@@ -1,5 +1,11 @@
 package com.blockstream.data.managers
 
+import com.blockstream.data.BTC_POLICY_ASSET
+import com.blockstream.data.CountlyBase
+import com.blockstream.data.LN_BTC_POLICY_ASSET
+import com.blockstream.data.backend.NetworkBackend
+import com.blockstream.data.data.CountlyAsset
+import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.gdk.data.Asset
 import com.blockstream.data.gdk.params.AssetsParams
 import com.blockstream.data.gdk.params.GetAssetsParams
@@ -9,7 +15,10 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import kotlinx.datetime.DateTimeUnit
 import kotlinx.datetime.TimeZone
@@ -31,7 +40,7 @@ data class AssetStatus constructor(
  * NetworkAssetManager is responsible of updating Assets and handle different caches
  * App Cache: cached data from apk
  */
-class NetworkAssetManager constructor() {
+class NetworkAssetManager constructor(private val isMainnet: Boolean, private val countly: CountlyBase) {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     private val metadata = mutableMapOf<String, Asset?>()
@@ -43,7 +52,47 @@ class NetworkAssetManager constructor() {
     private val _assetsUpdateSharedFlow = MutableSharedFlow<Unit>(replay = 0)
     val assetsUpdateFlow = _assetsUpdateSharedFlow.asSharedFlow()
 
-    fun cacheAssets(assetIds: Collection<String>, assetsProvider: AssetsProvider) {
+    val countlyAssetsFlow: StateFlow<List<CountlyAsset>>
+        field = MutableStateFlow(listOf())
+
+    init {
+        countly.remoteConfigUpdateEvent.onEach {
+            updateCountlyAssets()
+        }.launchIn(scope)
+    }
+
+    fun getCountlyAsset(id: String?) = countlyAssetsFlow.value.find { it.assetId == id }
+
+    fun updateCountlyAssets() {
+        countly.getRemoteConfigValueForAssets(if (isMainnet) LIQUID_ASSETS_KEY else LIQUID_ASSETS_TESTNET_KEY).also {
+            countlyAssetsFlow.value = it ?: listOf()
+        }
+    }
+
+    suspend fun getEnrichedAsset(assetId: String, assetsProvider: AssetsProvider): EnrichedAsset {
+        if (assetId == LN_BTC_POLICY_ASSET) {
+            return (getEnrichedAsset(
+                assetsProvider = assetsProvider,
+                assetId = BTC_POLICY_ASSET
+            ).copy(assetId = LN_BTC_POLICY_ASSET, name = "Lightning Bitcoin"))
+        }
+
+        val asset = getAsset(assetId, assetsProvider)
+        val countlyAsset = getCountlyAsset(assetId)
+
+        return EnrichedAsset(
+            assetId = assetId,
+            name = asset?.name,
+            precision = asset?.precision ?: 0,
+            ticker = asset?.ticker,
+            entity = asset?.entity,
+
+            isAmp = countlyAsset?.isAmp ?: false,
+            weight = countlyAsset?.weight ?: 0,
+        )
+    }
+
+    suspend fun cacheAssets(assetIds: Collection<String>, assetsProvider: AssetsProvider) {
         assetIds.filter { !metadata.containsKey(it) && !icons.containsKey(it) }.takeIf { it.isNotEmpty() }?.also { unCachedIds ->
             assetsProvider.getAssets(GetAssetsParams(unCachedIds))?.also { assets ->
                 // get_assets only returns non null assets, so we need to add nulls for the missing assets
@@ -55,7 +104,12 @@ class NetworkAssetManager constructor() {
         }
     }
 
-    fun getAsset(assetId: String, assetsProvider: AssetsProvider): Asset? {
+    suspend fun getAsset(assetId: String, assetsProvider: AssetsProvider): Asset? {
+
+        // Only allow liquid assets
+        if(assetId == BTC_POLICY_ASSET) return null
+        if(assetId == LN_BTC_POLICY_ASSET) return null
+
         // Asset from GDK (cache or up2date)
         if (!metadata.containsKey(assetId)) {
             try {
@@ -72,7 +126,11 @@ class NetworkAssetManager constructor() {
         return metadata[assetId]
     }
 
-    fun getAssetIcon(assetId: String, assetsProvider: AssetsProvider): ByteArray? {
+    fun getAssetIconOrNull(assetId: String): ByteArray? {
+        return icons[assetId]
+    }
+
+    suspend fun getAssetIcon(assetId: String, assetsProvider: AssetsProvider): ByteArray? {
         if (!icons.containsKey(assetId)) {
             try {
                 logger.i { "Cache Asset Icon Missed: $assetId" }
@@ -134,5 +192,8 @@ class NetworkAssetManager constructor() {
         }
     }
 
-    companion object : Loggable()
+    companion object : Loggable() {
+        const val LIQUID_ASSETS_KEY = "liquid_assets"
+        const val LIQUID_ASSETS_TESTNET_KEY = "liquid_assets_testnet"
+    }
 }

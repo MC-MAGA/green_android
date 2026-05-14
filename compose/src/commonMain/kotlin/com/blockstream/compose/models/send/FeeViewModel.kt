@@ -134,10 +134,10 @@ class FeeViewModel(
                     val feeRate = getFeeRate(priority = it)
 
                     val tx = if (params.isRedeposit) session.createRedepositTransaction(
-                        network = account.network,
+                        account = account,
                         params = params.copy(feeRate = feeRate)
                     ) else session.createTransaction(
-                        network = account.network,
+                        account = account,
                         params = params.copy(feeRate = feeRate)
                     )
 

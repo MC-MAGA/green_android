@@ -7,6 +7,21 @@ import blockstream_green.common.generated.resources.id_receiving
 import blockstream_green.common.generated.resources.id_redeposited
 import blockstream_green.common.generated.resources.id_sent
 import blockstream_green.common.generated.resources.id_swap
+import com.blockstream.compose.events.Event
+import com.blockstream.compose.extensions.details
+import com.blockstream.compose.extensions.previewAccountAsset
+import com.blockstream.compose.extensions.previewTransaction
+import com.blockstream.compose.extensions.previewWallet
+import com.blockstream.compose.looks.transaction.Completed
+import com.blockstream.compose.looks.transaction.Confirmed
+import com.blockstream.compose.looks.transaction.Failed
+import com.blockstream.compose.looks.transaction.TransactionStatus
+import com.blockstream.compose.looks.transaction.Unconfirmed
+import com.blockstream.compose.models.GreenViewModel
+import com.blockstream.compose.navigation.NavData
+import com.blockstream.compose.navigation.NavigateDestinations
+import com.blockstream.compose.sideeffects.SideEffect
+import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.data.BTC_POLICY_ASSET
 import com.blockstream.data.SATOSHI_UNIT
 import com.blockstream.data.data.Denomination
@@ -25,29 +40,14 @@ import com.blockstream.data.utils.getFiatCurrency
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.data.utils.toAmountLookOrNa
 import com.blockstream.data.utils.userNumberFormat
-import com.blockstream.compose.events.Event
-import com.blockstream.compose.extensions.details
-import com.blockstream.compose.extensions.previewAccountAsset
-import com.blockstream.compose.extensions.previewTransaction
-import com.blockstream.compose.extensions.previewWallet
-import com.blockstream.compose.looks.transaction.Completed
-import com.blockstream.compose.looks.transaction.Confirmed
-import com.blockstream.compose.looks.transaction.Failed
-import com.blockstream.compose.looks.transaction.TransactionStatus
-import com.blockstream.compose.looks.transaction.Unconfirmed
-import com.blockstream.compose.models.GreenViewModel
-import com.blockstream.compose.navigation.NavData
-import com.blockstream.compose.navigation.NavigateDestinations
-import com.blockstream.compose.sideeffects.SideEffect
-import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.utils.Loggable
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.plus
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -167,7 +167,7 @@ class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
                         Transaction.Type.OUT -> Res.string.id_sent
                         Transaction.Type.REDEPOSIT -> Res.string.id_redeposited
                         Transaction.Type.MIXED -> Res.string.id_swap
-                        else -> if(status.value.confirmations > 0) Res.string.id_received else Res.string.id_receiving
+                        else -> if (status.value.confirmations > 0) Res.string.id_received else Res.string.id_receiving
                     }
                 ),
                 subtitle = account.name
@@ -175,17 +175,16 @@ class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
         }
 
         if (session.isConnected) {
-            combine(
-                session.walletTransactions,
-                session.accountTransactions(transaction.account),
-                session.block(transaction.account.network)
-            ) { walletTransactions, accountTransactions, _ ->
-                // Be sure to find the correct tx not just by hash but also with the correct type (cross-account transactions)
-                walletTransactions.data()?.find { it.txHash == transaction.txHash && it.txType == transaction.txType }
-                    ?: accountTransactions.data()?.find { it.txHash == transaction.txHash }
-            }.filterNotNull().onEach {
-                _transaction.value = it
-            }.launchIn(viewModelScope)
+            session.networkBackend(network = transaction.network).blockStateFlow.onEach {
+                // Fetching the transaction on every block emission can be very expensive for older transactions,
+                // as getTransaction pages through the entire account history. Since you already have the transaction,
+                // only fetch it if it is unconfirmed.
+                if (_transaction.value.getConfirmations(session) <= transaction.network.confirmationsRequired) {
+                    session.accountBackend(transaction.account).getTransaction(id = transaction.txHash)?.also {
+                        _transaction.value = it
+                    }
+                }
+            }.launchIn(viewModelScope + Dispatchers.Default)
 
             _transaction.onEach {
                 updateData()
@@ -361,10 +360,8 @@ class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
 
     private fun bumpFee() {
         doAsync({
-            val transactions = session.getTransactions(
-                transaction.value.account,
-                TransactionParams(
-                    subaccount = transaction.value.account.pointer,
+            val transactions = session.accountBackend(transaction.value.account).getTransactions(
+                params = TransactionParams(
                     confirmations = 0
                 )
             )

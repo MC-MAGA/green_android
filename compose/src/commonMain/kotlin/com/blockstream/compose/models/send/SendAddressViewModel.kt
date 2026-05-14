@@ -122,9 +122,8 @@ class SendAddressViewModel(
         // so the user needs a visible signal that work is in flight.
         onProgress.value = true
         try {
-            val sendFlow = sendUseCase.getSendFlowUseCase(
+            val sendFlow = getSendFlowUseCase(
                 greenWallet = greenWallet,
-                session = session,
                 address = address,
                 asset = accountAsset.value?.asset,
                 account = accountAsset.value

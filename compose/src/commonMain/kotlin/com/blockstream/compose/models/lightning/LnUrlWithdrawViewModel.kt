@@ -257,7 +257,7 @@ class LnUrlWithdrawViewModel(greenWallet: GreenWallet, val requestData: LnUrlWit
         }
     }
 
-    override fun setDenominatedValue(denominatedValue: DenominatedValue) {
+    override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
         amount.value = denominatedValue.asInput(session) ?: ""
         _denomination.value = denominatedValue.denomination
     }

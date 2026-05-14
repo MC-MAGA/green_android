@@ -74,8 +74,7 @@ abstract class ObservableUseCase<in P, R> {
     protected abstract fun createObservable(params: P): Flow<R>
 
     @OptIn(ExperimentalCoroutinesApi::class)
-    fun observe() = paramState.filterNotNull().flatMapLatest { createObservable(it) }
-
+    open fun observe(): Flow<R> = paramState.filterNotNull().flatMapLatest { createObservable(it) }
 }
 
 

@@ -5,9 +5,9 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class TransactionParams(
+data class TransactionParams constructor(
     @SerialName("subaccount")
-    val subaccount: Long,
+    val subaccount: Long = 0,
     @SerialName("first")
     val offset: Int = 0,
     @SerialName("count")
