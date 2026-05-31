@@ -3,6 +3,23 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [5.5.0] - 2026-06-01
+
+### Added
+
+- Support LNURL, BOLT12, and BIP-353 for Lightning swaps
+
+### Changed
+
+- Add a dedicated Lightning send flow
+- Enable Lightning from Jade watch-only wallets
+- Add Lightning invoice screen and fee communication flow
+- Handle missing Lightning invoice addresses with a fallback
+- Improve app settings UX, validation, auto-save behavior, proxy URL validation, and TLS defaults
+- Improve QR display layout
+- Bump minimum required Jade firmware version to v1.0.40
+- Update GDK to Release 0.77.4
+
 ## [5.4.0] - 2026-05-02
 
 ### Added
