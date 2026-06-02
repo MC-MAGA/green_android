@@ -10,6 +10,7 @@ import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.lightning.satoshi
 import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.QuoteMode
+import com.blockstream.data.swap.SubmarineSwapLimits
 import com.blockstream.data.swap.SwapAsset
 import com.blockstream.utils.Loggable
 import com.github.michaelbull.retry.policy.fullJitterBackoff
@@ -37,6 +38,7 @@ import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.longOrNull
 import lwk.Address
 import lwk.AnyClient
 import lwk.BitcoinAddress
@@ -88,6 +90,8 @@ class Lwk(
     // duplicate DNS round-trip on the second hit.
     private val bip353CacheMutex = Mutex()
     private val bip353Cache = mutableMapOf<String, String>()
+
+    private var submarineSwapLimits: SubmarineSwapLimits? = null
 
     private val _isConnected = MutableStateFlow(false)
 
@@ -688,6 +692,29 @@ class Lwk(
         boltzSession.refreshSwapInfo()
     }
 
+    suspend fun fetchSubmarineSwapLimits(): SubmarineSwapLimits? {
+        if (!isConnected) return null
+        submarineSwapLimits?.let { return it }
+        return tryCatch {
+            ioExceptionHandler { parseLbtcSubmarineLimits(boltzSession.fetchSwapsInfo()) }
+        }?.also { submarineSwapLimits = it }
+    }
+
+    private fun parseLbtcSubmarineLimits(json: String): SubmarineSwapLimits? {
+        val limits = Json.parseToJsonElement(json)
+            .jsonObject["submarine"]?.jsonObject
+            ?.get("L-BTC")?.jsonObject
+            ?.get("BTC")?.jsonObject
+            ?.get("limits")?.jsonObject
+            ?: return null
+
+        val maximal = limits["maximal"]?.jsonPrimitive?.longOrNull ?: return null
+        val minimal = limits["minimal"]?.jsonPrimitive?.longOrNull ?: return null
+        val minimalBatched = limits["minimalBatched"]?.jsonPrimitive?.longOrNull
+
+        return SubmarineSwapLimits(maximal = maximal, minimal = minimal, minimalBatched = minimalBatched)
+    }
+
     suspend fun quote(satoshi: Long, quoteMode: QuoteMode, send: SwapAsset, receive: SwapAsset): Quote = ioExceptionHandler {
         val builder = if (quoteMode.isSend) boltzSession.quote(satoshi.toULong()) else boltzSession.quoteReceive(satoshi.toULong())
         builder.send(send.toLwk());
@@ -702,6 +729,7 @@ class Lwk(
         monitor.clear()
         inspectCache.clear()
         inspectInFlight.clear()
+        submarineSwapLimits = null
     }
 
     override fun log(level: LogLevel, message: String) {

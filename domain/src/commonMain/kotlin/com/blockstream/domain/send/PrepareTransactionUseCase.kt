@@ -14,6 +14,7 @@ import com.blockstream.data.lwk.Bolt12AmountMode
 import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.swap.SwapDetails
 import com.blockstream.data.utils.UserInput
+import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.jade.Loggable
 import kotlinx.serialization.json.buildJsonObject
@@ -126,6 +127,27 @@ class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
 
                 if (isAmountlessInstruction && (userAmountSatoshi == null || userAmountSatoshi <= 0)) {
                     throw IllegalArgumentException("id_invalid_amount")
+                }
+
+                val swapAmountSats = userAmountSatoshi
+                    ?: bolt12FixedAmount
+                    ?: (effectiveInstruction as? PaymentInstruction.Bolt11)?.amountSats
+
+                if (swapAmountSats == null || swapAmountSats <= 0) {
+                    throw IllegalArgumentException("id_invalid_amount")
+                }
+
+                session.lwkOrNull?.fetchSubmarineSwapLimits()?.let { limits ->
+                    if (swapAmountSats < limits.minimumSats) {
+                        throw IllegalArgumentException(
+                            "id_amount_too_low_s|${limits.minimumSats.toAmountLook(session = session, denomination = Denomination.SATOSHI, withUnit = true, withGrouping = true) ?: "${limits.minimumSats}"}"
+                        )
+                    }
+                    if (swapAmountSats > limits.maximal) {
+                        throw IllegalArgumentException(
+                            "id_amount_too_high_s|${limits.maximal.toAmountLook(session = session, denomination = Denomination.SATOSHI, withUnit = true, withGrouping = true) ?: "${limits.maximal}"}"
+                        )
+                    }
                 }
 
                 swap = swapUseCase.createNormalSubmarineSwapUseCase(

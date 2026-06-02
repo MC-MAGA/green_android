@@ -297,6 +297,15 @@ class SendLightningAmountViewModel(
         }
 
         val balance = account.balance(session)
+        val limits = tryCatch { session.lwkOrNull?.fetchSubmarineSwapLimits() }
+        if (limits != null) {
+            if (sats < limits.minimumSats) {
+                return SoftValidation.Invalid("id_amount_too_low_s|${formatSats(limits.minimumSats)}")
+            }
+            if (sats > limits.maximal) {
+                return SoftValidation.Invalid("id_amount_too_high_s|${formatSats(limits.maximal)}")
+            }
+        }
         val quote = _quote.value
         if (quote != null) {
             if (sats > quote.maximal) {
