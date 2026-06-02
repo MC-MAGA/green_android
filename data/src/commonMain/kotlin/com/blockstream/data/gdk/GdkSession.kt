@@ -3250,7 +3250,7 @@ class GdkSession constructor(
                 delay(intervalMs)
                 if (lightningSdkOrNull?.isConnected != true) return@launch
                 updateAccountsAndBalances(updateBalancesForAccounts = listOf(lightningAccount)).join()
-                updateWalletTransactions(updateForAccounts = listOf(lightningAccount))
+                updateWalletTransactions(updateForAccounts = listOf(lightningAccount)).join()
                 if (accountAssets(lightningAccount).value.policyAsset != baselineSatoshi) return@launch
             }
         }
