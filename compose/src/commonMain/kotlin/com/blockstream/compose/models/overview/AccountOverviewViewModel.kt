@@ -50,6 +50,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import org.jetbrains.compose.resources.getString
@@ -91,8 +92,10 @@ class AccountOverviewViewModel(greenWallet: GreenWallet, accountAsset: AccountAs
     override val accountBalance: StateFlow<AccountBalance> = combine(
         this.accountAsset
             .filterNotNull()
-            .filter { session.isConnected }, session.expired2FA
-    ) { accountAsset, _ ->
+            .filter { session.isConnected },
+        session.expired2FA,
+        merge(flowOf(Unit), session.accountsAndBalanceUpdated)
+    ) { accountAsset, _, _ ->
         AccountBalance.create(account = accountAsset.account, session = session)
     }.stateIn(
         viewModelScope,

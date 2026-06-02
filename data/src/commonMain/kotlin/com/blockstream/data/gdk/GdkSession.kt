@@ -154,6 +154,7 @@ import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -3107,6 +3108,8 @@ class GdkSession constructor(
 
         _walletActiveEventInvalidated = true
 
+        val baselineLightningSatoshi = accountAssets(lightningAccount).value.policyAsset
+
         return when (val inputType = lightningSdk.parseBoltOrLNUrlAndCache(invoiceOrLnUrl)) {
             is LightningInputType.Bolt11 -> {
                 // Check for expiration
@@ -3121,6 +3124,9 @@ class GdkSession constructor(
                         invoice = inputType.invoice,
                         satoshi = satoshi.takeIf { inputType.invoice.amountSatoshi == null }
                     )
+
+                    refreshLightning()
+                    refreshLightningUntilBalanceSettles(baselineLightningSatoshi)
 
                     ProcessedTransactionDetails(paymentId = response.paymentId)
                 } catch (e: Exception) {
@@ -3143,6 +3149,9 @@ class GdkSession constructor(
                     comment = comment ?: ""
                 )) {
                     is LnUrlPayOutcome.Success -> {
+                        refreshLightning()
+                        refreshLightningUntilBalanceSettles(baselineLightningSatoshi)
+
                         ProcessedTransactionDetails.create(result)
                     }
 
@@ -3225,13 +3234,33 @@ class GdkSession constructor(
         }
     }
 
+    private fun refreshLightning() {
+        getTransactions(account = lightningAccount, isReset = false, isLoadMore = false)
+        updateAccountsAndBalances(updateBalancesForAccounts = listOf(lightningAccount))
+        updateWalletTransactions(updateForAccounts = listOf(lightningAccount))
+    }
+
+    private fun refreshLightningUntilBalanceSettles(
+        baselineSatoshi: Long,
+        attempts: Int = 20,
+        intervalMs: Long = 1_500L
+    ) {
+        scope.launch(context = logException(countly)) {
+            repeat(attempts) {
+                delay(intervalMs)
+                if (lightningSdkOrNull?.isConnected != true) return@launch
+                updateAccountsAndBalances(updateBalancesForAccounts = listOf(lightningAccount)).join()
+                updateWalletTransactions(updateForAccounts = listOf(lightningAccount))
+                if (accountAssets(lightningAccount).value.policyAsset != baselineSatoshi) return@launch
+            }
+        }
+    }
+
     private fun onLightningEvent(event: LightningEvent) {
         when (event) {
             is LightningEvent.Synced -> {
                 // Synced is not used in glsdk yet
-                getTransactions(account = lightningAccount, isReset = false, isLoadMore = false)
-                updateAccountsAndBalances(updateBalancesForAccounts = listOf(lightningAccount))
-                updateWalletTransactions(updateForAccounts = listOf(lightningAccount))
+                refreshLightning()
             }
 
             is LightningEvent.NewBlock -> {
@@ -3240,9 +3269,7 @@ class GdkSession constructor(
 
             is LightningEvent.InvoicePaid -> {
                 // Added here getTransactions call as Synced is not used in glsdk yet
-                getTransactions(account = lightningAccount, isReset = false, isLoadMore = false)
-                updateAccountsAndBalances(updateBalancesForAccounts = listOf(lightningAccount))
-                updateWalletTransactions(updateForAccounts = listOf(lightningAccount))
+                refreshLightning()
                 _lastInvoicePaid.value = event.paymentHash to event.paymentAmountSatoshi
             }
         }
