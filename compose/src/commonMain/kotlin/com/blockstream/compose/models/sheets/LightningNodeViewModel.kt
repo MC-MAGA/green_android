@@ -190,6 +190,7 @@ class LightningNodeViewModel(greenWallet: GreenWallet) :
                     postSideEffect(
                         SideEffects.Snackbar(StringHolder.create(Res.string.id_lightning_disabled_successfully))
                     )
+                    postSideEffect(SideEffects.NavigateToRoot())
                     postSideEffect(SideEffects.Dismiss)
 
                 } catch (error: Exception) {
