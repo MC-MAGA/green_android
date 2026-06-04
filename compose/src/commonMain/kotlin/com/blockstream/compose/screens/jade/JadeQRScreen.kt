@@ -4,6 +4,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -52,6 +53,7 @@ import com.blockstream.compose.components.OnProgressStyle
 import com.blockstream.compose.components.QrBorderConfig
 import com.blockstream.compose.components.ZoomOutlinedButton
 import com.blockstream.compose.events.Events
+import com.blockstream.compose.extensions.pxToDp
 import com.blockstream.compose.models.jade.JadeQRViewModel
 import com.blockstream.compose.models.jade.JadeQRViewModelAbstract
 import com.blockstream.compose.models.jade.JadeQRViewModelPreview
@@ -70,6 +72,7 @@ import com.blockstream.compose.theme.textHigh
 import com.blockstream.compose.theme.textMedium
 import com.blockstream.compose.utils.SetupScreen
 import com.blockstream.compose.utils.bottom
+import com.blockstream.compose.utils.getScreenSizeInfo
 import com.blockstream.compose.utils.ifTrue
 import com.blockstream.data.data.MenuEntry
 import com.blockstream.data.data.MenuEntryList
@@ -228,13 +231,43 @@ fun JadeQRScreen(
                     ) {
 
                         if (onProgress) {
-                            CircularProgressIndicator(
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .size(120.dp),
-                                color = MaterialTheme.colorScheme.secondary,
-                                trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                            )
+                            val progressIndicator: @Composable () -> Unit = {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(120.dp),
+                                    color = MaterialTheme.colorScheme.secondary,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                            }
+
+                            if (step.isScan) {
+                                Box(
+                                    modifier = Modifier.ifTrue(!isCleanScan) {
+                                        it
+                                            .aspectRatio(1f)
+                                            .align(Alignment.Center)
+                                    }
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .ifTrue(!isCleanScan) {
+                                                it
+                                                    .height((getScreenSizeInfo().heightPx * 0.70).toInt().pxToDp())
+                                                    .fillMaxWidth()
+                                                    .align(Alignment.BottomCenter)
+                                            }
+                                            .ifTrue(isCleanScan) {
+                                                it.fillMaxSize()
+                                            },
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        progressIndicator()
+                                    }
+                                }
+                            } else {
+                                Box(modifier = Modifier.align(Alignment.Center)) {
+                                    progressIndicator()
+                                }
+                            }
                         } else {
                             if (step.isScan) {
                                 GreenScanner(
