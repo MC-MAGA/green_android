@@ -1,15 +1,17 @@
 package com.blockstream.green
 
 import androidx.arch.core.executor.testing.InstantTaskExecutorRule
+import co.touchlab.kermit.Logger
+import co.touchlab.kermit.StaticConfig
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.data.CountlyBase
 import com.blockstream.data.config.AppInfo
 import com.blockstream.data.database.Database
-import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.managers.PromoManager
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.managers.SettingsManager
 import com.blockstream.domain.promo.GetPromoUseCase
+import com.blockstream.utils.Loggable.Companion.COMBINED_LOG_QUALIFIER
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkClass
@@ -26,11 +28,11 @@ import org.junit.Before
 import org.junit.Rule
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
+import org.koin.core.qualifier.named
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.mock.MockProvider
 import org.koin.test.mock.declareMock
-import org.mockito.Mock
 
 @OptIn(ExperimentalCoroutinesApi::class)
 open class TestViewModel<VM : GreenViewModel> : KoinTest {
@@ -38,12 +40,6 @@ open class TestViewModel<VM : GreenViewModel> : KoinTest {
 
     @get:Rule
     val taskExecutorRule = InstantTaskExecutorRule()
-
-    @Mock
-    protected lateinit var gdkSession: GdkSession
-
-    @Mock
-    protected lateinit var countly: CountlyBase
 
     protected val testDispatcher = UnconfinedTestDispatcher()
 
@@ -64,6 +60,12 @@ open class TestViewModel<VM : GreenViewModel> : KoinTest {
                     single { AppInfo("green_test", "1.0.0-test", true, true) }
 
                     single { GetPromoUseCase(get(), get(), get()) }
+
+                    // Bucketed Loggables (e.g. Lightning) resolve their logger via this qualifier.
+                    // Provide a no-op writer so tests don't depend on the file-logging module.
+                    factory<Logger>(named(COMBINED_LOG_QUALIFIER)) { (tag: String) ->
+                        Logger(StaticConfig(logWriterList = emptyList()), tag)
+                    }
 
                     declareMock<CountlyBase> {
                         every { viewModel(any()) } returns Unit

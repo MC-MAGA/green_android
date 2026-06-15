@@ -376,6 +376,10 @@ class Database(driverFactory: DriverFactory, val settingsManager: SettingsManage
         walletDB.boltzSwapsQueries.setSwapComplete(id = id)
     }
 
+    suspend fun setSwapPending(id: String) = io {
+        walletDB.boltzSwapsQueries.setSwapPending(id = id)
+    }
+
     suspend fun setSwapTxHash(id: String, txHash: String) = io {
         walletDB.boltzSwapsQueries.setSwapTxHash(id = id, tx_hash = txHash)
     }

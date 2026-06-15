@@ -58,6 +58,9 @@ class HandleSwapEventsUseCase(
             val bitcoinAddress = btcAcc?.let { session.getReceiveAddressAsString(it) }
             val liquidAddress = lqAcc?.let { session.getReceiveAddressAsString(it) }
 
+            // Flag the swap as pending so LWK picks it up for background processing
+            database.setSwapPending(swapId)
+
             val lwk = lwkManager.getLwk(wallet = ownerWallet).apply {
                 if (!isConnected) {
                     val derivedBoltzMnemonic = database.getLoginCredential(

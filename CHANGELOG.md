@@ -3,6 +3,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [5.5.1] - 2026-06-15
+
+- Update GDK to Release 0.77.6
+- Updated LWK to version 0.18.0
+
 ## [5.5.0] - 2026-06-01
 
 ### Added

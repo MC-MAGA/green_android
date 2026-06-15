@@ -48,6 +48,9 @@ UPDATE boltzSwaps SET swap_type = ? WHERE id = ?;
 setSwapComplete:
 UPDATE boltzSwaps SET is_pending = 0 WHERE id = ?;
 
+setSwapPending:
+UPDATE boltzSwaps SET is_pending = 1 WHERE id = ?;
+
 setSwapTxHash:
 UPDATE boltzSwaps SET tx_hash = ? WHERE id = ?;
 

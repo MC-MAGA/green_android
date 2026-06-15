@@ -680,12 +680,6 @@ class Lwk(
 
     private fun isTerminalSwapError(e: Throwable): Boolean = when (e) {
         is LwkException.SwapExpired -> true
-        is LwkException.ObjectConsumed -> true
-        is LwkException.BoltzBackendHttpException -> {
-            val code = e.status.toInt()
-            // 408 and 429 are retryable, not terminal.
-            code in 400..499 && code != 408 && code != 429
-        }
         else -> false
     }
 
