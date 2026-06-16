@@ -11,7 +11,6 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import com.blockstream.data.extensions.logException
 import com.blockstream.data.fcm.FcmCommon
-import com.blockstream.data.lightning.BreezNotification
 import com.blockstream.green.managers.NotificationManagerAndroid
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
@@ -31,18 +30,17 @@ class LightningWork(val context: Context, workerParams: WorkerParameters) : Coro
 
     override suspend fun doWork(): Result {
         return withContext(Dispatchers.Default + logException()) {
-            val walletId = inputData.getString(WALLET_ID) ?: ""
-            val breezNotification = BreezNotification.fromString(
-                inputData.getString(
-                    BREEZ_NOTIFICATION
-                )
-            )
+            val walletId = inputData.getString(WALLET_ID)
 
-            if (breezNotification != null) {
-                firebase.doLightningBackgroundWork(walletId, breezNotification)
+            if (!walletId.isNullOrBlank()) {
+                // Signer background-wake is disabled until Greenlight auto-delivers the payment
+                // notification hook (LSP-driven node wake). Until then an idle node never receives the
+                // payment, so the woken signer has nothing to co-sign. The signer path is verified
+                // working. Re-enable the call below once Greenlight supports the notification hook.
+                // firebase.doLightningBackgroundWork(walletId)
                 Result.success()
             } else {
-                logger.d { "Failed to doWork, no notification data" }
+                logger.d { "Failed to doWork, no walletId" }
                 Result.failure()
             }
         }
@@ -52,13 +50,12 @@ class LightningWork(val context: Context, workerParams: WorkerParameters) : Coro
         private val TAG = LightningWork::class.java.simpleName
 
         private const val WALLET_ID = "WALLET_ID"
-        private const val BREEZ_NOTIFICATION = "BREEZ_NOTIFICATION"
 
-        fun create(walletId: String, breezNotification: BreezNotification, context: Context) {
+        fun create(walletId: String, context: Context) {
 
             val work = OneTimeWorkRequestBuilder<LightningWork>().addTag(TAG).setInputData(
                 workDataOf(
-                    WALLET_ID to walletId, BREEZ_NOTIFICATION to breezNotification.toJson()
+                    WALLET_ID to walletId
                 )
             ).setExpedited(OutOfQuotaPolicy.RUN_AS_NON_EXPEDITED_WORK_REQUEST).build()
 

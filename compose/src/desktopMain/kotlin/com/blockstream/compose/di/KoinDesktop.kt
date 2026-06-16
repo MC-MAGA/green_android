@@ -11,7 +11,6 @@ import com.blockstream.data.data.AppConfig
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.fcm.FcmCommon
 import com.blockstream.data.fcm.Firebase
-import com.blockstream.data.lightning.BreezNotification
 import com.blockstream.data.managers.BluetoothManager
 import com.blockstream.data.managers.DeviceManager
 import com.blockstream.data.notifications.models.BoltzNotificationSimple
@@ -116,8 +115,7 @@ fun initKoinDesktop(appConfig: AppConfig, appInfo: AppInfo) {
                     }
 
                     override fun scheduleLightningBackgroundJob(
-                        walletId: String,
-                        breezNotification: BreezNotification
+                        walletId: String
                     ) {
 
                     }
@@ -146,9 +144,14 @@ fun initKoinDesktop(appConfig: AppConfig, appInfo: AppInfo) {
 
                     }
 
+                    override suspend fun showLightningBackgroundNotification(
+                        wallet: GreenWallet
+                    ) {
+
+                    }
+
                     override suspend fun showOpenWalletNotification(
-                        wallet: GreenWallet,
-                        breezNotification: BreezNotification
+                        wallet: GreenWallet
                     ) {
 
                     }

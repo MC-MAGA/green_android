@@ -13,6 +13,7 @@ class RegisterFCMToken(
             externalCustomerId = params.externalCustomerId,
             fcmToken = params.fcmToken,
             platform = params.platform,
+            nodeId = params.nodeId,
         )
         val response = notificationsRepository.registerDevice(request)
         return response
@@ -22,5 +23,6 @@ class RegisterFCMToken(
         val externalCustomerId: String,
         val fcmToken: String,
         val platform: String = "android",
+        val nodeId: String? = null,
     )
 }

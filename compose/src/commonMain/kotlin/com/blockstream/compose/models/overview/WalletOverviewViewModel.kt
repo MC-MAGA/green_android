@@ -41,8 +41,10 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.merge
@@ -127,14 +129,25 @@ class WalletOverviewViewModel(
 
         // TODO move it to GDK session on the login procedure
         viewModelScope.launch {
-            fcmCommon.token?.let { token ->
-                registerFCMToken(
-                    RegisterFCMToken.Params(
-                        externalCustomerId = greenWallet.xPubHashId,
-                        fcmToken = token,
-                    )
-                ).collect()
-            }
+            val token = fcmCommon.token ?: return@launch
+            // lightningSdkOrNull (and its node id) stays null until lightning finishes initialising,
+            // so re-read it whenever accounts change and re-register once the node id appears.
+            session.accounts
+                .flatMapLatest {
+                    session.lightningSdkOrNull?.nodeInfoStateFlow
+                        ?.map { it.id.takeIf { id -> id.isNotBlank() } }
+                        ?: flowOf(null)
+                }
+                .distinctUntilChanged()
+                .collectLatest { nodeId ->
+                    registerFCMToken(
+                        RegisterFCMToken.Params(
+                            externalCustomerId = greenWallet.xPubHashId,
+                            fcmToken = token,
+                            nodeId = nodeId,
+                        )
+                    ).collect()
+                }
         }
     }
 

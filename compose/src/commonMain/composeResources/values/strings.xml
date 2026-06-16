@@ -868,6 +868,7 @@
     <string name="id_lightning_account">Lightning Account</string>
     <string name="id_lightning_account_shortcut">Lightning Account Shortcut</string>
     <string name="id_lightning_disabled_successfully">Lightning disabled successfully</string>
+    <string name="id_lightning_is_running_in_the_background">Lightning is running in the background</string>
     <string name="id_lightning_invoice">Lightning Invoice</string>
     <string name="id_lightning_invoice__lnurl">Lightning Invoice / LNURL</string>
     <string name="id_lightning_invoice_is_expired">Lightning invoice is expired</string>

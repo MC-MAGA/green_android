@@ -4,6 +4,8 @@ package com.blockstream.data.lightning
 
 import com.blockstream.data.extensions.tryCatchNull
 import com.blockstream.glsdk.Config
+import com.blockstream.glsdk.Credentials
+import com.blockstream.glsdk.Handle
 import com.blockstream.glsdk.LnUrlPayRequest
 import com.blockstream.glsdk.LnUrlWithdrawRequest
 import com.blockstream.glsdk.LnUrlWithdrawRequestData
@@ -12,6 +14,7 @@ import com.blockstream.glsdk.NodeBuilder
 import com.blockstream.glsdk.NodeEventListener
 import com.blockstream.glsdk.OnchainReceiveResponse
 import com.blockstream.glsdk.OnchainSendResponse
+import com.blockstream.glsdk.Signer
 import com.blockstream.glsdk.listPayments
 import com.blockstream.glsdk.resolveInput
 import com.blockstream.glsdk.use
@@ -130,6 +133,14 @@ class GreenlightSdk constructor(private val nodeRpc: Node) {
 
             }
             return GreenlightSdk(node)
+        }
+
+        // Starts only the signer (no full node connect) so it can co-sign in-flight operations
+        // for a node already registered on this device. Caller must stop() the returned Handle.
+        suspend fun startSigner(mnemonic: String, credentials: ByteArray): Handle {
+            val signer = Signer(phrase = mnemonic).authenticate(creds = Credentials.load(raw = credentials))
+            logger.i { "Starting signer" }
+            return signer.start()
         }
     }
 }

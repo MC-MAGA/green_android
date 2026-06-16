@@ -1,7 +1,5 @@
 package com.blockstream.data.fcm
 
-import com.blockstream.data.lightning.LightningEvent
-import com.blockstream.data.config.AppInfo
 import com.blockstream.data.crypto.GreenKeystore
 import com.blockstream.data.data.CredentialType
 import com.blockstream.data.data.GreenWallet
@@ -12,18 +10,12 @@ import com.blockstream.data.extensions.greenlightCredentials
 import com.blockstream.data.extensions.launchSafe
 import com.blockstream.data.extensions.lightningMnemonic
 import com.blockstream.data.extensions.logException
-import com.blockstream.data.lightning.BreezNotification
-import com.blockstream.data.lightning.GreenlightMnemonicAndCredentials
-import com.blockstream.data.lightning.LightningManager
-import com.blockstream.data.lightning.satoshi
+import com.blockstream.data.lightning.GreenlightSdk
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.notifications.models.BoltzNotificationSimple
 import com.blockstream.data.notifications.models.MeldNotificationData
-import com.blockstream.data.utils.randomChars
 import com.blockstream.utils.Loggable
-import kotlinx.coroutines.flow.filter
-import kotlinx.coroutines.flow.firstOrNull
-import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.delay
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 
@@ -31,10 +23,6 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
     private val database: Database by inject()
     private val greenKeystore: GreenKeystore by inject()
     private val sessionManager: SessionManager by inject()
-
-    val lightningManager: LightningManager by inject()
-
-    private val appInfo: AppInfo by inject()
 
     private var _token: String? = null
 
@@ -47,8 +35,7 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
     }
 
     abstract fun scheduleLightningBackgroundJob(
-        walletId: String,
-        breezNotification: BreezNotification
+        walletId: String
     )
 
     abstract fun scheduleBoltzBackgroundJob(
@@ -67,15 +54,19 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
         wallet: GreenWallet
     )
 
+    // TODO: currently unused. Rewire to a real settled-payment event to restore the "Payment received" notification.
     abstract suspend fun showLightningPaymentNotification(
         wallet: GreenWallet,
         paymentHash: String,
         satoshi: Long
     )
 
+    abstract suspend fun showLightningBackgroundNotification(
+        wallet: GreenWallet
+    )
+
     abstract suspend fun showOpenWalletNotification(
-        wallet: GreenWallet,
-        breezNotification: BreezNotification
+        wallet: GreenWallet
     )
 
     abstract fun showDebugNotification(
@@ -89,74 +80,39 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
 
     protected suspend fun wallet(walletId: String) = database.getWallet(walletId)
 
-    suspend fun doLightningBackgroundWork(walletId: String, breezNotification: BreezNotification) {
-        logger.d { "doLightningBackgroundWork for walletId:$walletId with data: $breezNotification" }
+    suspend fun doLightningBackgroundWork(walletId: String) {
+        logger.d { "doLightningBackgroundWork for walletId:$walletId" }
 
-        if (appInfo.isDevelopmentOrDebug) {
-            showDebugNotification(
-                title = "Background Work",
-                message = breezNotification.toString()
-            )
+        val existingSession = sessionManager.getWalletSessionOrNull(walletId)
+        if (existingSession?.isConnected == true && existingSession.lightningSdkOrNull != null) {
+            logger.d { "Signer already attached via live session, skipping background wake for walletId:$walletId" }
+            return
         }
 
         wallet(walletId)?.also { wallet ->
-            database.getLoginCredential(id = wallet.id, credentialType = CredentialType.KEYSTORE_LIGHTNING_MNEMONIC)?.lightningMnemonic(
-                greenKeystore = greenKeystore
-            )?.also { mnemonic ->
-                sessionManager.getLightningBridge(mnemonic, wallet.isTestnet).also {
-                    val greenlightCredentials = database.getLoginCredentials(wallet.id).greenlightCredentials?.encrypted_data?.let {
-                        greenKeystore.decryptData(it)
-                    } ?: byteArrayOf()
+            val mnemonic = database.getLoginCredential(
+                id = wallet.id,
+                credentialType = CredentialType.KEYSTORE_LIGHTNING_MNEMONIC
+            )?.lightningMnemonic(greenKeystore = greenKeystore)
 
-                    it.connect(mnemonicAndCredentials = GreenlightMnemonicAndCredentials(mnemonic = mnemonic, credentials = greenlightCredentials))
+            val credentials = database.getLoginCredentials(wallet.id).greenlightCredentials
+                ?.greenlightCredentials(greenKeystore = greenKeystore)
 
-                    // Wait maximum 2 minutes to complete all operations
-                    val success = withTimeoutOrNull(120_000) {
+            if (mnemonic == null || credentials == null) {
+                logger.d { "Couldn't decrypt mnemonic/credentials for walletId:$walletId" }
+                return@also
+            }
 
-                        if (appInfo.isDevelopmentOrDebug) {
-                            showDebugNotification(
-                                title = "Lightning connected and waiting",
-                                message = breezNotification.toString()
-                            )
-                        }
+            // Start only the signer so the cloud node can settle the in-flight payment, then stop it.
+            val handle = GreenlightSdk.startSigner(mnemonic = mnemonic, credentials = credentials)
 
-                        if (breezNotification.paymentHash == "test") {
-                            showLightningPaymentNotification(
-                                wallet = wallet,
-                                paymentHash = randomChars(10),
-                                satoshi = 999_999_000L + (111..999).random()
-                            )
-                        } else {
-                            it.eventSharedFlow.filter { event ->
-                                event is LightningEvent.InvoicePaid
-                            }.firstOrNull()?.also {
-                                (it as? LightningEvent.InvoicePaid)?.also {
-                                    showLightningPaymentNotification(
-                                        wallet = wallet,
-                                        paymentHash = it.paymentHash,
-                                        satoshi = it.paymentAmountSatoshi ?: 0
-                                    )
-                                }
-                            }
-                        }
+            try {
+                delay(SIGNER_WAKE_DURATION_MS)
+            } finally {
+                handle.stop()
+            }
 
-                        it.eventSharedFlow.filter { event ->
-                            event is LightningEvent.Synced
-                        }.firstOrNull()
-                    }
-
-                    if (appInfo.isDevelopmentOrDebug) {
-                        showDebugNotification(
-                            title = "Lightning disconnected: Success: $success",
-                            message = breezNotification.toString()
-                        )
-                    }
-
-                    logger.d { "doLightningBackgroundWork completed walletId:$walletId" }
-
-                    lightningManager.release(it)
-                }
-            } ?: logger.d { "Couldn't decrypt mnemonic" }
+            logger.d { "doLightningBackgroundWork completed walletId:$walletId" }
         } ?: run {
             logger.d { "Wallet not found $walletId" }
         }
@@ -197,7 +153,7 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
         }
     }
 
-    fun handleLightningPushNotification(xpubHashId: String, breezNotification: BreezNotification) {
+    fun handleLightningPushNotification(xpubHashId: String) {
         applicationScope.launchSafe(context = logException()) {
             database.getMainnetWalletWithXpubHashId(xpubHashId)?.also { wallet ->
 
@@ -208,10 +164,10 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
 
                 if (mnemonic != null) {
                     logger.d { "scheduleBackgroundJob" }
-                    scheduleLightningBackgroundJob(wallet.id, breezNotification)
+                    scheduleLightningBackgroundJob(wallet.id)
                 } else {
                     logger.d { "showNotification" }
-                    showOpenWalletNotification(wallet, breezNotification)
+                    showOpenWalletNotification(wallet)
                 }
             } ?: run {
                 logger.d { "wallet not found" }
@@ -219,5 +175,25 @@ abstract class FcmCommon constructor(val applicationScope: ApplicationScope) : K
         }
     }
 
-    companion object : Loggable()
+    fun handleGreenlightPushNotification(xpubHashId: String) {
+        applicationScope.launchSafe(context = logException()) {
+            val wallet = database.getMainnetWalletWithXpubHashId(xpubHashId) ?: run {
+                logger.d { "Greenlight: wallet not found for $xpubHashId" }
+                return@launchSafe
+            }
+
+            // Every event must wake the signer so the cloud node can settle in-flight operations.
+            if (database.getLoginCredentials(wallet.id).lightningMnemonic != null) {
+                scheduleLightningBackgroundJob(wallet.id)
+            } else {
+                logger.d { "Greenlight: no lightning mnemonic for ${wallet.id}" }
+            }
+
+            showLightningBackgroundNotification(wallet = wallet)
+        }
+    }
+
+    companion object : Loggable() {
+        private const val SIGNER_WAKE_DURATION_MS = 60_000L
+    }
 }

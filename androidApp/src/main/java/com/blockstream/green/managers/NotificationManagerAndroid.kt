@@ -21,6 +21,7 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_connected_wallets
 import blockstream_green.common.generated.resources.id_lightning
+import blockstream_green.common.generated.resources.id_lightning_is_running_in_the_background
 import blockstream_green.common.generated.resources.id_lightning_notifications
 import blockstream_green.common.generated.resources.id_logout
 import blockstream_green.common.generated.resources.id_open_wallet_to_receive_a_payment
@@ -386,8 +387,31 @@ class NotificationManagerAndroid constructor(
             .setTicker(getString(Res.string.id_lightning)).setOngoing(true).build()
     }
 
+    suspend fun createLightningBackgroundNotification(
+        context: Context, wallet: GreenWallet
+    ): Notification {
+        val intent = Intent(context, GreenActivity::class.java).also {
+            it.action = GreenActivity.OPEN_WALLET
+            it.putExtra(GreenActivity.WALLET, wallet.toJson())
+        }
+        val pendingIntent = PendingIntent.getActivity(
+            context, requestCode(wallet), intent, PendingIntent.FLAG_IMMUTABLE
+        )
+
+        return NotificationCompat.Builder(context, LIGHTNING_CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_stat_green).setContentTitle(wallet.name)
+            .setContentText(getString(Res.string.id_lightning_is_running_in_the_background))
+            .setContentIntent(pendingIntent).setColorized(true).setColor(md_theme_primary.toArgb())
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT).setAutoCancel(true)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC).build().also {
+                androidNotificationManager.notify(
+                    notificationId(wallet, NotificationType.LIGHTNING_BACKGROUND), it
+                )
+            }
+    }
+
     enum class NotificationType {
-        CONNECTED, OPEN_WALLET, LIGHTNING_PAYMENT_RECEIVED, SWAPS_PAYMENT_RECEIVED, SWAPS_PAYMENT_SENT, SWAP_COMPLETE
+        CONNECTED, OPEN_WALLET, LIGHTNING_PAYMENT_RECEIVED, LIGHTNING_BACKGROUND, SWAPS_PAYMENT_RECEIVED, SWAPS_PAYMENT_SENT, SWAP_COMPLETE
     }
 
     private fun notificationId(

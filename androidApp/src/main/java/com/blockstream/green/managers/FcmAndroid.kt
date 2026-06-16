@@ -4,7 +4,6 @@ import android.content.Context
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.di.ApplicationScope
 import com.blockstream.data.fcm.FcmCommon
-import com.blockstream.data.lightning.BreezNotification
 import com.blockstream.data.notifications.models.BoltzNotificationSimple
 import com.blockstream.data.notifications.models.MeldNotificationData
 import com.blockstream.green.work.BoltzWork
@@ -21,10 +20,9 @@ class FcmAndroid constructor(
     private val notificationManager: NotificationManagerAndroid by inject()
 
     override fun scheduleLightningBackgroundJob(
-        walletId: String,
-        breezNotification: BreezNotification
+        walletId: String
     ) {
-        LightningWork.create(walletId, breezNotification, context)
+        LightningWork.create(walletId, context)
     }
 
     override fun scheduleBoltzBackgroundJob(
@@ -34,8 +32,7 @@ class FcmAndroid constructor(
     }
 
     override suspend fun showOpenWalletNotification(
-        wallet: GreenWallet,
-        breezNotification: BreezNotification
+        wallet: GreenWallet
     ) {
         logger.d { "showNotification $wallet" }
         notificationManager.createOpenWalletNotification(context, wallet)
@@ -63,6 +60,13 @@ class FcmAndroid constructor(
     ) {
         logger.d { "showPaymentNotification $wallet" }
         notificationManager.createLightningPaymentNotification(context, wallet, paymentHash, satoshi)
+    }
+
+    override suspend fun showLightningBackgroundNotification(
+        wallet: GreenWallet,
+    ) {
+        logger.d { "showLightningBackgroundNotification $wallet" }
+        notificationManager.createLightningBackgroundNotification(context, wallet)
     }
 
     override fun showDebugNotification(

@@ -3,7 +3,6 @@ package com.blockstream.gms.services
 import com.blockstream.data.config.AppInfo
 import com.blockstream.data.extensions.tryCatchNull
 import com.blockstream.data.fcm.FcmCommon
-import com.blockstream.data.lightning.BreezNotification
 import com.blockstream.data.notifications.models.BoltzNotificationSimple
 import com.blockstream.data.notifications.models.MeldNotificationData
 import com.blockstream.data.notifications.models.MeldNotificationType
@@ -27,38 +26,51 @@ class FirebaseMessagingService : FirebaseMessagingService(), KoinComponent {
         if (data.isEmpty()) return
 
 
-        if (data["type"] == "BOLTZ_EVENT") {
-            tryCatchNull {
-                val boltzNotificationData = BoltzNotificationSimple.create(json, data)
-                fcm.handleBoltzPushNotification(boltzNotificationData)
+        when (data["type"]) {
+            "BOLTZ_EVENT" -> {
+                tryCatchNull {
+                    val boltzNotificationData = BoltzNotificationSimple.create(json, data)
+                    fcm.handleBoltzPushNotification(boltzNotificationData)
+                }
             }
-        } else {
-            val notificationType = data["notification_type"]
 
-            // Breez Notification
-            if (notificationType == "payment_received" || notificationType == "tx_confirmed" || notificationType == "address_txs_confirmed") {
-                val xpubHashId = data["app_data"]
-                val breezNotification = BreezNotification.fromString(data["notification_payload"])
+            "GREENLIGHT_EVENT" -> {
+                val xpubHashId = data["wallet_hashed_id"]
 
-                if (appInfo.isDevelopmentOrDebug) {
-                    fcm.showDebugNotification(
-                        title = "Notification Received", message = breezNotification.toString()
-                    )
-                }
-
-                if (breezNotification != null && !xpubHashId.isNullOrBlank()) {
-                    fcm.handleLightningPushNotification(xpubHashId, breezNotification)
+                if (!xpubHashId.isNullOrBlank()) {
+                    fcm.handleGreenlightPushNotification(xpubHashId = xpubHashId)
                 } else {
-                    logger.d { "No notification_payload or app_data $data" }
+                    logger.d { "Greenlight push missing wallet_hashed_id $data" }
                 }
-            } else {
-                //we don't have any other notification types
-                //so for now lets just show it as-is
-                //add notification types for other types
-                val notification = MeldNotificationData.create(remoteMessage.data)
+            }
 
-                if (notification.type == MeldNotificationType.MELD_TRANSACTION) {
-                    fcm.showBuyTransactionNotification(notification)
+            else -> {
+                val notificationType = data["notification_type"]
+
+                // Lightning Notification
+                if (notificationType == "payment_received" || notificationType == "tx_confirmed" || notificationType == "address_txs_confirmed") {
+                    val xpubHashId = data["app_data"]
+
+                    if (appInfo.isDevelopmentOrDebug) {
+                        fcm.showDebugNotification(
+                            title = "Notification Received", message = data.toString()
+                        )
+                    }
+
+                    if (!xpubHashId.isNullOrBlank()) {
+                        fcm.handleLightningPushNotification(xpubHashId)
+                    } else {
+                        logger.d { "No app_data $data" }
+                    }
+                } else {
+                    //we don't have any other notification types
+                    //so for now lets just show it as-is
+                    //add notification types for other types
+                    val notification = MeldNotificationData.create(remoteMessage.data)
+
+                    if (notification.type == MeldNotificationType.MELD_TRANSACTION) {
+                        fcm.showBuyTransactionNotification(notification)
+                    }
                 }
             }
         }

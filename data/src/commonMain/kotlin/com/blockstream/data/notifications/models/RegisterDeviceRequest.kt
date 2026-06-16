@@ -7,4 +7,5 @@ data class RegisterDeviceRequest(
     val externalCustomerId: String,
     val fcmToken: String,
     val platform: String,
+    val nodeId: String? = null,
 )
