@@ -86,7 +86,7 @@ class SupportViewModel(type: SupportType, supportData: SupportData, greenWalletO
                 subject = subject,
                 email = email.value,
                 message = message.value,
-                supportData = if (attachLogs.value) supportData.withGdkLogs(sessionOrNull) else supportData,
+                supportData = supportData.copy(attachLogs = attachLogs.value),
                 autoRetry = false
             )
         }, onSuccess = {

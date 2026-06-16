@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 data class SupportData(
     val subject: String? = null,
     val error: String? = null,
-    val gdkLogs: String? = null,
+    val attachLogs: Boolean = false,
     val supportId: String? = null,
     val paymentHash: String? = null,
     val zendeskSecurityPolicy: String? = null,
@@ -17,9 +17,6 @@ data class SupportData(
 ) : GreenJson<SupportData>() {
 
     override fun kSerializer() = serializer()
-
-    fun withGdkLogs(session: GdkSession?): SupportData =
-        copy(gdkLogs = session?.logs)
 
     companion object {
 

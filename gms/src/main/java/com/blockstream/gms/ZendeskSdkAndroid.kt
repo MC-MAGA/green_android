@@ -9,12 +9,19 @@ import com.blockstream.data.config.AppInfo
 import com.blockstream.data.data.SupportData
 import com.blockstream.data.di.ApplicationScope
 import com.blockstream.data.extensions.logException
+import com.blockstream.utils.FileLogWriterRegistry
+import com.blockstream.utils.LogBucket
 import com.blockstream.utils.Loggable
 import com.zendesk.service.ErrorResponse
 import com.zendesk.service.ZendeskCallback
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.coroutines.withContext
+import okio.FileSystem
+import okio.buffer
+import okio.use
 import zendesk.core.AnonymousIdentity
 import zendesk.core.Zendesk
 import zendesk.support.CreateRequest
@@ -33,6 +40,7 @@ class ZendeskSdkAndroid constructor(
     private val appInfo: AppInfo,
     private val scope: ApplicationScope,
     private val countlyBase: CountlyBase,
+    private val fileLogWriterRegistry: FileLogWriterRegistry,
     clientId: String
 ) : ZendeskSdk() {
     private val zendeskSdk = Zendesk.INSTANCE
@@ -58,15 +66,13 @@ class ZendeskSdkAndroid constructor(
         }
     }
 
-    private suspend fun uploadLogFile(logs: String): UploadResponse = suspendCancellableCoroutine { continuation ->
+    private suspend fun uploadLogFile(filePrefix: String, logs: String): UploadResponse = suspendCancellableCoroutine { continuation ->
         val provider = support.provider()?.uploadProvider()
         val timestamp = java.text.SimpleDateFormat(
             "dd-MM-yyyy_HH-mm-ss",
             java.util.Locale.getDefault()
-        ).format(
-            java.util.Date()
-        )
-        val filename = "android_logs_$timestamp.txt"
+        ).format(java.util.Date())
+        val filename = "${timestamp}_$filePrefix.log"
 
         if (provider == null) {
             continuation.resumeWithException(Exception("Zendesk UploadProvider is null"))
@@ -97,6 +103,36 @@ class ZendeskSdkAndroid constructor(
         }
     }
 
+    private suspend fun readBucketLog(bucket: LogBucket): String? = withContext(Dispatchers.IO) {
+        val fileSystem = FileSystem.SYSTEM
+        val file = fileLogWriterRegistry.fileFor(bucket)
+        if (!fileSystem.exists(file)) {
+            return@withContext null
+        }
+
+        runCatching {
+            fileSystem.source(file).buffer().use { source ->
+                source.readUtf8()
+            }.takeIf { it.isNotBlank() }
+        }.getOrElse { e ->
+            logger.e { "${bucket.name} log read failed: ${e.message}" }
+            null
+        }
+    }
+
+    private suspend fun attachLogIfPresent(
+        filePrefix: String,
+        logs: String?,
+        attachmentTokens: MutableList<String>
+    ) {
+        if (logs.isNullOrBlank()) return
+        try {
+            uploadLogFile(filePrefix, logs).token?.let { attachmentTokens.add(it) }
+        } catch (e: Exception) {
+            logger.e { "$filePrefix log upload failed: ${e.message}" }
+        }
+    }
+
     override suspend fun submitNewTicket(
         type: SupportType,
         subject: String,
@@ -113,19 +149,18 @@ class ZendeskSdkAndroid constructor(
             zendeskSdk.setIdentity(identity)
         }
         val request = CreateRequest()
+        val attachmentTokens = mutableListOf<String>()
 
-        if (!supportData.gdkLogs.isNullOrBlank()) {
-            try {
-                val uploadResponse = uploadLogFile(supportData.gdkLogs!!)
-                val token = uploadResponse.token
-                if (!token.isNullOrBlank()) {
-                    request.attachments = listOf(token)
-                } else {
-                    logger.e { "Log upload returned empty token, sending without logs" }
-                }
-            } catch (e: Exception) {
-                logger.e { "Log upload failed, sending without logs: ${e.message}" }
+        if (supportData.attachLogs) {
+            LogBucket.entries.forEach { bucket ->
+                attachLogIfPresent(bucket.name, readBucketLog(bucket), attachmentTokens)
             }
+        }
+
+        if (attachmentTokens.isNotEmpty()) {
+            request.attachments = attachmentTokens
+        } else if (supportData.attachLogs) {
+            logger.e { "All log uploads failed or empty, sending without logs" }
         }
 
         request.tags = mutableListOf("android", "green")
