@@ -9,6 +9,7 @@ import androidx.work.OutOfQuotaPolicy
 import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.blockstream.data.config.AppInfo
 import com.blockstream.data.extensions.logException
 import com.blockstream.data.fcm.FcmCommon
 import com.blockstream.green.managers.NotificationManagerAndroid
@@ -22,6 +23,7 @@ class LightningWork(val context: Context, workerParams: WorkerParameters) : Coro
 
     private val firebase: FcmCommon by inject()
     private val notificationManager: NotificationManagerAndroid by inject()
+    private val appInfo: AppInfo by inject()
 
     override suspend fun getForegroundInfo(): ForegroundInfo {
         val notification = notificationManager.createLightningForegroundServiceNotification(context)
@@ -33,11 +35,11 @@ class LightningWork(val context: Context, workerParams: WorkerParameters) : Coro
             val walletId = inputData.getString(WALLET_ID)
 
             if (!walletId.isNullOrBlank()) {
-                // Signer background-wake is disabled until Greenlight auto-delivers the payment
-                // notification hook (LSP-driven node wake). Until then an idle node never receives the
-                // payment, so the woken signer has nothing to co-sign. The signer path is verified
-                // working. Re-enable the call below once Greenlight supports the notification hook.
-                // firebase.doLightningBackgroundWork(walletId)
+                // Signer background-wake is gated to development/debug builds until Greenlight
+                // auto-delivers the payment notification hook (LSP-driven node wake).
+                if (appInfo.isDevelopmentOrDebug) {
+                    firebase.doLightningBackgroundWork(walletId)
+                }
                 Result.success()
             } else {
                 logger.d { "Failed to doWork, no walletId" }

@@ -144,7 +144,8 @@ class WalletOverviewViewModel(
                         RegisterFCMToken.Params(
                             externalCustomerId = greenWallet.xPubHashId,
                             fcmToken = token,
-                            nodeId = nodeId,
+                            // Temporarily limit Greenlight event signup to development/debug builds.
+                            nodeId = nodeId.takeIf { appInfo.isDevelopmentOrDebug },
                         )
                     ).collect()
                 }
