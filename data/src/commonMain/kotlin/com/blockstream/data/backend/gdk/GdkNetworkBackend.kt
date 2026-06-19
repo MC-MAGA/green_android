@@ -247,6 +247,8 @@ open class GdkNetworkBackend constructor(
             loginCredentialsParams = loginCredentialsParams
         ).result<LoginData>(hardwareWalletResolver = hardwareWalletResolver).also {
             isLoggedIn = true
+
+            getAccounts()
         }
     }
 
@@ -326,6 +328,8 @@ open class GdkNetworkBackend constructor(
                 assetsProvider = this@GdkNetworkBackend,
                 network = network
             )
+
+            getAccounts()
         }
     }
 

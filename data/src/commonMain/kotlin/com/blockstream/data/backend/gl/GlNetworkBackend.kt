@@ -61,7 +61,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.math.absoluteValue
 import kotlin.time.Duration.Companion.milliseconds
 
-class GlNetworkBackend constructor(
+class GlNetworkBackend(
     val sdk: LightningSdk,
     override val network: Network,
     val assetsProvider: AssetsProvider,
@@ -94,7 +94,7 @@ class GlNetworkBackend constructor(
         field = MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     final override val accounts: StateFlow<List<Account>>
-        field = MutableStateFlow<List<Account>>(emptyList())
+        field = MutableStateFlow<List<Account>>(listOf(account))
 
     override suspend fun connect(params: ConnectionParams) {
         // no op

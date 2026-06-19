@@ -58,7 +58,7 @@ open class WalletBalanceViewModel(greenWallet: GreenWallet) :
         super.bootstrap()
 
         refreshState.onEach {
-            getWalletAssetsUseCase(Unit)
+            getWalletAssetsUseCase.invoke(Unit)
         }.launchIn(this)
 
         combine(

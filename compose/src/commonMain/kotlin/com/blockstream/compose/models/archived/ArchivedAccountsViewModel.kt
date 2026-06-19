@@ -43,22 +43,13 @@ class ArchivedAccountsViewModel(greenWallet: GreenWallet, navigateToRoot: Boolea
     ArchivedAccountsViewModelAbstract(greenWallet = greenWallet, navigateToRoot = navigateToRoot) {
 
     private val hasHistoryUseCase: HasHistoryUseCase by inject()
-    
+
     final override val selectedAccounts : StateFlow<Set<Account>>
         field = MutableStateFlow<Set<Account>>(emptySet())
 
-    override val archivedAccounts: StateFlow<DataState<List<AccountAssetBalance>>> =
-        session.allAccounts.map { allAccounts ->
-            DataState.Success(
-                allAccounts.filter {
-                    it.hidden
-                }.filter {
-                    hasHistoryUseCase(session = session, wallet = greenWallet, account = it) || !(it.type == AccountType.BIP49_SEGWIT_WRAPPED && it.pointer == 0L) // GDK default account
-                }.map {
-                    AccountAssetBalance.create(accountAsset = it.accountAsset, session = session)
-                }
-            )
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), DataState.Loading)
+    final override val archivedAccounts: StateFlow<DataState<List<AccountAssetBalance>>>
+        field = MutableStateFlow<DataState<List<AccountAssetBalance>>>(DataState.Loading)
+
 
     init {
         viewModelScope.launch {
@@ -67,6 +58,18 @@ class ArchivedAccountsViewModel(greenWallet: GreenWallet, navigateToRoot: Boolea
                 subtitle = greenWallet.name
             )
         }
+
+        session.allAccounts.onEach { allAccounts ->
+            archivedAccounts.value = DataState.Success(
+                allAccounts.filter {
+                    it.hidden
+                }.filter {
+                    hasHistoryUseCase(session = session, wallet = greenWallet, account = it) || !(it.type == AccountType.BIP49_SEGWIT_WRAPPED && it.pointer == 0L) // GDK default account
+                }.map {
+                    AccountAssetBalance.create(accountAsset = it.accountAsset, session = session)
+                }
+            )
+        }.launchIn(this)
 
         archivedAccounts.onEach {
             onProgress.value = it.isLoading()

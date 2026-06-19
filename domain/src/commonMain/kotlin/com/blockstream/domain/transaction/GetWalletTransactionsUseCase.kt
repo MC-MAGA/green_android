@@ -36,6 +36,8 @@ class GetWalletTransactionsUseCase(private val session: GdkSession) :
 
     var currentTransactionLimit = DEFAULT_TRANSACTIONS_LIMIT
 
+    override fun shouldExecute(params: Params): Boolean = session.isConnected
+
     override suspend fun doAsyncWork(params: Params) {
         if (params.isReset) {
             set(DataState.Loading)

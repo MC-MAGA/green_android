@@ -337,14 +337,14 @@ class LoginViewModel constructor(
                                 )
                             )
                         )
-                    }.takeIf { check2 && (pinCredentials.value.isNotEmpty() || passwordCredentials.value.isNotEmpty()) },
+                    }.takeIf { check2 && (pinCredentials.value.isNotEmpty() || biometricsCredentials.value.isNotEmpty() || passwordCredentials.value.isNotEmpty()) },
                     NavAction(
                         title = getString(Res.string.id_show_recovery_phrase),
                         icon = Res.drawable.key,
                         isMenuEntry = true,
                     ) {
                         postEvent(LocalEvents.EmergencyRecovery(true))
-                    }.takeIf { check2 && (pinCredentials.value.isNotEmpty() || passwordCredentials.value.isNotEmpty()) },
+                    }.takeIf { check2 && (pinCredentials.value.isNotEmpty() || biometricsCredentials.value.isNotEmpty() || passwordCredentials.value.isNotEmpty()) },
                     NavAction(
                         title = getString(Res.string.id_rename_wallet),
                         icon = Res.drawable.text_aa,

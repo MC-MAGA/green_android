@@ -23,6 +23,7 @@ import com.blockstream.compose.models.archived.ArchivedAccountsViewModelAbstract
 import com.blockstream.compose.components.GreenAccountAsset
 import com.blockstream.compose.components.GreenButton
 import com.blockstream.compose.components.GreenButtonSize
+import com.blockstream.compose.components.OnProgressStyle
 import com.blockstream.compose.theme.bodyMedium
 import com.blockstream.compose.utils.SetupScreen
 import org.jetbrains.compose.resources.stringResource
@@ -34,7 +35,7 @@ fun ArchivedAccountsScreen(
     val archivedAccounts by viewModel.archivedAccounts.collectAsStateWithLifecycle()
     val selectedAccounts by viewModel.selectedAccounts.collectAsStateWithLifecycle()
 
-    SetupScreen(viewModel = viewModel, withPadding = false) {
+    SetupScreen(viewModel = viewModel, withPadding = false, onProgressStyle = OnProgressStyle.Full(bluBackground = false)) {
         Column(
             modifier = Modifier.fillMaxSize()
         ) {

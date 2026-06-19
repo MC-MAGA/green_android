@@ -481,7 +481,7 @@ class GdkSession constructor(
     }
 
     private suspend fun updateEnrichedAssets() {
-        if (isNetworkInitialized && (!isNoBlobWatchOnly || isHwWatchOnly)) {
+        if (isConnected && (!isNoBlobWatchOnly || isHwWatchOnly)) {
             networkAssetManager.countlyAssetsFlow.value.also {
                 cacheAssets(it.map { it.assetId })
             }
@@ -959,9 +959,6 @@ class GdkSession constructor(
                 throw Exception("Something went wrong while initiating your Lightning account")
             }
 
-            // update GreenSessions accounts (use cache)
-            updateAccounts()
-
             // Update accounts & balances & transactions for the new network
             updateAccountsAndBalances(updateBalancesForNetwork = lightning)
         }
@@ -1060,9 +1057,6 @@ class GdkSession constructor(
                     resetAccountName = defaultAccount.type.title()
                 )
             }
-
-            // update GreenSessions accounts (use cache)
-            updateAccounts()
 
             // Update accounts & balances & transactions for the new network
             updateAccountsAndBalances(updateBalancesForAccounts = networkAccounts)
@@ -1354,8 +1348,6 @@ class GdkSession constructor(
 
         val deviceParams = DeviceParams.fromDeviceOrEmpty(device?.gdkHardwareWallet?.device)
 
-        val initNetwork = wallet?.activeNetwork
-
         // Get enabled singlesig networks (multisig can be identified by login_user)
         val sortedGdkBackends = gdkNetworkBackends.sortedWith { a, b ->
             when {
@@ -1559,14 +1551,12 @@ class GdkSession constructor(
                                 quickResponse = isRestore
                             )
 
-                            if (isRestore) {
-                                hasLightning = lightningSdk.isConnected
-                            }
-
                             updateAccountsAndBalances(updateBalancesForNetwork = lightning)
                         } catch (e: Exception) {
                             e.printStackTrace()
-                            _failedNetworksStateFlow.value += listOfNotNull(lightning)
+                            if (!isRestore && !isSmartDiscovery) {
+                                _failedNetworksStateFlow.value += listOfNotNull(lightning)
+                            }
                         }
                     }
 
@@ -1648,18 +1638,24 @@ class GdkSession constructor(
             parentXpubHashId = parentXpubHashId ?: xPubHashId,
             isRestore = restoreOnly,
             quickResponse = quickResponse,
-        ).also {
-            hasLightning = it == ConnectStatus.Connect
-            if (it == ConnectStatus.Failed) {
-                _failedNetworksStateFlow.value += listOfNotNull(lightning)
-            }
-        }
+        )
 
         countly.loginLightningStop()
 
-        backend.eventSharedFlow.onEach {
-            onLightningEvent(it)
-        }.launchIn(scope = scope + parentJob)
+        when(connectStatus) {
+            ConnectStatus.Connect -> {
+               hasLightning = true
+
+                backend.eventSharedFlow.onEach {
+                    onLightningEvent(it)
+                }.launchIn(scope = scope + parentJob)
+            }
+            ConnectStatus.Failed -> {
+                if(!restoreOnly){
+                    _failedNetworksStateFlow.value += listOfNotNull(lightning)
+                }
+            }
+        }
 
         return connectStatus
     }
@@ -1937,9 +1933,6 @@ class GdkSession constructor(
         }.also {
             _walletActiveEventInvalidated = true
 
-            // Update account list
-            updateAccounts()
-
             listOf(it).also {
                 // Update newly created account
                 updateAccountsAndBalances(updateBalancesForAccounts = it)
@@ -1947,14 +1940,10 @@ class GdkSession constructor(
         }
     }
 
-    private suspend fun getAccounts(refresh: Boolean = false): List<Account> {
-        return networkBackends.mapLoggedIn { backend ->
+    private suspend fun getAccounts(network: Network? = null, refresh: Boolean = false): List<Account> {
+        return (network?.let { mapOf(it to networkBackend(network)) } ?: networkBackends).mapLoggedIn { backend ->
             backend.getAccounts(refresh = refresh)
         }.flatten().sorted()
-    }
-
-    private suspend fun getAccounts(network: Network, refresh: Boolean = false): List<Account> = initNetworkIfNeeded(network) {
-        networkBackend(network).getAccounts(refresh = refresh && isNoBlobWatchOnly)
     }
 
     suspend fun getAccount(account: Account) = networkBackend(account.network).getAccount(account)
@@ -1966,10 +1955,13 @@ class GdkSession constructor(
         if (account.isLightning) {
             hasLightning = false
 
-            lightningSdk.disconnect()
-
-            // Update accounts
-            updateAccounts()
+            networkBackendsMutex.withLock {
+                networkBackendsStateFlow.update { backends ->
+                    backends.toMutableMap().also {
+                        it.remove(lightning)
+                    }
+                }
+            }
 
             updateAccountsAndBalances()
         }
@@ -1988,8 +1980,6 @@ class GdkSession constructor(
             hidden = isHidden,
             name = resetAccountName?.takeIf { it.isNotBlank() }
         )
-        // Update account list
-        updateAccounts()
 
         if (userInitiated && isHidden) {
             _eventsSharedFlow.emit(WalletEvents.ARCHIVED_ACCOUNT)
@@ -2005,8 +1995,6 @@ class GdkSession constructor(
 
     suspend fun updateAccount(account: Account, name: String): Account {
         gdkAccountBackend(account).updateAccount(name = name)
-
-        updateAccounts()
 
         return getAccount(account)
     }
@@ -2204,7 +2192,7 @@ class GdkSession constructor(
     }
 
     private suspend fun updateAccounts(refresh: Boolean = false, autoUnarchiveAccounts: Boolean = false): List<Account> {
-        val fetchedAccounts = getAccounts(refresh)
+        val fetchedAccounts = getAccounts(refresh = refresh)
 
         if (autoUnarchiveAccounts) {
             var accountsChanged = false

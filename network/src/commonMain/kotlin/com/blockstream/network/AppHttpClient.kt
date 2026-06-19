@@ -46,7 +46,8 @@ inline fun <reified T> NetworkResponse<T>.dataOrThrow(): T {
     if (this is NetworkResponse.Success) {
         return this.data
     }
-    throw Exception((this as? NetworkResponse.Error)?.message ?: "Something went wrong")
+
+    throw Exception((this as? NetworkResponse.Error)?.let { "[${it.code}] ${it.message}" } ?: "id_something_went_wrong")
 }
 
 inline fun <reified T> NetworkResponse<T>.error(): String {

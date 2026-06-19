@@ -38,6 +38,8 @@ class GetAccountTransactionsUseCase(private val session: GdkSession, accountAsse
 
     private val account = accountAsset.account
 
+    override fun shouldExecute(params: Params): Boolean = session.isConnected
+
     override suspend fun doAsyncWork(params: Params) {
         val currentData = getCurrent().data() ?: TransactionList()
 

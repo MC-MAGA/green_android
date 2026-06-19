@@ -32,6 +32,8 @@ import kotlinx.coroutines.flow.merge
  */
 class GetWalletAssetsUseCase(private val session: GdkSession) : DataStateObservableUseCase<Unit, Assets>() {
 
+    override fun shouldExecute(params: Unit): Boolean = session.isConnected
+
     override suspend fun doAsyncWork(params: Unit) {
         val walletAssets = session.accounts.value
             .mapNotNull {

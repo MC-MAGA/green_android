@@ -107,7 +107,9 @@ class GdkAccountBackend constructor(
                 name = name,
                 hidden = hidden
             )
-        ).resolve()
+        ).resolve().also {
+            networkBackend.getAccounts()
+        }
     }
 
     override suspend fun signTransaction(createTransaction: CreateTransaction): CreateTransaction =

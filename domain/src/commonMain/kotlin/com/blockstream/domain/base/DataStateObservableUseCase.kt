@@ -71,7 +71,15 @@ abstract class DataStateObservableUseCase<P, R> : ObservableUseCase<P, DataState
 
     protected abstract suspend fun doAsyncWork(params: P)
 
+    /**
+     * Gate that decides whether [doAsyncWork] runs for the given [params]. When it returns false the
+     * invocation is skipped and the current state is left unchanged. Defaults to always running;
+     * override to skip work under conditions such as a disconnected session.
+     */
+    protected open fun shouldExecute(params: P): Boolean = true
+
     final override suspend fun doWork(params: P) = mutex.withLock {
+        if (!shouldExecute(params)) return@withLock
         withContext(context = Dispatchers.Default) {
             try {
                 doAsyncWork(params)

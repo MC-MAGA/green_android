@@ -628,15 +628,6 @@ fun Router(
                     )
                 })
             }
-            appComposable<NavigateDestinations.ArchivedAccounts> {
-                val args = it.toRoute<NavigateDestinations.ArchivedAccounts>()
-                ArchivedAccountsScreen(viewModel {
-                    ArchivedAccountsViewModel(
-                        greenWallet = args.greenWallet,
-                        navigateToRoot = args.navigateToRoot
-                    )
-                })
-            }
             appComposable<NavigateDestinations.LnUrlAuth> {
                 val args = it.toRoute<NavigateDestinations.LnUrlAuth>()
                 LnUrlAuthScreen(viewModel {
