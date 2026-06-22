@@ -17,6 +17,7 @@ import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.jade.Loggable
+import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.buildJsonObject
 
 /**
@@ -72,6 +73,7 @@ class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
         isSendAll: Boolean = false,
         feeRate: Long? = null,
         paymentInstruction: PaymentInstruction? = null,
+        selectedUtxos: Map<String, List<JsonElement>>? = null,
     ): CreateTransactionParams {
 
         return (if (accountAsset.account.network.isLightning) {
@@ -173,7 +175,8 @@ class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
                 ).getBalance(onlyInAcceptableRange = false)?.satoshi
             }
 
-            val unspentOutputs = accountAsset.account.let { session.getUnspentOutputs(it) }
+            val utxos = selectedUtxos
+                ?: session.getUnspentOutputs(accountAsset.account).unspentOutputs
 
             AddressParams(
                 address = toAddress,
@@ -185,7 +188,7 @@ class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
                     from = accountAsset,
                     addressees = listOf(params).toJsonElement(),
                     feeRate = feeRate,
-                    utxos = unspentOutputs.unspentOutputs,
+                    utxos = utxos,
                     swap = swap,
                     isLiquidToLightningSwap = isLiquidToLightningSwap
                 )

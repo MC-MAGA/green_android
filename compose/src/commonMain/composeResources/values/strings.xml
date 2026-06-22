@@ -429,8 +429,9 @@
     <string name="id_d_assets">%1$d assets</string>
     <string name="id_d_assets_in_this_account">%1$d assets in this account</string>
     <string name="id_d_assets_in_total">%1$d assets in total</string>
-    <string name="id_d_coins_selected">(%1$d coins selected)</string>
     <string name="id_d_words">%1$d words</string>
+    <string name="id_d_coins_selected">%1$d coins selected</string>
+    <string name="id_d_coin_selected">%1$d coin selected</string>
     <string name="id_data_directory">Data directory</string>
     <string name="id_data_not_available">Data not available</string>
     <string name="id_date">Date</string>

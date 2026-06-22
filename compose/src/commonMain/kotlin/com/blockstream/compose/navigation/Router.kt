@@ -71,6 +71,7 @@ import com.blockstream.compose.models.recovery.RecoveryPhraseViewModel
 import com.blockstream.compose.models.recovery.RecoverySuccessViewModel
 import com.blockstream.compose.models.recovery.RecoveryWordsViewModel
 import com.blockstream.compose.models.send.BumpViewModel
+import com.blockstream.compose.models.send.CoinSelectionViewModel
 import com.blockstream.compose.models.send.DenominationViewModel
 import com.blockstream.compose.models.send.FeeViewModel
 import com.blockstream.compose.models.send.RedepositViewModel
@@ -152,6 +153,7 @@ import com.blockstream.compose.screens.recovery.RecoveryPhraseScreen
 import com.blockstream.compose.screens.recovery.RecoverySuccessScreen
 import com.blockstream.compose.screens.recovery.RecoveryWordsScreen
 import com.blockstream.compose.screens.send.BumpScreen
+import com.blockstream.compose.screens.send.CoinSelectionScreen
 import com.blockstream.compose.screens.send.RedepositScreen
 import com.blockstream.compose.screens.send.SendAddressScreen
 import com.blockstream.compose.screens.send.SendChooseAccountScreen
@@ -182,6 +184,7 @@ import com.blockstream.compose.sheets.Bip39PassphraseBottomSheet
 import com.blockstream.compose.sheets.BuyQuotesBottomSheet
 import com.blockstream.compose.sheets.Call2ActionBottomSheet
 import com.blockstream.compose.sheets.CameraBottomSheet
+import com.blockstream.compose.sheets.CoinFilterBottomSheet
 import com.blockstream.compose.sheets.CountriesBottomSheet
 import com.blockstream.compose.sheets.DenominationBottomSheet
 import com.blockstream.compose.sheets.DeviceInteractionBottomSheet
@@ -549,6 +552,16 @@ fun Router(
                     )
                 })
             }
+            appComposable<NavigateDestinations.CoinSelection> {
+                val args = it.toRoute<NavigateDestinations.CoinSelection>()
+                CoinSelectionScreen(viewModel {
+                    CoinSelectionViewModel(
+                        greenWallet = args.greenWallet,
+                        selectedAccountAsset = args.accountAsset,
+                        selectedUtxoIds = args.selectedUtxoIds
+                    )
+                })
+            }
             appComposable<NavigateDestinations.SendLightningAmount> {
                 val args = it.toRoute<NavigateDestinations.SendLightningAmount>()
                 SendLightningAmountScreen(viewModel {
@@ -911,6 +924,14 @@ fun Router(
                             denominatedValue = args.denominatedValue
                         )
                     },
+                    onDismissRequest = navController.onDismissRequest()
+                )
+            }
+            appBottomSheet<NavigateDestinations.CoinFilters> {
+                val args = it.toRoute<NavigateDestinations.CoinFilters>()
+                CoinFilterBottomSheet(
+                    selectedFilter = args.selectedFilter,
+                    availableFilters = args.availableFilters,
                     onDismissRequest = navController.onDismissRequest()
                 )
             }

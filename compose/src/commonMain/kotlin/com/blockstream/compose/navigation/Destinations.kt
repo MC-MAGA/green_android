@@ -3,6 +3,7 @@ package com.blockstream.compose.navigation
 import com.blockstream.compose.events.Event
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.models.jade.JadeQrOperation
+import com.blockstream.compose.models.send.CoinFilter
 import com.blockstream.compose.models.settings.WalletSettingsSection
 import com.blockstream.compose.models.sheets.NoteType
 import com.blockstream.data.AddressInputType
@@ -388,6 +389,19 @@ sealed class NavigateDestinations : NavigateDestination() {
         val address: String,
         val addressType: AddressInputType,
         val accountAsset: AccountAsset
+    ) : NavigateDestination()
+
+    @Serializable
+    data class CoinSelection(
+        val greenWallet: GreenWallet,
+        val accountAsset: AccountAsset,
+        val selectedUtxoIds: List<String> = emptyList()
+    ) : NavigateDestination()
+
+    @Serializable
+    data class CoinFilters(
+        val selectedFilter: CoinFilter,
+        val availableFilters: List<CoinFilter>
     ) : NavigateDestination()
 
     @Serializable

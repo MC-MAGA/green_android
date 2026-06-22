@@ -17,7 +17,6 @@ import com.blockstream.compose.navigation.NavAction
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffects
-import com.blockstream.compose.utils.StringHolder
 import com.blockstream.compose.utils.getStringFromId
 import com.blockstream.data.AddressInputType
 import com.blockstream.data.TransactionSegmentation
@@ -26,7 +25,6 @@ import com.blockstream.data.banner.Banner
 import com.blockstream.data.data.DenominatedValue
 import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.GreenWallet
-import com.blockstream.data.data.SupportData
 import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.isBlank
 import com.blockstream.data.extensions.isNotBlank
@@ -50,8 +48,6 @@ import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
-import kotlinx.coroutines.IO
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -79,6 +75,8 @@ abstract class SendViewModelAbstract(greenWallet: GreenWallet, accountAsset: Acc
         return countly.sessionSegmentation(session = session)
     }
 
+    abstract val selectedUtxosCount: StateFlow<Int>
+
     abstract val address: String
 
     abstract val errorAmount: StateFlow<String?>
@@ -91,6 +89,8 @@ abstract class SendViewModelAbstract(greenWallet: GreenWallet, accountAsset: Acc
 
     abstract val amountHint: StateFlow<String?>
 
+    abstract val availableBalance: StateFlow<String?>
+
     abstract val showAmount: StateFlow<Boolean>
 
     abstract val isAmountLocked: StateFlow<Boolean>
@@ -98,6 +98,8 @@ abstract class SendViewModelAbstract(greenWallet: GreenWallet, accountAsset: Acc
     abstract val isSendAll: MutableStateFlow<Boolean>
 
     abstract val supportsSendAll: Boolean
+
+    abstract val canSelectCoins: StateFlow<Boolean>
 
     abstract val showDenominationSelector: StateFlow<Boolean>
 
@@ -122,10 +124,21 @@ class SendViewModel(
 
     override val supportsSendAll: Boolean = !accountAsset.account.isLightning
 
+    override val canSelectCoins: StateFlow<Boolean> = accountAssetBalance.map { accountAssetBalance ->
+        accountAssetBalance?.let {
+            !it.account.isLightning && it.assetId == it.account.network.policyAsset
+        } == true
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
+
     private val _showDenominationSelector: MutableStateFlow<Boolean> = MutableStateFlow(accountAsset.assetId.isPolicyAsset(session))
     override val showDenominationSelector: StateFlow<Boolean> = _showDenominationSelector.asStateFlow()
 
     override val isSendAll: MutableStateFlow<Boolean> = MutableStateFlow(false)
+
+    private val coinSelection: MutableStateFlow<CoinSelectionResult?> = MutableStateFlow(null)
+    override val selectedUtxosCount: StateFlow<Int> = coinSelection.map {
+        it?.selectedUtxoIds?.size ?: 0
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), 0)
 
     private val _errorAmount: MutableStateFlow<String?> = MutableStateFlow(null)
     override val errorAmount: StateFlow<String?> = _errorAmount.asStateFlow()
@@ -160,6 +173,10 @@ class SendViewModel(
     private val _amountHint: MutableStateFlow<String?> = MutableStateFlow(null)
     override val amountHint: StateFlow<String?> = _amountHint.asStateFlow()
 
+    override val availableBalance: StateFlow<String?> = combine(accountAssetBalance, coinSelection) { accountAssetBalance, coinSelection ->
+        coinSelection?.selectedAmount ?: accountAssetBalance?.balance
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
+
     private val _isAmountLocked: MutableStateFlow<Boolean> = MutableStateFlow(false)
     override val isAmountLocked: StateFlow<Boolean> = _isAmountLocked.asStateFlow()
 
@@ -184,6 +201,8 @@ class SendViewModel(
     class LocalEvents {
         object ToggleIsSendAll : Event
         object Note : Event
+        object OpenCoinSelection : Event
+        data class SetSelectedUtxos(val result: CoinSelectionResult) : Event
     }
 
     private var addressNetwork: MutableStateFlow<Network?> = MutableStateFlow(null)
@@ -251,6 +270,7 @@ class SendViewModel(
                 _feeEstimation,
                 amount,
                 isSendAll,
+                coinSelection,
                 _feePriorityPrimitive,
                 _paymentInstruction,
                 merge(
@@ -338,6 +358,14 @@ class SendViewModel(
                     )
                 )
             }
+
+            is LocalEvents.OpenCoinSelection -> {
+                openCoinSelection()
+            }
+
+            is LocalEvents.SetSelectedUtxos -> {
+                setSelectedUtxos(event.result)
+            }
         }
     }
 
@@ -352,6 +380,7 @@ class SendViewModel(
             isSendAll = isSendAll.value,
             feeRate = getFeeRate(),
             paymentInstruction = _paymentInstruction.value,
+            selectedUtxos = coinSelection.value?.gdkPayloadUtxos?.takeIf { it.isNotEmpty() },
         )
     }
 
@@ -548,6 +577,24 @@ class SendViewModel(
     private fun isLiquidToLightningSwap(accountAsset: AccountAsset): Boolean =
         addressNetwork.value?.isLightning == true && accountAsset.account.network.isLiquid
 
+    private fun openCoinSelection() {
+        accountAsset.value?.also {
+            postSideEffect(
+                SideEffects.NavigateTo(
+                    NavigateDestinations.CoinSelection(
+                        greenWallet = greenWallet,
+                        accountAsset = it,
+                        selectedUtxoIds = coinSelection.value?.selectedUtxoIds.orEmpty()
+                    )
+                )
+            )
+        }
+    }
+
+    private fun setSelectedUtxos(result: CoinSelectionResult) {
+        coinSelection.value = result.takeIf { it.gdkPayloadUtxos.isNotEmpty() }
+    }
+
     companion object : Loggable() {
         val DustLimit = 546
 
@@ -567,16 +614,19 @@ class SendViewModelPreview(greenWallet: GreenWallet, isLightning: Boolean = fals
     override val amount: MutableStateFlow<String> = MutableStateFlow("0.1")
     override val amountExchange: StateFlow<String> = MutableStateFlow("0.1 USD")
     override val amountHint: StateFlow<String?> = MutableStateFlow(null)
+    override val availableBalance: StateFlow<String?> = MutableStateFlow("1 BTC")
     override val showAmount: StateFlow<Boolean> = MutableStateFlow(true)
     override val isAmountLocked: StateFlow<Boolean> = MutableStateFlow(false)
     override val isSendAll: MutableStateFlow<Boolean> = MutableStateFlow(false)
     override val supportsSendAll: Boolean = true
+    override val canSelectCoins: StateFlow<Boolean> = MutableStateFlow(!isLightning)
     override val showDenominationSelector: StateFlow<Boolean> = MutableStateFlow(true)
     override val metadataDomain: StateFlow<String?> = MutableStateFlow("id_payment_requested_by_s|blockstream.com")
     override val metadataImage: StateFlow<ByteArray?> = MutableStateFlow(Base64.decode(base64Png))
     override val metadataDescription: StateFlow<String?> = MutableStateFlow("Metadata Description")
     override val description: StateFlow<String?> = MutableStateFlow(null)
     override val isNoteEditable: StateFlow<Boolean> = MutableStateFlow(true)
+    override val selectedUtxosCount: StateFlow<Int> = MutableStateFlow(0)
 
     init {
         _showFeeSelector.value = true

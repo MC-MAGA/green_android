@@ -29,13 +29,17 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blockstream_green.common.generated.resources.Res
+import blockstream_green.common.generated.resources.id_change
 import blockstream_green.common.generated.resources.id_account__asset
 import blockstream_green.common.generated.resources.id_comment
+import blockstream_green.common.generated.resources.id_d_coin_selected
+import blockstream_green.common.generated.resources.id_d_coins_selected
 import blockstream_green.common.generated.resources.id_description
 import blockstream_green.common.generated.resources.id_fee_rate
 import blockstream_green.common.generated.resources.id_lightning_account
 import blockstream_green.common.generated.resources.id_next
 import blockstream_green.common.generated.resources.id_recipient
+import blockstream_green.common.generated.resources.id_select_your_coins
 import blockstream_green.common.generated.resources.id_set_custom_fee_rate
 import blockstream_green.common.generated.resources.pencil_simple_line
 import com.blockstream.data.data.DenominatedValue
@@ -48,6 +52,7 @@ import com.blockstream.compose.components.GreenAccountAsset
 import com.blockstream.compose.components.GreenAmountField
 import com.blockstream.compose.components.GreenButton
 import com.blockstream.compose.components.GreenButtonSize
+import com.blockstream.compose.components.GreenButtonType
 import com.blockstream.compose.components.GreenColumn
 import com.blockstream.compose.components.GreenDataLayout
 import com.blockstream.compose.components.GreenNetworkFee
@@ -55,6 +60,7 @@ import com.blockstream.compose.components.GreenTextField
 import com.blockstream.compose.components.OnProgressStyle
 import com.blockstream.compose.dialogs.TextDialog
 import com.blockstream.compose.events.Events
+import com.blockstream.compose.models.send.CoinSelectionResult
 import com.blockstream.compose.models.send.CreateTransactionViewModelAbstract
 import com.blockstream.compose.models.send.SendViewModel
 import com.blockstream.compose.models.send.SendViewModelAbstract
@@ -92,6 +98,10 @@ fun SendScreen(
         viewModel.note.value = it
     }
 
+    NavigateDestinations.CoinSelection.getResult<CoinSelectionResult> {
+        viewModel.postEvent(SendViewModel.LocalEvents.SetSelectedUtxos(it))
+    }
+
     var customFeeDialog by remember { mutableStateOf<String?>(null) }
 
     val decimalSymbol = remember { DecimalFormat.DecimalSeparator }
@@ -121,6 +131,7 @@ fun SendScreen(
     }
 
     val accountAssetBalance by viewModel.accountAssetBalance.collectAsStateWithLifecycle()
+    val canSelectCoins by viewModel.canSelectCoins.collectAsStateWithLifecycle()
     val onProgressSending by viewModel.onProgressSending.collectAsStateWithLifecycle()
 
     SetupScreen(
@@ -139,6 +150,8 @@ fun SendScreen(
                 .padding(horizontal = 16.dp)
                 .padding(top = 8.dp, bottom = 16.dp)
         ) {
+            val selectedUtxosCount by viewModel.selectedUtxosCount.collectAsStateWithLifecycle()
+
             GreenColumn(
                 padding = 0,
                 modifier = Modifier
@@ -170,6 +183,7 @@ fun SendScreen(
                 val showAmount by viewModel.showAmount.collectAsStateWithLifecycle()
                 val denomination by viewModel.denomination.collectAsStateWithLifecycle()
                 val errorAmount by viewModel.errorAmount.collectAsStateWithLifecycle()
+                val availableBalance by viewModel.availableBalance.collectAsStateWithLifecycle()
                 val isAmountLocked by viewModel.isAmountLocked.collectAsStateWithLifecycle()
                 val isSendAll by viewModel.isSendAll.collectAsStateWithLifecycle()
                 val supportsSendAll = viewModel.supportsSendAll
@@ -190,7 +204,7 @@ fun SendScreen(
                         denomination = denomination,
                         sendAll = isSendAll,
                         supportsSendAll = supportsSendAll,
-                        availableBalance = accountAssetBalance?.balance,
+                        availableBalance = availableBalance,
                         isMaxPayable = accountAssetBalance?.account?.isLightning == true,
                         onSendAllClick = {
                             viewModel.postEvent(SendViewModel.LocalEvents.ToggleIsSendAll)
@@ -302,6 +316,49 @@ fun SendScreen(
                             .padding(vertical = 8.dp),
                     ) {
                         Text(text = it)
+                    }
+                }
+            }
+
+            AnimatedVisibility(visible = canSelectCoins) {
+                if (selectedUtxosCount > 0) {
+                    val selectedCoinsText = stringResource(
+                        if (selectedUtxosCount == 1) Res.string.id_d_coin_selected else Res.string.id_d_coins_selected,
+                        selectedUtxosCount
+                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = selectedCoinsText,
+                            style = bodyMedium,
+                            color = whiteLow,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        GreenButton(
+                            text = stringResource(Res.string.id_change),
+                            type = GreenButtonType.TEXT,
+                            size = GreenButtonSize.SMALL,
+                        ) {
+                            viewModel.postEvent(SendViewModel.LocalEvents.OpenCoinSelection)
+                        }
+                    }
+                } else {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        GreenButton(
+                            text = stringResource(Res.string.id_select_your_coins),
+                            type = GreenButtonType.TEXT,
+                            size = GreenButtonSize.SMALL
+                        ) {
+                            viewModel.postEvent(SendViewModel.LocalEvents.OpenCoinSelection)
+                        }
                     }
                 }
             }

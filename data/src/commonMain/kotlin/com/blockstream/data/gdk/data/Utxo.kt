@@ -15,6 +15,10 @@ data class Utxo(
     val blockHeight: Long? = null,
     @SerialName("expiry_height")
     val expiryHeight: Long? = null,
+    @SerialName("user_status")
+    val userStatus: Int? = null,
+    @SerialName("is_blinded")
+    val isBlinded: Boolean? = null,
     @SerialName("satoshi")
     val satoshi: Long,
     @SerialName("txhash")
@@ -24,3 +28,5 @@ data class Utxo(
 ) : GreenJson<Utxo>() {
     override fun kSerializer() = serializer()
 }
+
+fun Utxo.shortOutpoint(): String = "${txHash.take(8)}...${txHash.takeLast(8)}:$index"
