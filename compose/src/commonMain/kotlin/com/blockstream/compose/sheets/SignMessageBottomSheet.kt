@@ -1,11 +1,16 @@
 package com.blockstream.compose.sheets
 
-import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
@@ -48,6 +53,7 @@ fun SignMessageBottomSheet(
         subtitle = viewModel.address,
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         viewModel = viewModel,
+        withBottomPadding = false,
         onDismissRequest = onDismissRequest
     ) {
 
@@ -55,37 +61,52 @@ fun SignMessageBottomSheet(
         val signature by viewModel.signature.collectAsStateWithLifecycle()
         val buttonEnabled by viewModel.buttonEnabled.collectAsStateWithLifecycle()
 
-        Column(modifier = Modifier.offset(y = -32.dp)) {
-            AnimatedVisibility(visible = signature != null) {
-                GreenColumn(padding = 0) {
-                    Box {
-                        Rive(RiveAnimation.CHECKMARK)
+        Column(modifier = Modifier.offset(y = (-32).dp)) {
 
-                        Text(
-                            stringResource(Res.string.id_heres_the_proof_of_ownership_of),
-                            style = titleSmall,
-                            textAlign = TextAlign.Center,
+            Crossfade(
+                targetState = signature,
+                animationSpec = tween(),
+                label = "SignMessageContent"
+            ) { currentSignature ->
+                if (currentSignature != null) {
+                    GreenColumn(
+                        padding = 0,
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.verticalScroll(rememberScrollState())
+                    ) {
+                        Box(
+                            contentAlignment = Alignment.Center,
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .align(Alignment.BottomEnd)
-                                .padding(top = 8.dp)
-                                .padding(horizontal = 32.dp)
-                        )
-                    }
+                                .height(300.dp)
+                        ) {
+                            Rive(RiveAnimation.CHECKMARK)
 
-                    GreenColumn(padding = 0) {
-                        DataListItem(
-                            title = StringHolder.create(Res.string.id_message),
-                            data = StringHolder.create(message),
-                            withDataLayout = true
-                        )
+                            Text(
+                                stringResource(Res.string.id_heres_the_proof_of_ownership_of),
+                                style = titleSmall,
+                                textAlign = TextAlign.Center,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .align(Alignment.BottomEnd)
+                                    .padding(top = 8.dp)
+                                    .padding(horizontal = 32.dp)
+                            )
+                        }
 
-                        DataListItem(
-                            title = StringHolder.create(Res.string.id_signature),
-                            data = StringHolder.create(signature ?: ""),
-                            withDataLayout = true
-                        )
-                    }
+                        GreenColumn(padding = 0) {
+                            DataListItem(
+                                title = StringHolder.create(Res.string.id_message),
+                                data = StringHolder.create(message),
+                                withDataLayout = true
+                            )
+
+                            DataListItem(
+                                title = StringHolder.create(Res.string.id_signature),
+                                data = StringHolder.create(currentSignature),
+                                withDataLayout = true
+                            )
+                        }
 // Sync with iOS to enable this feature
 //                    GreenButton(
 //                        text = stringResource(R.string.id_try_again),
@@ -95,26 +116,31 @@ fun SignMessageBottomSheet(
 //                    ) {
 //                        viewModel.postEvent(SignMessageViewModel.LocalEvents.TryAgain)
 //                    }
-                }
-            }
-
-            AnimatedVisibility(visible = signature == null) {
-                GreenColumn(padding = 0, modifier = Modifier.padding(top = 40.dp)) {
-                    GreenTextField(
-                        title = stringResource(Res.string.id_message),
-                        value = message,
-                        onValueChange = viewModel.message.onValueChange(),
-                        singleLine = false,
-                        minLines = 5,
-                        placeholder = stringResource(Res.string.id_paste_here_the_message_to_be)
-                    )
-
-                    GreenButton(
-                        text = stringResource(Res.string.id_sign_message),
-                        modifier = Modifier.fillMaxWidth(),
-                        enabled = buttonEnabled
+                    }
+                } else {
+                    GreenColumn(
+                        padding = 0,
+                        modifier = Modifier
+                            .padding(top = 40.dp)
                     ) {
-                        viewModel.postEvent(Events.Continue)
+                        GreenTextField(
+                            title = stringResource(Res.string.id_message),
+                            value = message,
+                            onValueChange = viewModel.message.onValueChange(),
+                            singleLine = false,
+                            minLines = 5,
+                            placeholder = stringResource(Res.string.id_paste_here_the_message_to_be)
+                        )
+
+                        GreenButton(
+                            text = stringResource(Res.string.id_sign_message),
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 16.dp),
+                            enabled = buttonEnabled
+                        ) {
+                            viewModel.postEvent(Events.Continue)
+                        }
                     }
                 }
             }
