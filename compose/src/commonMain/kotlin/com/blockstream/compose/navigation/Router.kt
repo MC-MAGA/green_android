@@ -558,6 +558,7 @@ fun Router(
                     CoinSelectionViewModel(
                         greenWallet = args.greenWallet,
                         selectedAccountAsset = args.accountAsset,
+                        displayDenomination = args.denomination,
                         selectedUtxoIds = args.selectedUtxoIds
                     )
                 })

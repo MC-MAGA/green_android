@@ -395,6 +395,7 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class CoinSelection(
         val greenWallet: GreenWallet,
         val accountAsset: AccountAsset,
+        val denomination: com.blockstream.data.data.Denomination? = null,
         val selectedUtxoIds: List<String> = emptyList()
     ) : NavigateDestination()
 

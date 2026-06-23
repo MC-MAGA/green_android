@@ -173,8 +173,14 @@ class SendViewModel(
     private val _amountHint: MutableStateFlow<String?> = MutableStateFlow(null)
     override val amountHint: StateFlow<String?> = _amountHint.asStateFlow()
 
-    override val availableBalance: StateFlow<String?> = combine(accountAssetBalance, coinSelection) { accountAssetBalance, coinSelection ->
-        coinSelection?.selectedAmount ?: accountAssetBalance?.balance
+    override val availableBalance: StateFlow<String?> = combine(accountAssetBalance, coinSelection, denomination) { accountAssetBalance, coinSelection, denomination ->
+        coinSelection?.selectedAmountSatoshi?.toAmountLook(
+            session = session,
+            assetId = accountAsset.assetId,
+            denomination = denomination,
+            withUnit = true,
+            withGrouping = true
+        ) ?: accountAssetBalance?.balance
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), null)
 
     private val _isAmountLocked: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -584,6 +590,7 @@ class SendViewModel(
                     NavigateDestinations.CoinSelection(
                         greenWallet = greenWallet,
                         accountAsset = it,
+                        denomination = denomination.value,
                         selectedUtxoIds = coinSelection.value?.selectedUtxoIds.orEmpty()
                     )
                 )

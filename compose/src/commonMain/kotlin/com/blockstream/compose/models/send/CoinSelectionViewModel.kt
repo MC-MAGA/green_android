@@ -15,6 +15,7 @@ import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.navigation.setResult
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountType
@@ -44,6 +45,7 @@ enum class CoinFilter {
 data class CoinSelectionListItem(
     val id: String,
     val amount: String,
+    val amountFiat: String? = null,
     val satoshi: Long,
     val outpoint: String,
     val addressType: String,
@@ -56,12 +58,13 @@ data class CoinSelectionListItem(
 data class CoinSelectionSummary(
     val count: Int = 0,
     val amount: String? = null,
+    val amountFiat: String? = null,
     val canConfirm: Boolean = false
 )
 
 data class CoinSelectionResult(
     val selectedUtxoIds: List<String>,
-    val selectedAmount: String?,
+    val selectedAmountSatoshi: Long? = null,
     val gdkPayloadUtxos: Map<String, List<JsonElement>>
 )
 
@@ -93,6 +96,7 @@ abstract class CoinSelectionViewModelAbstract(
 class CoinSelectionViewModel(
     greenWallet: GreenWallet,
     private val selectedAccountAsset: AccountAsset,
+    private val displayDenomination: Denomination? = null,
     private val selectedUtxoIds: List<String> = emptyList()
 ) : CoinSelectionViewModelAbstract(greenWallet = greenWallet, accountAsset = selectedAccountAsset) {
     private val sendUseCase: SendUseCase by inject()
@@ -162,9 +166,17 @@ class CoinSelectionViewModel(
                         amount = coin.utxo.satoshi.toAmountLook(
                             session = session,
                             assetId = coin.assetId,
+                            denomination = displayDenomination,
                             withUnit = true,
                             withGrouping = true
                         ) ?: "${coin.utxo.satoshi}",
+                        amountFiat = coin.utxo.satoshi.toAmountLook(
+                            session = session,
+                            assetId = coin.assetId,
+                            denomination = Denomination.fiat(session),
+                            withUnit = true,
+                            withGrouping = true
+                        )?.let { "≈ $it" },
                         satoshi = coin.utxo.satoshi,
                         outpoint = coin.utxo.shortOutpoint(),
                         addressType = coin.utxo.addressType,
@@ -225,19 +237,15 @@ class CoinSelectionViewModel(
         }
     }
 
-    private suspend fun confirmSelection() {
+    private fun confirmSelection() {
         val selectedIds = allCoins.filter { it.isSelected }.map { it.id }.toSet()
         val selectedUtxos = spendableUtxos.filter { it.id in selectedIds }
+        val selectedAmountSatoshi = selectedUtxos.takeIf { it.isNotEmpty() }?.sumOf { it.utxo.satoshi }
 
         NavigateDestinations.CoinSelection.setResult(
             CoinSelectionResult(
                 selectedUtxoIds = selectedIds.toList(),
-                selectedAmount = selectedUtxos.takeIf { it.isNotEmpty() }?.sumOf { it.utxo.satoshi }.toAmountLook(
-                    session = session,
-                    assetId = selectedAccountAsset.assetId,
-                    withUnit = true,
-                    withGrouping = true
-                ),
+                selectedAmountSatoshi = selectedAmountSatoshi,
                 gdkPayloadUtxos = selectedUtxos
                     .groupBy { it.assetId }
                     .mapValues { (_, coins) -> coins.map { it.rawUtxo } }
@@ -278,14 +286,23 @@ class CoinSelectionViewModel(
 
     private suspend fun updateSummary(coins: List<CoinSelectionListItem>) {
         val selected = coins.filter { it.isSelected }
+        val selectedAmountSatoshi = selected.sumOf { it.satoshi }
         _summary.value = CoinSelectionSummary(
             count = selected.size,
-            amount = selected.sumOf { it.satoshi }.toAmountLook(
+            amount = selectedAmountSatoshi.toAmountLook(
                 session = session,
                 assetId = selectedAccountAsset.assetId,
+                denomination = displayDenomination,
                 withUnit = true,
                 withGrouping = true
             ),
+            amountFiat = selectedAmountSatoshi.toAmountLook(
+                session = session,
+                assetId = selectedAccountAsset.assetId,
+                denomination = Denomination.fiat(session),
+                withUnit = true,
+                withGrouping = true
+            )?.let { "≈ $it" },
             canConfirm = selected.isNotEmpty() || selectedUtxoIds.isNotEmpty()
         )
     }
@@ -306,6 +323,7 @@ class CoinSelectionViewModelPreview(
             CoinSelectionListItem(
                 id = "coin-1",
                 amount = "0.015 BTC",
+                amountFiat = "≈ 1,500.00 USD",
                 satoshi = 1_500_000,
                 outpoint = "3a5f1e2b...9c8d7a6f:0",
                 addressType = "p2wsh",
@@ -317,6 +335,7 @@ class CoinSelectionViewModelPreview(
             CoinSelectionListItem(
                 id = "coin-2",
                 amount = "0.004 BTC",
+                amountFiat = "≈ 400.00 USD",
                 satoshi = 400_000,
                 outpoint = "0f4b12aa...77c390de:1",
                 addressType = "csv",
@@ -331,6 +350,7 @@ class CoinSelectionViewModelPreview(
         CoinSelectionSummary(
             count = 1,
             amount = "0.015 BTC",
+            amountFiat = "≈ 1,500.00 USD",
             canConfirm = true
         )
     )

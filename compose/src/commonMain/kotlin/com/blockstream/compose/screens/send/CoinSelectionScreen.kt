@@ -34,6 +34,7 @@ import com.blockstream.compose.models.send.CoinSelectionViewModelPreview
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.navigation.getResult
 import com.blockstream.compose.theme.bodyMedium
+import com.blockstream.compose.theme.bodySmall
 import com.blockstream.compose.theme.green
 import com.blockstream.compose.theme.titleSmall
 import com.blockstream.compose.theme.whiteHigh
@@ -104,11 +105,23 @@ fun CoinSelectionScreen(
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = coin.amount,
-                                        style = titleSmall,
-                                        color = whiteHigh
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = coin.amount,
+                                            style = titleSmall,
+                                            color = whiteHigh
+                                        )
+                                        coin.amountFiat?.also {
+                                            Text(
+                                                text = it,
+                                                style = bodySmall,
+                                                color = whiteMedium
+                                            )
+                                        }
+                                    }
                                     Text(
                                         text = coin.outpoint,
                                         style = bodyMedium,
@@ -150,12 +163,23 @@ fun CoinSelectionScreen(
                 )
 
                 summary.amount?.takeIf { summary.count > 0 }?.also {
-                    Text(
-                        text = it,
-                        style = titleSmall,
-                        color = whiteHigh,
+                    Column(
+                        horizontalAlignment = Alignment.End,
                         modifier = Modifier.padding(start = 16.dp)
-                    )
+                    ) {
+                        Text(
+                            text = it,
+                            style = titleSmall,
+                            color = whiteHigh
+                        )
+                        summary.amountFiat?.also { amountFiat ->
+                            Text(
+                                text = amountFiat,
+                                style = bodyMedium,
+                                color = whiteMedium
+                            )
+                        }
+                    }
                 }
             }
 
