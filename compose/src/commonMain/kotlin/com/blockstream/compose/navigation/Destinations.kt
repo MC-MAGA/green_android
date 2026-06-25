@@ -229,12 +229,14 @@ sealed class NavigateDestinations : NavigateDestination() {
                                 viewModel.session.liquid?.policyAsset
                             ),
                         ) + (viewModel.session.networkAssetManager.countlyAssetsFlow.value.takeIf { viewModel.session.liquid != null }
-                            ?.filter { !it.isAmp || viewModel.session.hasAmpAccount }?.map {
+                            ?.filter { (!it.isAmp || viewModel.session.hasAmpAccount) || (!it.isAmpLegacy || viewModel.session.hasAmpLegacyAccount)}?.map {
                                 EnrichedAsset.create(session = viewModel.session, assetId = it.assetId)
                             } ?: listOf()) + listOfNotNull(
-                            EnrichedAsset.createAnyAsset(session = viewModel.session, isAmp = false)
-                                .takeIf { viewModel.session.hasAmpAccount },
+                            EnrichedAsset.createAnyAsset(session = viewModel.session)
+                                .takeIf { viewModel.session.hasAmpAccount || viewModel.session.hasAmpLegacyAccount },
                             EnrichedAsset.createAnyAsset(session = viewModel.session, isAmp = true)
+                                .takeIf { !viewModel.session.isHwWatchOnly },
+                            EnrichedAsset.createAnyAsset(session = viewModel.session, isAmpLegacy = true)
                                 .takeIf { !viewModel.session.isHwWatchOnly }
                         ).sortedWith(ComparatorEnrichedAssets(viewModel.session))).let { list ->
                             list.map {
@@ -559,7 +561,7 @@ sealed class NavigateDestinations : NavigateDestination() {
     data object JadeGuide : NavigateDestination()
 
     @Serializable
-    data class Note(val greenWallet: GreenWallet, val note: String, val noteType: NoteType) : NavigateDestination()
+    data class Note constructor(val greenWallet: GreenWallet, val note: String, val noteType: NoteType) : NavigateDestination()
 
     @Serializable
     data class Promo(val promo: com.blockstream.data.data.Promo, val greenWalletOrNull: GreenWallet? = null) : NavigateDestination()

@@ -34,6 +34,7 @@ import blockstream_green.common.generated.resources.id_hide_advanced_options
 import blockstream_green.common.generated.resources.id_show_advanced_options
 import blockstream_green.common.generated.resources.id_there_is_already_an_archived
 import blockstream_green.common.generated.resources.id_you_cannot_add_more_than_one
+import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.LocalDialog
 import com.blockstream.compose.components.CaretRight
 import com.blockstream.compose.components.GreenAsset
@@ -47,12 +48,14 @@ import com.blockstream.compose.extensions.drawDiagonalLabel
 import com.blockstream.compose.looks.AccountTypeLook
 import com.blockstream.compose.models.add.ChooseAccountTypeViewModel
 import com.blockstream.compose.models.add.ChooseAccountTypeViewModelAbstract
+import com.blockstream.compose.models.add.ChooseAccountTypeViewModelPreview
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.navigation.getResult
 import com.blockstream.compose.navigation.setResult
 import com.blockstream.compose.screens.jade.JadeQRResult
 import com.blockstream.compose.sideeffects.OpenDialogData
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.compose.theme.GreenChromePreview
 import com.blockstream.compose.theme.bodyMedium
 import com.blockstream.compose.theme.labelLarge
 import com.blockstream.compose.theme.labelMedium
@@ -66,11 +69,13 @@ import com.blockstream.compose.utils.StringHolder
 import com.blockstream.compose.utils.ifTrue
 import com.blockstream.compose.utils.roundBackground
 import com.blockstream.data.extensions.toggle
+import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.AssetBalance
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun ChooseAccountTypeScreen(
@@ -270,5 +275,40 @@ fun AccountType(accountType: AccountTypeLook, onClick: () -> Unit = {}) {
                 }
             }
         }
+    }
+}
+
+@Composable
+@Preview
+fun AccountTypePreview() {
+    GreenChromePreview {
+        GreenColumn {
+            AccountType(
+                AccountTypeLook(
+                    accountType = AccountType.BIP44_LEGACY,
+                    canBeAdded = true
+                )
+            )
+            AccountType(
+                AccountTypeLook(
+                    accountType = AccountType.LIGHTNING,
+                    canBeAdded = true
+                )
+            )
+            AccountType(
+                AccountTypeLook(
+                    accountType = AccountType.LIGHTNING,
+                    canBeAdded = false
+                )
+            )
+        }
+    }
+}
+
+@Composable
+@Preview
+fun ChooseAccountTypeScreenPreview() {
+    GreenPreview {
+        ChooseAccountTypeScreen(viewModel = ChooseAccountTypeViewModelPreview.preview())
     }
 }

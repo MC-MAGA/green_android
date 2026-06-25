@@ -1,6 +1,5 @@
 package com.blockstream.data.extensions
 
-import co.touchlab.kermit.Logger
 import com.blockstream.data.BTC_POLICY_ASSET
 import com.blockstream.data.LN_BTC_POLICY_ASSET
 import com.blockstream.data.backend.NetworkBackend
@@ -14,9 +13,7 @@ import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Network
-import com.blockstream.data.gdk.data.Networks
 import com.blockstream.data.gdk.data.Transaction
-import com.blockstream.data.gdk.params.TransactionParams
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.utils.getBitcoinOrLiquidUnit
 import kotlinx.coroutines.CoroutineScope
@@ -71,7 +68,7 @@ fun ByteArray.reverseBytes(): ByteArray {
 
 fun AccountType?.title(): String = when (this) {
     AccountType.STANDARD -> "2FA Protected"
-    AccountType.AMP_ACCOUNT -> "AMP"
+    AccountType.AMP_LEGACY_ACCOUNT -> "AMP"
     AccountType.TWO_OF_THREE -> "2of3 with 2FA"
     AccountType.BIP44_LEGACY -> "Legacy"
     AccountType.BIP49_SEGWIT_WRAPPED -> "Legacy SegWit"
@@ -82,7 +79,7 @@ fun AccountType?.title(): String = when (this) {
 }
 
 suspend fun Account.needs2faActivation(session: GdkSession): Boolean {
-    if (isSinglesig || isAmp || session.isWatchOnlyValue) {
+    if (isSinglesig || isAmpLegacy || session.isWatchOnlyValue) {
         return false
     }
 
@@ -110,7 +107,8 @@ fun List<Account>.filterForAsset(assetId: String, session: GdkSession): List<Acc
     val enrichedAsset = session.networkAssetManager.getCountlyAsset(assetId)
     return filter { account ->
         when {
-            enrichedAsset?.isAmp == true -> account.type == AccountType.AMP_ACCOUNT
+            enrichedAsset?.isAmp == true -> account.type == AccountType.AMP2_ACCOUNT
+            enrichedAsset?.isAmpLegacy == true -> account.type == AccountType.AMP_LEGACY_ACCOUNT
             assetId.isPolicyAsset(session) -> account.network.policyAsset == assetId
             else -> account.isLiquid
         }

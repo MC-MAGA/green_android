@@ -5,6 +5,7 @@ import com.blockstream.data.config.AppInfo
 import com.blockstream.data.data.AppConfig
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.data.LogoutReason
+import com.blockstream.data.database.Database
 import com.blockstream.data.devices.GreenDevice
 import com.blockstream.data.extensions.logException
 import com.blockstream.data.gdk.GASession
@@ -49,6 +50,7 @@ class SessionManager constructor(
     private val assetManager: AssetManager,
     private val walletSettingsManager: WalletSettingsManager,
     private var countly: CountlyBase,
+    private val database: Database,
     private val gdk: Gdk,
     private val wally: Wally
 ) {
@@ -308,6 +310,7 @@ class SessionManager constructor(
             settingsManager = settingsManager,
             assetManager = assetManager,
             walletSettingsManager = walletSettingsManager,
+            database = database,
             gdk = gdk,
             wally = wally,
             countly = countly

@@ -30,6 +30,7 @@ import com.blockstream.data.extensions.assetTickerOrNull
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.extensions.isPolicyAsset
 import com.blockstream.data.gdk.data.AccountAsset
+import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Transaction
 import com.blockstream.data.gdk.data.isMeldPending
 import com.blockstream.data.gdk.params.TransactionParams
@@ -144,7 +145,7 @@ class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
     private val _note: MutableStateFlow<String?> = MutableStateFlow(null)
     override val note: StateFlow<String?> = _note
 
-    private val _canEditNote: MutableStateFlow<Boolean> = MutableStateFlow(!account.isLightning && sessionOrNull?.isWatchOnlyValue == false)
+    private val _canEditNote: MutableStateFlow<Boolean> = MutableStateFlow(false)
     override val canEditNote: StateFlow<Boolean> = _canEditNote
 
     private val _hasMoreDetails: MutableStateFlow<Boolean> = MutableStateFlow(false)
@@ -340,7 +341,7 @@ class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
         
         _canReplaceByFee.value = !isMeldTransaction && transaction.canRBF && !transaction.isIn && session.canSendTransaction
         
-        _canEditNote.value = !isMeldTransaction && !account.isLightning && sessionOrNull?.isWatchOnlyValue == false
+        _canEditNote.value = !isMeldTransaction && !account.isLightning && account.type != AccountType.AMP2_ACCOUNT && sessionOrNull?.isWatchOnlyValue == false
 
         _note.value = transaction.memo.takeIf { it.isNotBlank() }
 

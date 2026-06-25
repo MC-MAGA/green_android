@@ -22,7 +22,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filter
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
@@ -46,11 +48,11 @@ class AssetAccountListViewModel(
         class AccountClick(val accountAssetBalance: AccountAssetBalance) : Event
     }
 
-    private val _accounts = MutableStateFlow<List<AccountAssetBalance>>(emptyList())
-    override val accounts: StateFlow<List<AccountAssetBalance>> = _accounts
+    final override val accounts : StateFlow<List<AccountAssetBalance>>
+        field = MutableStateFlow<List<AccountAssetBalance>>(emptyList())
 
-    private val _isLoading = MutableStateFlow(true)
-    override val isLoading: StateFlow<Boolean> = _isLoading
+    final override val isLoading : StateFlow<Boolean>
+        field = MutableStateFlow(true)
 
     private val _asset = MutableStateFlow<EnrichedAsset?>(null)
     override val asset: StateFlow<EnrichedAsset?> = _asset
@@ -70,37 +72,25 @@ class AssetAccountListViewModel(
                 title = asset.name(session),
             )
         }
-        viewModelScope.launch {
-            val accountBalances = session.accounts.value.filterForAsset(assetId, session).map { account ->
-                AccountAssetBalance.create(
-                    accountAsset = AccountAsset.fromAccountAsset(
-                        account = account, assetId = assetId, session = session
-                    ), session = session
-                )
-            }
 
-            _accounts.value = accountBalances
-            _isLoading.value = false
-
-            updateTotalBalance(accountBalances)
-
-
-            session.ifConnected {
-                combine(
-                    session.accounts, session.accountsAndBalanceUpdated, hideAmounts
-                ) { accounts, _, _ ->
-                    accounts.filterForAsset(assetId, session).map { account ->
-                        AccountAssetBalance.create(
-                            accountAsset = AccountAsset.fromAccountAsset(
-                                account = account, assetId = assetId, session = session
-                            ), session = session
-                        )
-                    }
-                }.onEach { accountsList ->
-                    _accounts.value = accountsList
-                    updateTotalBalance(accountsList)
-                }.launchIn(viewModelScope)
-            }
+        session.ifConnected {
+            combine(
+                session.accounts,
+                merge(flowOf(Unit), session.accountsAndBalanceUpdated), // set initial value
+                hideAmounts
+            ) { accounts, _, _ ->
+                accounts.filterForAsset(assetId, session).map { account ->
+                    AccountAssetBalance.create(
+                        accountAsset = AccountAsset.fromAccountAsset(
+                            account = account, assetId = assetId, session = session
+                        ), session = session
+                    )
+                }
+            }.onEach { accountsList ->
+                accounts.value = accountsList
+                updateTotalBalance(accountsList)
+                isLoading.value = false
+            }.launchIn(viewModelScope)
         }
 
         bootstrap()

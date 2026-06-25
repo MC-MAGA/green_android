@@ -2,6 +2,7 @@ package com.blockstream.data.backend.gdk
 
 import co.touchlab.stately.collections.ConcurrentMutableMap
 import com.blockstream.data.BTC_POLICY_ASSET
+import com.blockstream.data.backend.AbstractNetworkBackend
 import com.blockstream.data.backend.AccountBackend
 import com.blockstream.data.backend.AmountConverter
 import com.blockstream.data.backend.NetworkBackend
@@ -74,30 +75,20 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.JsonElement
 
 open class GdkNetworkBackend constructor(
     val gdk: Gdk,
     val gdkHwWallet: GdkHardwareWallet?,
-    override val network: Network,
-    val networkAssetManager: NetworkAssetManager
-) : NetworkBackend, AssetsProvider, AmountConverter {
-
-    override var isConnected = false
-    override var isLoggedIn = false
+    network: Network,
+    networkAssetManager: NetworkAssetManager
+) : AbstractNetworkBackend(network = network, networkAssetManager = networkAssetManager), AssetsProvider, AmountConverter {
 
     private var isWatchOnly: Boolean = false
 
-    final override val networkEventsFlow: SharedFlow<com.blockstream.data.backend.NetworkEvent>
-        field = MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
-
-    final override val blockStateFlow: StateFlow<Block>
-        field = MutableStateFlow(Block())
-
-    final override val accounts: StateFlow<List<Account>>
-        field = MutableStateFlow<List<Account>>(emptyList())
 
     val settings: StateFlow<Settings?>
         field = MutableStateFlow<Settings?>(null)
@@ -126,23 +117,7 @@ open class GdkNetworkBackend constructor(
 
     val gaSession: GASession = gdk.createSession()
 
-    protected val accountBackends: ConcurrentMutableMap<String, AccountBackend> = ConcurrentMutableMap()
-
-    override fun accountBackend(account: Account): AccountBackend {
-        return accountBackends.computeIfAbsent(account.id) {
-            createAccountBackend(account)
-        }
-    }
-
-    override suspend fun isPolicyAsset(assetId: String?): Boolean {
-        return if (network.isLiquid) {
-            network.policyAsset == assetId
-        } else {
-            assetId == null || assetId == BTC_POLICY_ASSET
-        }
-    }
-
-    internal open fun createAccountBackend(account: Account): AccountBackend = GdkAccountBackend(
+    override fun createAccountBackend(account: Account): AccountBackend = GdkAccountBackend(
         networkBackend = this,
         gdk = gdk,
         gdkHwWallet = gdkHwWallet,
@@ -154,7 +129,10 @@ open class GdkNetworkBackend constructor(
         if (isConnected) return
 
         gdk.connect(gaSession, params)
-        isConnected = true
+
+        state.update {
+            it.copy(isConnected = true)
+        }
     }
 
     suspend fun encryptWithPin(
@@ -177,7 +155,7 @@ open class GdkNetworkBackend constructor(
         }
     }
 
-    suspend fun getSystemMessage(): String? =
+    open suspend fun getSystemMessage(): String? =
         gdk.getSystemMessage(session = gaSession).also { systemMessage.value = it?.takeIf { msg -> msg.isNotBlank() } }
 
     suspend fun getWatchOnlyUsername(): String? =
@@ -192,7 +170,7 @@ open class GdkNetworkBackend constructor(
             memo = memo
         )
 
-        networkEventsFlow.emit(
+        _networkEventsFlow.emit(
             com.blockstream.data.backend.NetworkEvent.Transaction(accountPointers = emptyList())
         )
     }
@@ -246,7 +224,9 @@ open class GdkNetworkBackend constructor(
             deviceParams = deviceParams,
             loginCredentialsParams = loginCredentialsParams
         ).result<LoginData>(hardwareWalletResolver = hardwareWalletResolver).also {
-            isLoggedIn = true
+            state.update {
+                it.copy(isLoggedIn = true)
+            }
 
             getAccounts()
         }
@@ -265,7 +245,7 @@ open class GdkNetworkBackend constructor(
     }
 
     // Deprecated
-    suspend fun register(
+    open suspend fun register(
         deviceParams: DeviceParams,
         loginCredentialsParams: LoginCredentialsParams,
         hardwareWalletResolver: HardwareWalletResolver?
@@ -301,7 +281,7 @@ open class GdkNetworkBackend constructor(
             )
         }.let { transformAccounts(it) }
 
-        this.accounts.value = accounts
+        _accounts.value = accounts
         return accounts
     }
 
@@ -311,14 +291,10 @@ open class GdkNetworkBackend constructor(
      */
     protected open suspend fun transformAccounts(accounts: List<Account>): List<Account> = accounts
 
-    protected fun updateBlock(block: Block) {
-        blockStateFlow.value = block
-    }
-
     override suspend fun createAccount(
         params: SubAccountParams,
         hardwareWalletResolver: HardwareWalletResolver?
-    ): Account  = gdkContext{
+    ): Account  = backendContext{
         gdk.createSubAccount(
             session = gaSession,
             params = params
@@ -335,28 +311,28 @@ open class GdkNetworkBackend constructor(
 
     suspend fun setCsvTime(
         value: CsvParams, twoFactorResolver: TwoFactorResolver
-    ) = gdkContext {
+    ) = backendContext {
         gdk.setCsvTime(
             session = gaSession,
             value = value
         ).resolve(twoFactorResolver = twoFactorResolver)
     }
 
-    suspend fun sendNlocktimes() = gdkContext {
+    suspend fun sendNlocktimes() = backendContext {
         gdk.sendNlocktimes(session = gaSession)
     }
 
-    suspend fun changeSettings(settings: Settings) = gdkContext { gdk.changeSettings(gaSession, settings).resolve() }
+    suspend fun changeSettings(settings: Settings) = backendContext { gdk.changeSettings(gaSession, settings).resolve() }
 
-    suspend fun ackSystemMessage(message: String) = gdkContext {
+    suspend fun ackSystemMessage(message: String) = backendContext {
         gdk.ackSystemMessage(gaSession, message).resolve().also { systemMessage.value = null }
     }
 
-    suspend fun decryptCredentialsWithPin(params: DecryptWithPinParams): Credentials = gdkContext {
+    suspend fun decryptCredentialsWithPin(params: DecryptWithPinParams): Credentials = backendContext {
         gdk.decryptWithPin(gaSession, params).result()
     }
 
-    suspend fun getUnspentOutputsForPrivateKey(params: UnspentOutputsPrivateKeyParams): UnspentOutputs = gdkContext {
+    suspend fun getUnspentOutputsForPrivateKey(params: UnspentOutputsPrivateKeyParams): UnspentOutputs = backendContext {
         gdk.getUnspentOutputsForPrivateKey(gaSession, params).result()
     }
 
@@ -378,10 +354,9 @@ open class GdkNetworkBackend constructor(
     suspend fun psbtFromJson(transaction: CreateTransaction): Psbt =
         gdk.psbtFromJson(gaSession, transaction = transaction.jsonElement!!).result()
 
+    open fun getSettings(): Settings = gdk.getSettings(gaSession).also { settings.value = it }
 
-    fun getSettings(): Settings = gdk.getSettings(gaSession).also { settings.value = it }
-
-    fun getTwoFactorConfig(): TwoFactorConfig = gdk.getTwoFactorConfig(gaSession).also {
+    open fun getTwoFactorConfig(): TwoFactorConfig = gdk.getTwoFactorConfig(gaSession).also {
         twoFactorConfig.value = it
         twoFactorReset.value = it.twoFactorReset
     }
@@ -408,15 +383,15 @@ open class GdkNetworkBackend constructor(
         }
     }
 
-    suspend fun getAvailableCurrencies(): List<Pricing> = gdkContext {
+    suspend fun getAvailableCurrencies(): List<Pricing> = backendContext {
         gdk.getAvailableCurrencies(gaSession)
     }
 
-    suspend fun getProxySettings(): ProxySettings = gdkContext { gdk.getProxySettings(gaSession) }
+    suspend fun getProxySettings(): ProxySettings = backendContext { gdk.getProxySettings(gaSession) }
 
-    suspend fun httpRequest(data: JsonElement): JsonElement = gdkContext { gdk.httpRequest(gaSession, data) }
+    suspend fun httpRequest(data: JsonElement): JsonElement = backendContext { gdk.httpRequest(gaSession, data) }
 
-    fun getFeeEstimates(): FeeEstimation = gdk.getFeeEstimates(gaSession).let { estimation ->
+    override suspend fun getFeeEstimates(): FeeEstimation = gdk.getFeeEstimates(gaSession).let { estimation ->
         // Temp fix: liquid singlesig can return zero fees
         if (network.isSinglesig && network.isLiquid) {
             FeeEstimation(estimation.fees.map { it.coerceAtLeast(100L) })
@@ -427,13 +402,13 @@ open class GdkNetworkBackend constructor(
         logger.d { "FeeEstimation: ${network.id} $it" }
     }
 
-    override suspend fun convertAmount(convert: JsonElement): JsonElement = gdkContext { gdk.convertAmount(gaSession, convert) }
+    override suspend fun convertAmount(convert: JsonElement): JsonElement = backendContext { gdk.convertAmount(gaSession, convert) }
 
     suspend fun changeSettingsTwoFactor(
         method: String,
         methodConfig: TwoFactorMethodConfig,
         twoFactorResolver: TwoFactorResolver
-    ) = gdkContext {
+    ) = backendContext {
         gdk.changeSettingsTwoFactor(gaSession, method, methodConfig)
             .resolve(twoFactorResolver = twoFactorResolver)
     }
@@ -476,9 +451,9 @@ open class GdkNetworkBackend constructor(
                     // SingleSig after connect immediately sends a block with height 0
                     // it's not safe to call getTransactions so early
                     if (it.height > 0) {
-                        blockStateFlow.value = it
+                        _blockStateFlow.value = it
 
-                        networkEventsFlow.emit(
+                        _networkEventsFlow.emit(
                             com.blockstream.data.backend.NetworkEvent.Block(height = it.height)
                         )
 
@@ -513,7 +488,7 @@ open class GdkNetworkBackend constructor(
 
             "subaccount" -> {
                 if(notification.subaccount?.isSynced == true){
-                    networkEventsFlow.emit(
+                    _networkEventsFlow.emit(
                         com.blockstream.data.backend.NetworkEvent.Synced(accountPointer = notification.subaccount.pointer)
                     )
                 }
@@ -521,7 +496,7 @@ open class GdkNetworkBackend constructor(
 
             "transaction" -> {
                 notification.transaction?.let { event ->
-                    networkEventsFlow.emit(
+                    _networkEventsFlow.emit(
                         com.blockstream.data.backend.NetworkEvent.Transaction(accountPointers = event.subaccounts)
                     )
                 }
@@ -570,23 +545,16 @@ open class GdkNetworkBackend constructor(
     }
 
     override suspend fun disconnect() {
+        val isConnected = isConnected
+        super.disconnect()
+
         if (isConnected) {
-
-            accounts.value = emptyList()
-            accountBackends.clear()
-
             logger.d { "Destroying GDK session ${network.id}" }
-
             gdk.destroySession(gaSession)
-
-            isConnected = false
-            isLoggedIn = false
-        } else {
-            logger.d { "Already disconnected ${network.id}" }
         }
     }
 
-    private suspend fun <T> gdkContext(block: suspend CoroutineScope.() -> T): T {
+    private suspend fun <T> backendContext(block: suspend CoroutineScope.() -> T): T {
         return withContext(context = Dispatchers.Default) {
             block()
         }

@@ -1,0 +1,18 @@
+import com.blockstream.data.gdk.data.AccountType;
+import kotlin.Boolean;
+
+CREATE TABLE IF NOT EXISTS `lwkAccounts` (
+    `fingerprint` TEXT NOT NULL,
+    `account_type` TEXT AS AccountType NOT NULL,
+    `index` INTEGER NOT NULL DEFAULT 0,
+
+    `name` TEXT NOT NULL,
+
+    `descriptor` TEXT NOT NULL,
+
+    `wid` TEXT DEFAULT NULL,
+
+    `hidden` INTEGER AS Boolean NOT NULL DEFAULT 0,
+
+     PRIMARY KEY(`fingerprint`, `account_type`, `index`)
+);

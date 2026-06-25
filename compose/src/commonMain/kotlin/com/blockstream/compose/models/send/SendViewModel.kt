@@ -456,18 +456,16 @@ class SendViewModel(
                         }
                     } else null
 
-                    if ((addressee.bip21Params?.hasAmount == true || addressee.isGreedy == true || addressee.isAmountLocked == true || isSwap) && !isAmountlessInstruction) {
+                    if ((addressee.bip21Params?.hasAmount == true || addressee.isGreedy == true || addressee.isAmountLocked || isSwap) && !isAmountlessInstruction) {
                         val assetId = addressee.assetId ?: account.network.policyAsset
 
-                        (tx.satoshi[assetId]?.absoluteValue?.let { sendAmount ->
-                            sendAmount.toAmountLook(
-                                session = session,
-                                assetId = assetId,
-                                denomination = denomination.value,
-                                withUnit = false,
-                                withGrouping = false
-                            )
-                        } ?: tx.addressees.firstOrNull()?.bip21Params?.amount?.let { bip21Amount ->
+                        (tx.satoshi[assetId]?.absoluteValue?.toAmountLook(
+                            session = session,
+                            assetId = assetId,
+                            denomination = denomination.value,
+                            withUnit = false,
+                            withGrouping = false
+                        ) ?: tx.addressees.firstOrNull()?.bip21Params?.amount?.let { bip21Amount ->
                             session.convert(
                                 assetId = assetId,
                                 asString = bip21Amount

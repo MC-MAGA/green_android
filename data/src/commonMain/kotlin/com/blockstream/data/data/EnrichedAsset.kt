@@ -33,8 +33,10 @@ data class EnrichedAsset constructor(
     val ticker: String? = null,
     @SerialName("entity")
     val entity: Entity? = null,
-    @SerialName("amp")
+    @SerialName("amp2")
     val isAmp: Boolean = false,
+    @SerialName("amp")
+    val isAmpLegacy: Boolean = false,
     @SerialName("weight")
     val weight: Int = 0,
     // @SerialName("isSendable") val isSendable: Boolean = true, // Display "Any Liquid Asset" UI element
@@ -44,7 +46,11 @@ data class EnrichedAsset constructor(
 
     fun nameOrNull(session: GdkSession?): String? {
         return if (isAnyAsset) {
-             if (isAmp) "id_receive_any_amp_asset" else "id_receive_any_liquid_asset"
+            when {
+                isAmp -> "id_receive_any_amp_asset"
+                isAmpLegacy -> "id_receive_any_amp_legacy_asset"
+                else -> "id_receive_any_liquid_asset"
+            }
         } else if (session != null && assetId.isPolicyAsset(session)) {
             when {
                 assetId.isBitcoinPolicyAsset() -> "Bitcoin"
@@ -99,6 +105,9 @@ data class EnrichedAsset constructor(
     val isLightning
         get() = assetId == LN_BTC_POLICY_ASSET
 
+    val isAmp2OrLegacy
+        get() = isAmp || isAmpLegacy
+
     fun isPolicyAsset(session: GdkSession) = assetId.isPolicyAsset(session)
 
     fun isLiquidPolicyAsset(session: GdkSession) = !isAnyAsset && assetId.isNetworkPolicyAsset(session.liquid)
@@ -144,13 +153,13 @@ data class EnrichedAsset constructor(
                 precision = asset?.precision ?: 0,
                 ticker = asset?.ticker,
                 entity = asset?.entity,
-
                 isAmp = enrichedAsset?.isAmp ?: false,
+                isAmpLegacy = enrichedAsset?.isAmpLegacy ?: false,
                 weight = enrichedAsset?.weight ?: 0,
             )
         }
 
-        suspend fun createAnyAsset(session: GdkSession, isAmp: Boolean): EnrichedAsset? {
+        suspend fun createAnyAsset(session: GdkSession, isAmp: Boolean = false, isAmpLegacy: Boolean = false): EnrichedAsset? {
             val assetId = session.liquid?.policyAsset ?: return null
             val asset = session.getAsset(assetId)
 
@@ -161,10 +170,16 @@ data class EnrichedAsset constructor(
                 ticker = asset?.ticker,
                 entity = asset?.entity,
 
-                weight = if (isAmp) -20 else -10,
+                weight = when {
+                    isAmp -> -20
+                    isAmpLegacy ->30
+                    else -> -10
+                },
                 isAmp = isAmp,
+                isAmpLegacy = isAmpLegacy,
                 isAnyAsset = true
             )
+
         }
     }
 }

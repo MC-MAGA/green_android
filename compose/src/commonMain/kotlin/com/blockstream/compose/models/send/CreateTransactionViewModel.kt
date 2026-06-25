@@ -397,7 +397,7 @@ abstract class CreateTransactionViewModelAbstract(
             val isAtomicSwap = transaction.isAtomicSwap()
 
             // If liquid, blind the transaction before signing
-            if (network.isLiquid && !transaction.isBump() && !transaction.isSweep()) {
+            if (network.isLiquid && !network.isAmp2 && !transaction.isBump() && !transaction.isSweep()) {
                 transaction = session.blindTransaction(network, transaction)
             }
 
@@ -424,7 +424,7 @@ abstract class CreateTransactionViewModelAbstract(
 
                 // Broadcast or just sign
                 if (broadcast) {
-                    if (network.isSinglesig || isAtomicSwap || transaction.isSweep()) {
+                    if (network.isSinglesig || network.isAmp2 || isAtomicSwap || transaction.isSweep()) {
                         session.broadcastTransaction(
                             network = network,
                             broadcastTransaction = BroadcastTransactionParams(

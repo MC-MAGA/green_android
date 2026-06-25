@@ -98,9 +98,10 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
                 else -> throw Exception("Network not found")
             }
 
-            AccountType.AMP_ACCOUNT -> session.liquidMultisig!!
+            AccountType.AMP_LEGACY_ACCOUNT -> session.liquidMultisig!!
+            AccountType.AMP2_ACCOUNT -> session.liquidAmp2!!
             AccountType.TWO_OF_THREE -> session.bitcoinMultisig!!
-            AccountType.LIGHTNING -> session.lightning!!
+            AccountType.LIGHTNING -> session.lightning
             AccountType.UNKNOWN -> throw Exception("Network not found")
         }
     }

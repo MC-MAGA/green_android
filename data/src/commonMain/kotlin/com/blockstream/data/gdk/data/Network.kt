@@ -6,7 +6,7 @@ import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class Network(
+data class Network constructor(
     @SerialName("network")
     val network: String,
     @SerialName("name")
@@ -44,6 +44,9 @@ data class Network(
     val isMultisig
         get() = !isElectrum && !isLightning
 
+    val is2faNetwork
+        get() = isMultisig && !isAmp2
+
     val isTestnet
         get() = !isMainnet
 
@@ -64,6 +67,9 @@ data class Network(
 
     val isLiquidTestnet
         get() = isLiquidTestnet(id)
+
+    val isAmp2
+        get() = network == LiquidAmp2Mainnet || network == LiquidTestnetAmp2Mainnet
 
     val canonicalName: String
         get() = when (network) {
@@ -140,6 +146,10 @@ data class Network(
         const val ElectrumTestnetLiquid = "electrum-testnet-liquid"
 
         const val LightningMainnet = "greenlight-mainnet"
+
+        const val LiquidAmp2Mainnet = "liquid-amp2"
+
+        const val LiquidTestnetAmp2Mainnet = "testnet-liquid-amp2"
 
         const val BIP32_VER_MAIN_PUBLIC = 0x0488B21E
         const val BIP32_VER_TEST_PUBLIC = 0x043587CF

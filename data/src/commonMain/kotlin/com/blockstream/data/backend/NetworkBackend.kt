@@ -3,6 +3,7 @@ package com.blockstream.data.backend
 import com.blockstream.data.gdk.HardwareWalletResolver
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.Block
+import com.blockstream.data.gdk.data.FeeEstimation
 import com.blockstream.data.gdk.data.Network
 import com.blockstream.data.gdk.data.ProcessedTransactionDetails
 import com.blockstream.data.gdk.params.BroadcastTransactionParams
@@ -44,6 +45,8 @@ interface NetworkBackend : AssetsProvider {
     suspend fun createAccount(params: SubAccountParams, hardwareWalletResolver: HardwareWalletResolver? = null): Account
 
     suspend fun broadcastTransaction(broadcastTransaction: BroadcastTransactionParams): ProcessedTransactionDetails
+
+    suspend fun getFeeEstimates(): FeeEstimation
 }
 
 inline fun <R> Map<Network, NetworkBackend>.mapLoggedIn(transform: (NetworkBackend) -> R): List<R> {

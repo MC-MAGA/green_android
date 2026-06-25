@@ -6,7 +6,8 @@ import kotlinx.serialization.Serializable
 enum class AccountType(val gdkType: String) {
     // Mutlisig
     STANDARD("2of2"),
-    AMP_ACCOUNT("2of2_no_recovery"),
+    AMP_LEGACY_ACCOUNT("2of2_no_recovery"),
+    AMP2_ACCOUNT("amp2"),
     TWO_OF_THREE("2of3"),
 
     // Singlesig
@@ -27,7 +28,8 @@ enum class AccountType(val gdkType: String) {
         LIGHTNING -> "Lightning"
 
         STANDARD -> "2FA Protected"
-        AMP_ACCOUNT -> "AMP"
+        AMP2_ACCOUNT -> "AMP"
+        AMP_LEGACY_ACCOUNT -> "AMP Legacy"
         TWO_OF_THREE -> "2of3 with 2FA"
         else -> gdkType
     }
@@ -39,12 +41,15 @@ enum class AccountType(val gdkType: String) {
 
     fun isLightning() = this == LIGHTNING
 
+    fun isAmp2() = this == AMP2_ACCOUNT
+
     fun isMutlisig() = !isSinglesig() && !isLightning()
 
     companion object {
         fun byGDKType(name: String) = when (name) {
             "2of2" -> STANDARD
-            "2of2_no_recovery" -> AMP_ACCOUNT
+            "2of2_no_recovery" -> AMP_LEGACY_ACCOUNT
+            "amp2" -> AMP2_ACCOUNT
             "2of3" -> TWO_OF_THREE
             "p2pkh" -> BIP44_LEGACY
             "p2sh-p2wpkh" -> BIP49_SEGWIT_WRAPPED

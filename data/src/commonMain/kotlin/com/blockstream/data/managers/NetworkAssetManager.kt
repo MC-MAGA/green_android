@@ -86,8 +86,8 @@ class NetworkAssetManager constructor(private val isMainnet: Boolean, private va
             precision = asset?.precision ?: 0,
             ticker = asset?.ticker,
             entity = asset?.entity,
-
             isAmp = countlyAsset?.isAmp ?: false,
+            isAmpLegacy = countlyAsset?.isAmpLegacy ?: false,
             weight = countlyAsset?.weight ?: 0,
         )
     }

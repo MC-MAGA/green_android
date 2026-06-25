@@ -68,7 +68,7 @@ class GetReceiveAssetsUseCase(
             ).toSet()
 
             val popularAssets = (session.networkAssetManager.countlyAssetsFlow.value.takeIf { session.liquid != null }
-                ?.filter { !it.isAmp || session.hasAmpAccount }?.map {
+                ?.filter { (!it.isAmp || session.hasAmpAccount) && (!it.isAmpLegacy || session.hasAmpLegacyAccount) }?.map {
                     EnrichedAsset.create(session = session, assetId = it.assetId)
                 }?.toSet() ?: emptySet())
 
@@ -77,10 +77,9 @@ class GetReceiveAssetsUseCase(
             }?.toSet() ?: emptySet()
 
             val anyAssets = setOfNotNull(
-                EnrichedAsset.createAnyAsset(session = session, isAmp = false)
-                    .takeIf { session.hasAmpAccount },
-                EnrichedAsset.createAnyAsset(session = session, isAmp = true)
-                    .takeIf { !session.isHwWatchOnly }
+                EnrichedAsset.createAnyAsset(session = session).takeIf { session.liquid != null },
+                EnrichedAsset.createAnyAsset(session = session, isAmp = true).takeIf { session.hasAmpAccount && !session.isHwWatchOnly },
+                EnrichedAsset.createAnyAsset(session = session, isAmpLegacy = true).takeIf { session.hasAmpLegacyAccount && !session.isHwWatchOnly },
             )
 
             (policies + popularAssets + walletAsset.sortedWith(ComparatorEnrichedAssets(session)) + anyAssets).toList()

@@ -38,6 +38,20 @@ data class Networks(
         )
     }
 
+    val liquidAmp2 by lazy {
+        getNetworkById(Network.ElectrumLiquid).copy(
+            network = Network.LiquidAmp2Mainnet,
+            name = "Liquid AMP 2",
+        )
+    }
+
+    val liquidTestnetAmp2 by lazy {
+        getNetworkById(Network.ElectrumTestnetLiquid).copy(
+            network = Network.LiquidTestnetAmp2Mainnet,
+            name = "Liquid Testnet AMP 2",
+        )
+    }
+
     val bitcoinGreen by lazy { getNetworkById(Network.GreenMainnet) }
     val liquidGreen by lazy { getNetworkById(Network.GreenLiquid) }
     val testnetBitcoinGreen by lazy { getNetworkById(Network.GreenTestnet) }
@@ -95,7 +109,7 @@ data class Networks(
 
         return when (accountType) {
             // Multisig
-            AccountType.STANDARD, AccountType.AMP_ACCOUNT, AccountType.TWO_OF_THREE -> {
+            AccountType.STANDARD, AccountType.AMP_LEGACY_ACCOUNT, AccountType.TWO_OF_THREE -> {
                 if (Network.isBitcoin(networkTypeOrId)) {
                     if (Network.isBitcoinMainnet(networkTypeOrId)) bitcoinGreen else testnetBitcoinGreen
                 } else {

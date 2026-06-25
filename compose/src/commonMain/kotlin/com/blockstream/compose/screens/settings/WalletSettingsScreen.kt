@@ -36,6 +36,7 @@ import blockstream_green.common.generated.resources.id_2fa_methods
 import blockstream_green.common.generated.resources.id_2fa_threshold
 import blockstream_green.common.generated.resources.id_a_screen_lock_must_be_enabled
 import blockstream_green.common.generated.resources.id_add_a_pgp_public_key_to_receive
+import blockstream_green.common.generated.resources.id_amp2_id
 import blockstream_green.common.generated.resources.id_amp_id
 import blockstream_green.common.generated.resources.id_archived_account
 import blockstream_green.common.generated.resources.id_archived_accounts
@@ -73,7 +74,6 @@ import blockstream_green.common.generated.resources.id_there_is_already_an_archi
 import blockstream_green.common.generated.resources.id_touch_to_display
 import blockstream_green.common.generated.resources.id_verify_the_authenticity_of
 import blockstream_green.common.generated.resources.id_version
-import blockstream_green.common.generated.resources.id_wallet_details
 import blockstream_green.common.generated.resources.sign_out
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
@@ -270,7 +270,11 @@ fun WalletSettingsScreen(
     }
 
     NavigateDestinations.Accounts.getResult<AccountAssetBalance> {
-        viewModel.postEvent(LocalEvents.CopyAmpId(it.account))
+        if (it.account.isAmp) {
+            viewModel.postEvent(LocalEvents.CopyAmp2Id(it.account))
+        } else {
+            viewModel.postEvent(LocalEvents.CopyAmpId(it.account))
+        }
     }
 
     val items by viewModel.items.collectAsStateWithLifecycle()
@@ -751,14 +755,36 @@ fun WalletSettingsScreen(
                         )
                     }
 
+                    is WalletSetting.CopyAmp2Id -> {
+                        Setting(
+                            title = stringResource(Res.string.id_amp2_id),
+                            imageVector = PhosphorIcons.Regular.CaretRight,
+                            modifier = Modifier.clickable {
+                                viewModel.postEvent(LocalEvents.CopyAmp2Id())
+                            },
+                            testTag = "amp_account"
+                        )
+                    }
+
                     WalletSetting.CreateAmpAccount -> {
                         Setting(
                             title = stringResource(Res.string.id_amp_id),
                             imageVector = PhosphorIcons.Regular.CaretRight,
                             modifier = Modifier.clickable {
-                                viewModel.postEvent(LocalEvents.ChooseAccountType(AccountType.AMP_ACCOUNT))
+                                viewModel.postEvent(LocalEvents.ChooseAccountType(AccountType.AMP_LEGACY_ACCOUNT))
                             },
                             testTag = "amp_account"
+                        )
+                    }
+
+                    WalletSetting.CreateAmp2Account -> {
+                        Setting(
+                            title = stringResource(Res.string.id_amp2_id),
+                            imageVector = PhosphorIcons.Regular.CaretRight,
+                            modifier = Modifier.clickable {
+                                viewModel.postEvent(LocalEvents.ChooseAccountType(AccountType.AMP2_ACCOUNT))
+                            },
+                            testTag = "amp2_account"
                         )
                     }
 

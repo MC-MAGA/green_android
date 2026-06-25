@@ -171,8 +171,8 @@ fun String.getNetworkColor(): Color = when {
 }
 
 fun Account.getAccountColor(): Color = when {
-    isAmp && isLiquidMainnet -> amp
-    isAmp && isLiquidTestnet -> amp_testnet
+    isAmpLegacy && isLiquidMainnet -> amp
+    isAmpLegacy && isLiquidTestnet -> amp_testnet
     else -> networkId.getNetworkColor()
 }
 
@@ -286,7 +286,7 @@ fun String.toImageVector(): ImageVector? = when (this) {
 @Composable
 fun AccountType.policyRes(): String = when (this) {
     AccountType.STANDARD -> stringResource(Res.string.id_2of2)
-    AccountType.AMP_ACCOUNT -> stringResource(Res.string.id_amp)
+    AccountType.AMP_LEGACY_ACCOUNT -> stringResource(Res.string.id_amp)
     AccountType.TWO_OF_THREE -> stringResource(Res.string.id_2of3)
     AccountType.BIP44_LEGACY -> stringResource(Res.string.id_legacy)
     AccountType.BIP49_SEGWIT_WRAPPED -> stringResource(Res.string.id_legacy_segwit)

@@ -10,8 +10,10 @@ import com.blockstream.data.data.toGreenWallet
 import com.blockstream.data.database.local.LocalDB
 import com.blockstream.data.database.wallet.BoltzSwaps
 import com.blockstream.data.database.wallet.LoginCredentials
+import com.blockstream.data.database.wallet.LwkAccounts
 import com.blockstream.data.database.wallet.Wallet
 import com.blockstream.data.database.wallet.WalletDB
+import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.managers.SettingsManager
 import com.blockstream.data.utils.getSecureRandom
 import com.blockstream.utils.Loggable
@@ -22,6 +24,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
+import kotlin.collections.map
 
 const val DATABASE_NAME_WALLET = "green.sqlite"
 const val DATABASE_NAME_LOCAL = "local.sqlite"
@@ -41,6 +44,7 @@ fun createWalletDatabase(driverFactory: DriverFactory): WalletDB {
             encrypted_dataAdapter = encryptedDataAdapter
         ),
         walletAdapter = Wallet.Adapter(device_identifiersAdapter = deviceIdentifierAdapter, extrasAdapter = walletExtrasTypeAdapter),
+        lwkAccountsAdapter = LwkAccounts.Adapter(account_typeAdapter = EnumColumnAdapter()),
         boltzSwapsAdapter = BoltzSwaps.Adapter(swap_typeAdapter = EnumColumnAdapter())
     )
 
@@ -394,6 +398,54 @@ class Database(driverFactory: DriverFactory, val settingsManager: SettingsManage
 
     suspend fun deleteAllSwaps() = io {
         walletDB.boltzSwapsQueries.deleteAllSwaps()
+    }
+
+    suspend fun insertAccount(
+        fingerprint: String,
+        accountType: AccountType,
+        index: Long = 0,
+        name: String,
+        descriptor: String,
+        wid: String? = null
+    ) = io {
+        walletDB.lwkAccountQueries.insertAccount(
+            fingerprint = fingerprint,
+            account_type = accountType,
+            index = index,
+            name = name,
+            descriptor = descriptor,
+            wid = wid
+        )
+    }
+
+    suspend fun updateAccount(
+        fingerprint: String,
+        accountType: AccountType,
+        index: Long,
+        name: String,
+        hidden: Boolean
+    ) = io {
+        walletDB.lwkAccountQueries.updateAccount(
+            name = name,
+            hidden = hidden,
+            fingerprint = fingerprint,
+            account_type = accountType,
+            index = index
+        )
+    }
+
+    suspend fun getAccounts(fingerprint: String) = io {
+        walletDB.lwkAccountQueries.getAccounts(fingerprint = fingerprint).executeAsList()
+    }
+
+    suspend fun getAccount(fingerprint: String, accountType: AccountType, index: Long) = io {
+        walletDB.lwkAccountQueries.getAccount(fingerprint = fingerprint, account_type = accountType, index = index).executeAsOneOrNull()
+    }
+
+    suspend fun getAccountsFlow(fingerprint: String) = walletDB.lwkAccountQueries.getAccounts(fingerprint = fingerprint).asFlow().map {
+        io {
+            it.executeAsList()
+        }
     }
 
     companion object : Loggable()

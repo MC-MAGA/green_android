@@ -14,6 +14,7 @@ import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Addressee
 import com.blockstream.data.gdk.data.Block
 import com.blockstream.data.gdk.data.CreateTransaction
+import com.blockstream.data.gdk.data.FeeEstimation
 import com.blockstream.data.gdk.data.LiquidAssets
 import com.blockstream.data.gdk.data.Network
 import com.blockstream.data.gdk.data.Output
@@ -94,11 +95,7 @@ class GlNetworkBackend(
         field = MutableSharedFlow(extraBufferCapacity = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST)
 
     final override val accounts: StateFlow<List<Account>>
-        field = MutableStateFlow<List<Account>>(listOf(account))
-
-    override suspend fun connect(params: ConnectionParams) {
-        // no op
-    }
+        field = MutableStateFlow<List<Account>>(listOf())
 
     // Can emit the same value multiple times
     val eventSharedFlow = sdk.eventSharedFlow.distinctUntilChanged()
@@ -126,7 +123,11 @@ class GlNetworkBackend(
 
     override suspend fun isPolicyAsset(assetId: String?): Boolean = assetId == LN_BTC_POLICY_ASSET
 
-    suspend fun connect(
+    override suspend fun connect(params: ConnectionParams) {
+        // no op
+    }
+
+    suspend fun login(
         mnemonicAndCredentials: GreenlightMnemonicAndCredentials,
         parentXpubHashId: String?,
         isRestore: Boolean = false,
@@ -141,6 +142,8 @@ class GlNetworkBackend(
             if (it == ConnectStatus.Connect) {
                 isConnected = true
                 isLoggedIn = true
+
+                accounts.value = listOf(account)
             }
         }
     }
@@ -178,6 +181,10 @@ class GlNetworkBackend(
 
     override suspend fun broadcastTransaction(broadcastTransaction: BroadcastTransactionParams): ProcessedTransactionDetails {
         throw Exception("Use sendLightningTransaction")
+    }
+
+    override suspend fun getFeeEstimates(): FeeEstimation {
+        throw Exception("No support for getFeeEstimates")
     }
 
     suspend fun sendLightningTransaction(params: CreateTransaction, comment: String?): ProcessedTransactionDetails {

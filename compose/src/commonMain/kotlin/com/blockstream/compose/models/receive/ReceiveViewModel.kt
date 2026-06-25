@@ -217,7 +217,7 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
             accountAsset.account.isLiquid && boltzUseCase.isSwapsEnabledUseCase(wallet = greenWallet) && accountAsset.asset.let {
                 it.isLiquidPolicyAsset(
                     session
-                ) && !it.isAnyAsset && !it.isAmp
+                ) && !it.isAnyAsset && !it.isAmp2OrLegacy
             }
         }.stateIn(
             viewModelScope,
@@ -298,13 +298,13 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
                                 )
                             )
                         }
-                    ).takeIf { accountAsset.account?.isLightning == true && !showLightningOnChainAddress && receiveAddress == null },
+                    ).takeIf { accountAsset.account.isLightning == true && !showLightningOnChainAddress && receiveAddress == null },
                     NavAction(
                         title = getString(Res.string.id_help),
                         icon = Res.drawable.question,
                         isMenuEntry = false,
                         onClick = {
-                            postSideEffect(SideEffects.OpenBrowser(if (accountAsset.account.isAmp) Urls.HELP_AMP_ASSETS else Urls.HELP_RECEIVE_ASSETS))
+                            postSideEffect(SideEffects.OpenBrowser(if (accountAsset.account.isAmpOrLecacy) Urls.HELP_AMP_ASSETS else Urls.HELP_RECEIVE_ASSETS))
                         }
                     ),
 
@@ -315,7 +315,7 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
                         onClick = {
                             postEvent(LocalEvents.ShowRequestAmount)
                         }
-                    ).takeIf { receiveAddress.isNotBlank() && accountAsset.account.isLightning == false },
+                    ).takeIf { receiveAddress.isNotBlank() && !accountAsset.account.isLightning },
                     NavAction(
                         title = getString(Res.string.id_list_of_addresses),
                         icon = Res.drawable.at,
@@ -325,7 +325,7 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
                                 postEvent(NavigateDestinations.Addresses(greenWallet = greenWallet, accountAsset = it))
                             }
                         }
-                    ).takeIf { receiveAddress.isNotBlank() && accountAsset.account.isLightning == false },
+                    ).takeIf { receiveAddress.isNotBlank() && !accountAsset.account.isLightning && !accountAsset.account.isAmpOrLecacy },
                     NavAction(
                         title = getString(Res.string.id_sweep_from_paper_wallet),
                         icon = Res.drawable.qr_code,

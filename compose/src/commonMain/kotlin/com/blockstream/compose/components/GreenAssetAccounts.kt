@@ -30,13 +30,17 @@ import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.amp_asset
 import blockstream_green.common.generated.resources.id_create_new_account
 import blockstream_green.common.generated.resources.id_receive_any_amp_asset
+import blockstream_green.common.generated.resources.id_receive_any_amp_legacy_asset
 import blockstream_green.common.generated.resources.id_receive_any_liquid_asset
 import blockstream_green.common.generated.resources.id_s_is_a_liquid_asset_you_can
 import blockstream_green.common.generated.resources.id_s_is_a_liquid_asset_you_need_a
 import blockstream_green.common.generated.resources.id_s_is_an_amp_asset_you_can
 import blockstream_green.common.generated.resources.id_s_is_an_amp_asset_you_need_an
+import blockstream_green.common.generated.resources.id_s_is_an_amp_legacy_asset_you_can
+import blockstream_green.common.generated.resources.id_s_is_an_amp_legacy_asset_you_need_an
 import blockstream_green.common.generated.resources.id_you_need_a_liquid_account_in
 import blockstream_green.common.generated.resources.id_you_need_an_amp_account_in
+import blockstream_green.common.generated.resources.id_you_need_an_amp_legacy_account_in
 import blockstream_green.common.generated.resources.liquid_asset
 import blockstream_green.common.generated.resources.shield_warning
 import com.blockstream.compose.extensions.assetIcon
@@ -76,7 +80,7 @@ fun GreenAssetAccounts(
 
     val warningMessage = stringResource(
         when {
-            asset.isAnyAsset && !asset.isAmp -> {
+            asset.isAnyAsset && !asset.isAmp2OrLegacy -> {
                 Res.string.id_you_need_a_liquid_account_in
             }
 
@@ -84,16 +88,28 @@ fun GreenAssetAccounts(
                 Res.string.id_you_need_an_amp_account_in
             }
 
+            asset.isAnyAsset && asset.isAmpLegacy -> {
+                Res.string.id_you_need_an_amp_legacy_account_in
+            }
+
             accounts.isNotEmpty() && asset.isAmp -> {
                 Res.string.id_s_is_an_amp_asset_you_can
             }
 
-            accounts.isNotEmpty() && !asset.isAmp -> {
+            accounts.isNotEmpty() && asset.isAmpLegacy -> {
+                Res.string.id_s_is_an_amp_legacy_asset_you_can
+            }
+
+            accounts.isNotEmpty() && !asset.isAmp2OrLegacy -> {
                 Res.string.id_s_is_a_liquid_asset_you_can
             }
 
             accounts.isEmpty() && asset.isAmp -> {
                 Res.string.id_s_is_an_amp_asset_you_need_an
+            }
+
+            accounts.isEmpty() && asset.isAmpLegacy -> {
+                Res.string.id_s_is_an_amp_legacy_asset_you_need_an
             }
 
             else -> {
@@ -123,7 +139,8 @@ fun GreenAssetAccounts(
                     Image(
                         painter = when {
                             asset.isAnyAsset && asset.isAmp -> painterResource(Res.drawable.amp_asset)
-                            asset.isAnyAsset && !asset.isAmp -> painterResource(Res.drawable.liquid_asset)
+                            asset.isAnyAsset && asset.isAmpLegacy -> painterResource(Res.drawable.amp_asset)
+                            asset.isAnyAsset && !asset.isAmp2OrLegacy -> painterResource(Res.drawable.liquid_asset)
                             else -> asset.assetId.assetIcon(session = session)
                         },
                         contentDescription = null,
@@ -144,8 +161,12 @@ fun GreenAssetAccounts(
                 ) {
                     if (asset.isAnyAsset) {
                         Text(
-                            text = if (asset.isAnyAsset && asset.isAmp) stringResource(Res.string.id_receive_any_amp_asset) else stringResource(
-                                Res.string.id_receive_any_liquid_asset
+                            text = stringResource(
+                                when {
+                                    asset.isAnyAsset && asset.isAmp -> Res.string.id_receive_any_amp_asset
+                                    asset.isAnyAsset && asset.isAmpLegacy -> Res.string.id_receive_any_amp_legacy_asset
+                                    else -> Res.string.id_receive_any_liquid_asset
+                                }
                             ),
                             style = titleSmall,
                             overflow = TextOverflow.Ellipsis
@@ -294,6 +315,20 @@ fun GreenAssetAccountsPreview() {
             )
             GreenAssetAccounts(
                 asset = previewEnrichedAsset(true).copy(isAnyAsset = true),
+                isExpanded = selected == 5,
+                onExpandClick = {
+                    selected = 5
+                }
+            )
+            GreenAssetAccounts(
+                asset = previewEnrichedAsset(true).copy(isAnyAsset = true, isAmp = true),
+                isExpanded = selected == 5,
+                onExpandClick = {
+                    selected = 5
+                }
+            )
+            GreenAssetAccounts(
+                asset = previewEnrichedAsset(true).copy(isAnyAsset = true, isAmpLegacy = true),
                 isExpanded = selected == 5,
                 onExpandClick = {
                     selected = 5

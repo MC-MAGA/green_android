@@ -13,9 +13,6 @@ data class Bip21Params constructor(
 ) : GreenJson<Bip21Params>() {
     override fun kSerializer() = serializer()
 
-    val hasAssetId: Boolean
-        get() = !assetId.isNullOrBlank()
-
     val hasAmount: Boolean
         get() = !amount.isNullOrBlank()
 }

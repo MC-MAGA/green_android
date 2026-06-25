@@ -55,7 +55,11 @@ fun GreenAsset(
 
         when {
             asset?.isAnyAsset == true -> {
-                if (asset.isAmp) "any_amp_asset" else "any_liquid_asset"
+                when{
+                    asset.isAmp -> "any_amp_asset"
+                    asset.isAmpLegacy -> "any_amp_legacy_asset"
+                    else -> "any_liquid_asset"
+                }
             }
             else -> {
                 val rawId = ticker ?: asset?.assetId ?: assetBalance?.assetId

@@ -30,14 +30,17 @@ import blockstream_green.common.generated.resources.id_processing_payment
 import blockstream_green.common.generated.resources.id_refundable
 import blockstream_green.common.generated.resources.id_unconfirmed
 import blockstream_green.common.generated.resources.question
+import com.blockstream.compose.GreenPreview
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.gdk.data.Transaction
 import com.blockstream.data.gdk.data.isMeldPending
 import com.blockstream.data.utils.formatAuto
 import com.blockstream.compose.extensions.directionColor
 import com.blockstream.compose.extensions.icon
+import com.blockstream.compose.extensions.previewTransactionLook
 import com.blockstream.compose.looks.transaction.Confirmed
 import com.blockstream.compose.looks.transaction.TransactionLook
+import com.blockstream.compose.looks.transaction.Unconfirmed
 import com.blockstream.compose.theme.bodyMedium
 import com.blockstream.compose.theme.bodySmall
 import com.blockstream.compose.theme.labelLarge
@@ -47,6 +50,7 @@ import com.blockstream.compose.theme.red
 import com.blockstream.compose.theme.whiteMedium
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @Composable
 fun GreenTransaction(

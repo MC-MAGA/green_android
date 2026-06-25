@@ -24,6 +24,7 @@ import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.data.LogoutReason
 import com.blockstream.data.data.MultipleWatchOnlyCredentials
 import com.blockstream.data.data.RichWatchOnly
+import com.blockstream.data.database.Database
 import com.blockstream.data.database.wallet.LoginCredentials
 import com.blockstream.data.devices.DeviceBrand
 import com.blockstream.data.devices.DeviceModel
@@ -127,8 +128,6 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.cancelChildren
-import kotlinx.coroutines.channels.Channel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -174,6 +173,7 @@ class GdkSession constructor(
     private val settingsManager: SettingsManager,
     private val assetManager: AssetManager,
     private val walletSettingsManager: WalletSettingsManager,
+    private val database: Database,
     private val gdk: Gdk,
     private val wally: Wally,
     private val countly: CountlyBase
@@ -343,6 +343,9 @@ class GdkSession constructor(
     val liquidMultisig
         get() = networkBackends.firstNotNullOfOrNull { it.key.takeIf { network -> network.isMultisig && network.isLiquid } }
 
+    val liquidAmp2
+        get() = networkBackends.firstNotNullOfOrNull { it.key.takeIf { network -> network.isAmp2 } }
+
     val activeBitcoin get() = activeBitcoinSinglesig ?: activeBitcoinMultisig
     val activeBitcoinSinglesig get() = bitcoinSinglesig?.takeIf { hasActiveNetwork(it) }
     val activeBitcoinMultisig get() = bitcoinMultisig?.takeIf { hasActiveNetwork(it) }
@@ -379,7 +382,10 @@ class GdkSession constructor(
         private set
 
     val hasAmpAccount: Boolean
-        get() = accounts.value.find { it.type == AccountType.AMP_ACCOUNT } != null
+        get() = accounts.value.find { it.type == AccountType.AMP2_ACCOUNT } != null
+
+    val hasAmpLegacyAccount: Boolean
+        get() = accounts.value.find { it.type == AccountType.AMP_LEGACY_ACCOUNT } != null
 
     private var _lightningAccount: Account? = null
 
@@ -530,7 +536,7 @@ class GdkSession constructor(
     }
 
     private suspend fun updateTwoFactorConfig(network: Network, useCache: Boolean = false): TwoFactorConfig? {
-        if (!network.isMultisig) return null
+        if (!network.is2faNetwork) return null
 
         val cached = if (useCache) gdkNetworkBackend(network).twoFactorConfig.value else null
         if (cached != null) return cached
@@ -655,14 +661,16 @@ class GdkSession constructor(
                 networks.testnetBitcoinElectrum,
                 networks.testnetBitcoinGreen,
                 networks.testnetLiquidElectrum,
-                networks.testnetLiquidGreen
+                networks.testnetLiquidGreen,
+                networks.liquidTestnetAmp2.takeIf { device == null && !isWatchOnly }
             )
         } else {
             listOfNotNull(
                 networks.bitcoinElectrum,
                 networks.bitcoinGreen,
                 networks.liquidElectrum,
-                networks.liquidGreen
+                networks.liquidGreen,
+                networks.liquidAmp2.takeIf { device == null && !isWatchOnly }
             )
         }
     }
@@ -685,9 +693,9 @@ class GdkSession constructor(
                     useLwkFor(network) ->
                         LwkNetworkBackend(
                             dataDir = gdk.dataDir,
+                            database = database,
                             gdk = gdk,
                             network = network,
-                            gdkHwWallet = gdkHwWallet,
                             networkAssetManager = networkAssetManager,
                         )
 
@@ -995,8 +1003,17 @@ class GdkSession constructor(
     ): T {
         if (!network.isLightning && !hasActiveNetwork(network)) {
 
+            val loginCredentialsParams = if (isHardwareWallet) {
+                LoginCredentialsParams.empty
+            } else {
+                LoginCredentialsParams.fromCredentials(getCredentials())
+            }
+
             if (useLwkFor(network)) {
-                lwkNetworkBackend(network).connect(createConnectionParams(network))
+                lwkNetworkBackend(network).also {
+                    it.connect(createConnectionParams(network))
+//                    it.login(loginCredentialsParams = loginCredentialsParams)
+                }
                 return action()
             }
 
@@ -1005,12 +1022,6 @@ class GdkSession constructor(
             backend.connect(createConnectionParams(network))
 
             val previousMultisig = activeMultisig.firstOrNull()
-
-            val loginCredentialsParams = if (isHardwareWallet) {
-                LoginCredentialsParams.empty
-            } else {
-                LoginCredentialsParams.fromCredentials(getCredentials())
-            }
 
             val deviceParams = DeviceParams.fromDeviceOrEmpty(device?.gdkHardwareWallet?.device)
 
@@ -1349,7 +1360,9 @@ class GdkSession constructor(
         val deviceParams = DeviceParams.fromDeviceOrEmpty(device?.gdkHardwareWallet?.device)
 
         // Get enabled singlesig networks (multisig can be identified by login_user)
-        val sortedGdkBackends = gdkNetworkBackends.sortedWith { a, b ->
+        val sortedBackends = networkBackends.values.filter {
+            !it.network.isLightning
+        }.sortedWith { a, b ->
             when {
                 a.network == prominentNetwork -> -1
                 b.network == prominentNetwork -> 1
@@ -1381,7 +1394,7 @@ class GdkSession constructor(
 
         hasLightning = greenlightMnemonicAndCredentials != null
 
-        return (sortedGdkBackends.map { backend ->
+        return (sortedBackends.map { backend ->
             scope.async(start = CoroutineStart.LAZY) {
                 val network = backend.network
 
@@ -1401,9 +1414,7 @@ class GdkSession constructor(
 
                     if (useLwkFor(network)) {
                         return@async lwkNetworkBackend(network).login(
-                            deviceParams = deviceParams,
-                            loginCredentialsParams = networkLoginCredentialsParams,
-                            hardwareWalletResolver = hardwareWalletResolver
+                            loginCredentialsParams = networkLoginCredentialsParams
                         )
                     }
 
@@ -1633,7 +1644,7 @@ class GdkSession constructor(
 
         val backend = glNetworkBackend()
 
-        val connectStatus = backend.connect(
+        val connectStatus = backend.login(
             mnemonicAndCredentials = mnemonicAndCredentials,
             parentXpubHashId = parentXpubHashId ?: xPubHashId,
             isRestore = restoreOnly,
@@ -1846,7 +1857,7 @@ class GdkSession constructor(
     private val isLwkEnabled: Boolean = false
 
     // no support for hardware wallet
-    private fun useLwkFor(network: Network): Boolean =
+    private fun useLwkFor(network: Network): Boolean = network.isAmp2 ||
         isLwkEnabled && network.isLiquid && network.isSinglesig && !isHardwareWallet
 
     fun networkBackend(network: Network): NetworkBackend =
@@ -1929,7 +1940,7 @@ class GdkSession constructor(
         hardwareWalletResolver: HardwareWalletResolver? = null
     ): Account {
         return initNetworkIfNeeded(network, hardwareWalletResolver) {
-            gdkNetworkBackend(network).createAccount(params = params, hardwareWalletResolver = hardwareWalletResolver)
+            networkBackend(network).createAccount(params = params, hardwareWalletResolver = hardwareWalletResolver)
         }.also {
             _walletActiveEventInvalidated = true
 
@@ -1973,10 +1984,7 @@ class GdkSession constructor(
         userInitiated: Boolean = false,
         resetAccountName: String? = null
     ): Account {
-        // Disable account editing for lightning accounts
-        if (account.isLightning) return account
-
-        gdkAccountBackend(account).updateAccount(
+        accountBackend(account).updateAccount(
             hidden = isHidden,
             name = resetAccountName?.takeIf { it.isNotBlank() }
         )
@@ -1994,7 +2002,7 @@ class GdkSession constructor(
     }
 
     suspend fun updateAccount(account: Account, name: String): Account {
-        gdkAccountBackend(account).updateAccount(name = name)
+        accountBackend(account).updateAccount(name = name)
 
         return getAccount(account)
     }
@@ -2017,7 +2025,7 @@ class GdkSession constructor(
             bitcoin ?: network
         } else network
 
-        gdkNetworkBackend(feeNetwork).getFeeEstimates()
+        networkBackend(feeNetwork).getFeeEstimates()
     } ?: FeeEstimation(fees = mutableListOf(network.defaultFee))
 
     private val refreshMutex = Mutex()
@@ -2391,7 +2399,7 @@ class GdkSession constructor(
     suspend fun broadcastTransaction(
         network: Network,
         broadcastTransaction: BroadcastTransactionParams
-    ): ProcessedTransactionDetails = gdkNetworkBackend(network).broadcastTransaction(broadcastTransaction).also {
+    ): ProcessedTransactionDetails = networkBackend(network).broadcastTransaction(broadcastTransaction).also {
         _walletActiveEventInvalidated = true
     }
 

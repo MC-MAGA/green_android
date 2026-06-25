@@ -127,6 +127,7 @@ class GlAccountBackend constructor(private val sdk: LightningSdk, private val ac
     }
 
     override suspend fun signTransaction(createTransaction: CreateTransaction): CreateTransaction = createTransaction
+    override suspend fun updateAccount(name: String?, hidden: Boolean?) { }
 
     override suspend fun getUnspentOutputs(isBump: Boolean, isExpired: Boolean, expiredAt: Long?): UnspentOutputs {
         return UnspentOutputs()

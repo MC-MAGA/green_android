@@ -458,7 +458,7 @@ public class TrezorHWWallet extends GdkHardwareWallet {
     private static TrezorType.InputScriptType mapAccountType(final AccountType accountType) {
         switch (accountType) {
             case STANDARD:
-            case AMP_ACCOUNT:
+            case AMP_LEGACY_ACCOUNT:
             case TWO_OF_THREE:
                 return TrezorType.InputScriptType.SPENDMULTISIG;
             case BIP44_LEGACY:

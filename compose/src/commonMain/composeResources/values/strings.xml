@@ -71,6 +71,7 @@
     <string name="id_account_type">Account Type</string>
     <string name="id_account_type_2fa_protected">Account: 2FA Protected</string>
     <string name="id_account_type_amp">Account: AMP</string>
+    <string name="id_account_type_amp_legacy">Account: AMP Legacy</string>
     <string name="id_account_type_standard">Account: Standard</string>
     <string name="id_accounts">Accounts</string>
     <string name="id_accounts_summary">Accounts summary</string>
@@ -138,6 +139,7 @@
     <string name="id_amp_accounts_allow_you_to_send">AMP accounts allow you to send, receive, and store managed assets issued on the Liquid Network.</string>
     <string name="id_amp_accounts_are_only_available">AMP accounts are only available on Liquid wallets. You may be required to provide your account ID to issuers to receive an AMP Asset.</string>
     <string name="id_amp_id">AMP ID</string>
+    <string name="id_amp2_id">AMP2 ID</string>
     <string name="id_amp_wallet">AMP Wallet</string>
     <string name="id_an_unidentified_error_occured">An unidentified error occured. The following error log can help you identify the issue:</string>
     <string name="id_an_unidentified_error_occurred">An unidentified error occurred. The following error log can help you identify the issue:\n\n%1$s</string>
@@ -1191,6 +1193,7 @@
     <string name="id_receive">Receive</string>
     <string name="id_receive_amount">Receive Amount</string>
     <string name="id_receive_any_amp_asset">Receive any AMP Asset</string>
+    <string name="id_receive_any_amp_legacy_asset">Receive any AMP Legacy Asset</string>
     <string name="id_receive_any_liquid_asset">Receive any Liquid Asset</string>
     <string name="id_receive_email_notifications_for">Receive email notifications for sent and received transactions</string>
     <string name="id_receive_in">Receive in</string>
@@ -1283,7 +1286,9 @@
     <string name="id_s_is_a_liquid_asset_you_can">%1$s is a Liquid asset. You can receive it directly on any Liquid account.</string>
     <string name="id_s_is_a_liquid_asset_you_need_a">%1$s is a Liquid asset. You need a Liquid account in order to receive it.</string>
     <string name="id_s_is_an_amp_asset_you_can">%1$s is an AMP asset. You can receive it directly on any AMP account.</string>
+    <string name="id_s_is_an_amp_legacy_asset_you_can">%1$s is an AMP Legacy asset. You can receive it directly on any AMP Legacy account.</string>
     <string name="id_s_is_an_amp_asset_you_need_an">%1$s is an AMP asset. You need an AMP account in order to receive it.</string>
+    <string name="id_s_is_an_amp_legacy_asset_you_need_an">%1$s is an AMP Legacy asset. You need an AMP Legacy account in order to receive it.</string>
     <string name="id_s_minutes">~%1$s minutes</string>
     <string name="id_s_network">%1$s network</string>
     <string name="id_s_will_send_you_the_funds_it">%1$s will send you the funds, it can take some time.\n\nKeep the app online.</string>
@@ -1840,6 +1845,7 @@
     <string name="id_you_must_save_this_mnemonic_now">You MUST save this mnemonic NOW</string>
     <string name="id_you_need_a_liquid_account_in">You need a Liquid account in order to receive it.</string>
     <string name="id_you_need_an_amp_account_in">You need an AMP account in order to receive it.</string>
+    <string name="id_you_need_an_amp_legacy_account_in">You need an AMP Legacy account in order to receive it.</string>
     <string name="id_you_need_an_unlock_method_to">You need an unlock method to access your wallet and funds. </string>
     <string name="id_you_only_have_one_twofactor">You only have one Two-Factor authentication method enabled</string>
     <string name="id_you_receive">You receive</string>

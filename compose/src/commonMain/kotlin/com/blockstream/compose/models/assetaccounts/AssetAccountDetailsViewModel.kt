@@ -35,6 +35,7 @@ import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.swap.IsSwapAvailableUseCase
 import com.blockstream.domain.swap.IsSwapsEnabledUseCase
 import com.blockstream.domain.transaction.GetAccountTransactionsUseCase
+import com.blockstream.domain.transaction.GetWalletTransactionsUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -122,6 +123,8 @@ abstract class AssetAccountDetailsViewModelAbstract(
             )
         )
     }
+
+    open fun resetTransactionList() {}
 }
 
 class AssetAccountDetailsViewModel(
@@ -136,10 +139,9 @@ class AssetAccountDetailsViewModel(
 
     override val asset: EnrichedAsset = accountAsset.asset
 
-    override val accountBalance: StateFlow<AccountBalance> =
-        merge(flowOf(Unit), session.accountsAndBalanceUpdated).mapNotNull {
-            tryCatch { AccountBalance.create(account = account, session = session) }
-        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), AccountBalance.create(account = account))
+    override val accountBalance: StateFlow<AccountBalance> = merge(flowOf(Unit), session.accountsAndBalanceUpdated).mapNotNull {
+        tryCatch { AccountBalance.create(account = account, session = session) }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), AccountBalance.create(account = account))
 
     override val showBuyButton: Boolean = accountAsset.asset.isBitcoin
 
@@ -288,6 +290,16 @@ class AssetAccountDetailsViewModel(
             } finally {
                 isLoadingMore.value = false
             }
+        }
+    }
+
+    override fun resetTransactionList() {
+        viewModelScope.launch {
+            getAccountTransactionsUseCase(
+                GetAccountTransactionsUseCase.Params(
+                    isReset = true
+                )
+            )
         }
     }
 

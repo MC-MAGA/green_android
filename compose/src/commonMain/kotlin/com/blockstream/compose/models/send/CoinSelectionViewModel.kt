@@ -129,7 +129,7 @@ class CoinSelectionViewModel(
         }
 
         if (selectedAccountAsset.account.type != AccountType.TWO_OF_THREE &&
-            selectedAccountAsset.account.type != AccountType.AMP_ACCOUNT
+            selectedAccountAsset.account.type != AccountType.AMP_LEGACY_ACCOUNT
         ) {
             add(CoinFilter.EXPIRED)
         }

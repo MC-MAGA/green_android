@@ -34,6 +34,8 @@ interface AccountBackend {
 
     suspend fun signTransaction(createTransaction: CreateTransaction): CreateTransaction
     fun setAssets(assets: Assets)
+
+    suspend fun updateAccount(name: String? = null, hidden: Boolean? = null)
 }
 
 /**

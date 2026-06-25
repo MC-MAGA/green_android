@@ -158,6 +158,7 @@ class WalletSettingsViewModel(
         data object SupportId : Event
 
         data class CopyAmpId(val account: Account? = null) : Event
+        data class CopyAmp2Id(val account: Account? = null) : Event
         data class ChooseAccountType(val accountType: AccountType) : Event
         data object OpenLightningSettings : Event
         data class CreateAccount(val accountType: AccountType, val asset: EnrichedAsset? = null) : Event
@@ -396,8 +397,13 @@ class WalletSettingsViewModel(
 
                 if (!session.isWatchOnlyValue) {
                     accountSettings += listOfNotNull(
-                        WalletSetting.CreateAmpAccount.takeIf { session.accounts.value.find { it.type == AccountType.AMP_ACCOUNT } == null },
-                        WalletSetting.CopyAmpId.takeIf { session.accounts.value.any { it.type == AccountType.AMP_ACCOUNT } },
+                        WalletSetting.CreateAmpAccount.takeIf { session.accounts.value.find { it.type == AccountType.AMP_LEGACY_ACCOUNT } == null },
+                        WalletSetting.CopyAmpId.takeIf { session.accounts.value.any { it.type == AccountType.AMP_LEGACY_ACCOUNT } },
+                    )
+
+                    accountSettings += listOfNotNull(
+                        WalletSetting.CreateAmp2Account.takeIf { session.accounts.value.find { it.type == AccountType.AMP2_ACCOUNT } == null },
+                        WalletSetting.CopyAmp2Id.takeIf { session.accounts.value.any { it.type == AccountType.AMP2_ACCOUNT } },
                     )
 
                     val hasMultisig = session.activeBitcoinMultisig != null || session.activeLiquidMultisig != null
@@ -439,7 +445,15 @@ class WalletSettingsViewModel(
         when (event) {
             is LocalEvents.CopyAmpId -> {
                 if (event.account == null) {
-                    postSideEffect(LocalSideEffects.CopyAmpId(session.accounts.value.filter { it.type == AccountType.AMP_ACCOUNT }))
+                    postSideEffect(LocalSideEffects.CopyAmpId(session.accounts.value.filter { it.type == AccountType.AMP_LEGACY_ACCOUNT }))
+                } else {
+                    postSideEffect(SideEffects.CopyToClipboard(event.account.receivingId))
+                }
+            }
+
+            is LocalEvents.CopyAmp2Id -> {
+                if (event.account == null) {
+                    postSideEffect(LocalSideEffects.CopyAmpId(session.accounts.value.filter { it.type == AccountType.AMP2_ACCOUNT }))
                 } else {
                     postSideEffect(SideEffects.CopyToClipboard(event.account.receivingId))
                 }
@@ -776,7 +790,8 @@ class WalletSettingsViewModel(
                 else -> throw Exception("Network not found")
             }
 
-            AccountType.AMP_ACCOUNT -> session.liquidMultisig!!
+            AccountType.AMP_LEGACY_ACCOUNT -> session.liquidMultisig!!
+            AccountType.AMP2_ACCOUNT -> session.liquidAmp2!!
             AccountType.TWO_OF_THREE -> session.bitcoinMultisig!!
             AccountType.LIGHTNING -> session.lightning
             AccountType.UNKNOWN -> throw Exception("Network not found")

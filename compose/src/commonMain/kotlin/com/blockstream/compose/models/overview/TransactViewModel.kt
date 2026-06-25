@@ -10,6 +10,7 @@ import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.looks.transaction.TransactionLook
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
+import com.blockstream.data.comparators.ComparatorTransactions
 import com.blockstream.data.data.DataState
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.data.TransactionList
@@ -125,7 +126,7 @@ class TransactViewModel(greenWallet: GreenWallet) : TransactViewModelAbstract(gr
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), emptyList())
     }
 
-    private val transactionsFlow : Flow<DataState<TransactionList>> = getWalletTransactionsUseCase.observe().filterNotNull()
+    private val transactionsFlow : Flow<DataState<TransactionList>> = getWalletTransactionsUseCase.observe()
 
     override val hasMoreTransactions: StateFlow<Boolean> = transactionsFlow.map {
         it.data()?.hasMore == true
@@ -140,8 +141,7 @@ class TransactViewModel(greenWallet: GreenWallet) : TransactViewModelAbstract(gr
             // and only add meld transactions that don't overlap.
             val uniqueHashes = gdkTransactions.mapTo(mutableSetOf()) { it.txHash }
 
-            val allTransactions =
-                (gdkTransactions + meldTransactions.filter { it.txHash !in uniqueHashes }).sortedByDescending { it.createdAtTs }
+            val allTransactions = (gdkTransactions + meldTransactions.filter { it.txHash !in uniqueHashes }).sortedWith(ComparatorTransactions)
 
             allTransactions.map {
                 TransactionLook.create(

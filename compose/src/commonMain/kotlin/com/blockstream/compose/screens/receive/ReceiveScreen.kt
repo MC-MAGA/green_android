@@ -42,6 +42,7 @@ import blockstream_green.common.generated.resources.arrows_counter_clockwise
 import blockstream_green.common.generated.resources.id_account_address
 import blockstream_green.common.generated.resources.id_account_type_2fa_protected
 import blockstream_green.common.generated.resources.id_account_type_amp
+import blockstream_green.common.generated.resources.id_account_type_amp_legacy
 import blockstream_green.common.generated.resources.id_account_type_standard
 import blockstream_green.common.generated.resources.id_address
 import blockstream_green.common.generated.resources.id_asset
@@ -260,6 +261,7 @@ fun ReceiveScreen(
                         when {
                             account.isLightning -> null
                             account.isAmp -> stringResource(Res.string.id_account_type_amp)
+                            account.isAmpLegacy -> stringResource(Res.string.id_account_type_amp_legacy)
                             account.isMultisig -> stringResource(Res.string.id_account_type_2fa_protected)
                             account.isLiquid -> stringResource(Res.string.id_account_type_standard)
                             else -> null

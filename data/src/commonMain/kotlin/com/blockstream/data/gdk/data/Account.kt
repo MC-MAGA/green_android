@@ -1,6 +1,5 @@
 package com.blockstream.data.gdk.data
 
-import com.blockstream.data.backend.NetworkBackend
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.GreenJson
@@ -91,7 +90,13 @@ data class Account constructor(
         get() = network.isLiquid
 
     val isAmp
-        get() = type == AccountType.AMP_ACCOUNT
+        get() = type == AccountType.AMP2_ACCOUNT
+
+    val isAmpLegacy
+        get() = type == AccountType.AMP_LEGACY_ACCOUNT
+
+    val isAmpOrLecacy
+        get() = isAmp || isAmpLegacy
 
     val outputDescriptors: String?
         get() = coreDescriptors?.joinToString("\n")
@@ -107,10 +112,11 @@ data class Account constructor(
             isBitcoin && isSinglesig -> 0
             isBitcoin && isMultisig -> 1
             isLightning -> 2
+            isAmp -> 5
+            isAmpLegacy -> 6
             isLiquid && isSinglesig -> 3
-            isLiquid && isMultisig && !isAmp -> 4
-            isLiquid && isMultisig && isAmp -> 5
-            else -> 6
+            isLiquid && isMultisig -> 4
+            else -> 7
         }
     }
 
@@ -150,7 +156,11 @@ data class Account constructor(
                     "2FA Protected"
                 }
 
-                AccountType.AMP_ACCOUNT -> {
+                AccountType.AMP_LEGACY_ACCOUNT -> {
+                    "AMP Legacy"
+                }
+
+                AccountType.AMP2_ACCOUNT -> {
                     "AMP"
                 }
 
@@ -170,7 +180,7 @@ data class Account constructor(
     }
 
     val bip32Pointer: Long
-        get() = when (type) {
+        get() = if(network.isAmp2) pointer else when (type) {
             AccountType.BIP44_LEGACY,
             AccountType.BIP49_SEGWIT_WRAPPED,
             AccountType.BIP84_SEGWIT,

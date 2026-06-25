@@ -99,7 +99,7 @@ class GdkAccountBackend constructor(
             PreviousAddressParams(account.pointer, lastPointer = lastPointer)
         ).result()
 
-    suspend fun updateAccount(name: String? = null, hidden: Boolean? = null) {
+    override suspend fun updateAccount(name: String?, hidden: Boolean?) {
         gdk.updateSubAccount(
             gaSession,
             UpdateSubAccountParams(

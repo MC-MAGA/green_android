@@ -72,8 +72,9 @@ class GetSendAccountsUseCase(
                 // Same Policy Asset
                 asset.assetId == account.network.policyAsset -> true
 
-                asset.isLiquidNetwork(session) && !asset.isAmp -> account.isLiquid
+                asset.isLiquidNetwork(session) && !asset.isAmp2OrLegacy -> account.isLiquid
                 asset.isLiquidNetwork(session) && asset.isAmp -> account.isAmp
+                asset.isLiquidNetwork(session) && asset.isAmpLegacy -> account.isAmpLegacy
 
                 isLiquidToLightningSwapUseCase(
                     wallet = wallet,

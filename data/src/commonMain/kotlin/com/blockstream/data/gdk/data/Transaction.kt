@@ -135,7 +135,8 @@ data class Transaction constructor(
                 )
             )
         } else if (txType == Type.OUT && network.isLiquid) {
-            // On Liquid we have to synthesize the utxo view as we can't unblind the outputs
+            // On Liquid we have to synthesize the utxo view as we can't unblind
+            // the recipient outputs, only wallet-owned ones (e.g. change)
 
             assets.map { asset ->
                 // Remove lbtc fee
@@ -195,7 +196,7 @@ data class Transaction constructor(
                 }
             }.map {
                 // Singlesig liquid returns an unblinded address
-                val outAddress = if (network.isLiquid && network.isSinglesig) null else it.address
+                val outAddress = if (network.isLiquid && network.isSinglesig && !network.isAmp2) null else it.address
                 val outSatoshi =
                     if (txType == Type.OUT || (txType == Type.MIXED && (satoshi[it.assetId]
                             ?: 0) < 0)

@@ -103,44 +103,46 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
                 val isLiquid = asset.asset.isLiquidNetwork(session)
 
                 if (asset.asset.isAmp) {
-                    list += AccountTypeLook(AccountType.AMP_ACCOUNT)
+                    list += AccountTypeLook(AccountType.AMP2_ACCOUNT)
+                } else if (asset.asset.isAmpLegacy) {
+                    list += AccountTypeLook(AccountType.AMP_LEGACY_ACCOUNT)
                 } else if (asset.asset.isLightning) {
-                    if (session.supportsLightning() && settingsManager.isLightningAvailable() && !session.isTestnet) {
-                        list += AccountTypeLook(
-                            AccountType.LIGHTNING,
-                            canBeAdded = !session.hasLightning
-                        )
-                    }
-                } else {
-                    // Check if singlesig networks are available in this session
-                    if ((isBitcoin && session.bitcoinSinglesig != null) || (!isBitcoin && session.liquidSinglesig != null)) {
-                        list += listOf(
-                            AccountType.BIP84_SEGWIT,
-                            AccountType.BIP49_SEGWIT_WRAPPED
-                        ).map { AccountTypeLook(it) }
-                    }
-
-                    // Check if multisig networks are available in this session
-                    if (
-                        (isBitcoin && session.bitcoinMultisig != null && session.allAccounts.value.any { it.isMultisig && it.isBitcoin }) ||
-                        (isLiquid && session.liquidMultisig != null && session.allAccounts.value.any { it.isMultisig && it.isLiquid && !it.isAmp })
-                    ) {
-
-                        list += AccountTypeLook(AccountType.STANDARD)
-
-                        if (isBitcoin) {
-                            list += AccountTypeLook(AccountType.TWO_OF_THREE)
-                        }
-
-                        // Move AMP account creation top level
-                        //else {
-                        //    AccountTypeLook(AccountType.AMP_ACCOUNT)
-                        // }
-                    }
+                if (session.supportsLightning() && settingsManager.isLightningAvailable() && !session.isTestnet) {
+                    list += AccountTypeLook(
+                        AccountType.LIGHTNING,
+                        canBeAdded = !session.hasLightning
+                    )
+                }
+            } else {
+                // Check if singlesig networks are available in this session
+                if ((isBitcoin && session.bitcoinSinglesig != null) || (!isBitcoin && session.liquidSinglesig != null)) {
+                    list += listOf(
+                        AccountType.BIP84_SEGWIT,
+                        AccountType.BIP49_SEGWIT_WRAPPED
+                    ).map { AccountTypeLook(it) }
                 }
 
+                // Check if multisig networks are available in this session
+                if (
+                    (isBitcoin && session.bitcoinMultisig != null && session.allAccounts.value.any { it.isMultisig && it.isBitcoin }) ||
+                    (isLiquid && session.liquidMultisig != null && session.allAccounts.value.any { it.isMultisig && it.isLiquid && !it.isAmp && !it.isAmpLegacy })
+                ) {
+
+                    list += AccountTypeLook(AccountType.STANDARD)
+
+                    if (isBitcoin) {
+                        list += AccountTypeLook(AccountType.TWO_OF_THREE)
+                    }
+
+                    // Move AMP account creation top level
+                    //else {
+                    //    AccountTypeLook(AccountType.AMP_ACCOUNT)
+                    // }
+                }
+            }
+
                 defaultAccountTypes.value = list.filter {
-                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || (it.accountType == AccountType.AMP_ACCOUNT && asset.asset.isAmp)
+                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmp)
                 }
 
                 allAccountTypes.value = list
@@ -260,7 +262,11 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
 
     private suspend fun isAccountAlreadyArchived(network: Network, accountType: AccountType): Boolean {
         return session.allAccounts.value.find {
-            it.hidden && it.network == network && it.type == accountType && (network.isMultisig || hasHistoryUseCase.invoke(session = session, wallet = greenWallet, account = it))
+            it.hidden && it.network == network && it.type == accountType && (network.isMultisig || hasHistoryUseCase.invoke(
+                session = session,
+                wallet = greenWallet,
+                account = it
+            ))
         } != null
     }
 }
@@ -277,7 +283,7 @@ class ChooseAccountTypeViewModelPreview(greenWallet: GreenWallet) :
             AccountTypeLook(AccountType.LIGHTNING, true),
             AccountTypeLook(AccountType.LIGHTNING, false),
             AccountTypeLook(AccountType.STANDARD, true),
-            AccountTypeLook(AccountType.AMP_ACCOUNT, true)
+            AccountTypeLook(AccountType.AMP_LEGACY_ACCOUNT, true)
         )
     )
     override val accountTypeBeingCreated: StateFlow<AccountTypeLook?> = MutableStateFlow(null)
