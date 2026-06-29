@@ -27,11 +27,11 @@ data class QuoteResponse(
     fun toCryptoWidgetRequest(
         walletAddress: String,
         externalCustomerId: String? = null
-    ): com.blockstream.data.meld.data.CryptoWidgetRequest {
-        return _root_ide_package_.com.blockstream.data.meld.data.CryptoWidgetRequest(
+    ): CryptoWidgetRequest {
+        return CryptoWidgetRequest(
             sessionType = "BUY",
             externalCustomerId = externalCustomerId,
-            sessionData = _root_ide_package_.com.blockstream.data.meld.data.SessionData(
+            sessionData = SessionData(
                 countryCode = countryCode,
                 sourceAmount = sourceAmount,
                 sourceCurrencyCode = sourceCurrencyCode,

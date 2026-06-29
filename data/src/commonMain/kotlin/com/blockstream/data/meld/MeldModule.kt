@@ -1,18 +1,20 @@
 package com.blockstream.data.meld
 
+import com.blockstream.data.meld.datasource.MeldLocalDataSource
+import com.blockstream.data.meld.datasource.MeldRemoteDataSource
 import org.koin.dsl.module
 
 val meldModule = module {
     single {
-        _root_ide_package_.com.blockstream.data.meld.MeldHttpClient(get())
+        MeldHttpClient(get())
     }
     single {
-        _root_ide_package_.com.blockstream.data.meld.datasource.MeldRemoteDataSource(get())
+        MeldRemoteDataSource(get())
     }
     single {
-        _root_ide_package_.com.blockstream.data.meld.datasource.MeldLocalDataSource()
+        MeldLocalDataSource()
     }
     single {
-        _root_ide_package_.com.blockstream.data.meld.MeldRepository(get(), get())
+        MeldRepository(get(), get())
     }
 }

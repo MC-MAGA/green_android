@@ -128,12 +128,6 @@ android {
     namespace = "com.blockstream.compose"
     compileSdk = libs.versions.androidCompileSdk.get().toInt()
 
-    sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
-    sourceSets["main"].res.srcDirs("src/androidMain/res")
-    // sourceSets["main"].resources.srcDirs("src/commonMain/resources")
-
-    experimentalProperties["android.experimental.kmp.enableAndroidResources"] = true
-
     defaultConfig {
         minSdk = libs.versions.androidMinSdk.get().toInt()
     }

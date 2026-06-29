@@ -5,6 +5,7 @@ import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.gdk.GdkSession
+import com.blockstream.data.meld.data.CryptoQuoteRequest
 import com.blockstream.network.NetworkResponse
 import com.blockstream.network.dataOrNull
 
@@ -33,7 +34,7 @@ class CreateCryptoQuoteUseCase constructor(
             ).dataOrNull()?.firstOrNull()?.defaultAmount?.toInt().toString()
         }
 
-        val cryptoQuote = _root_ide_package_.com.blockstream.data.meld.data.CryptoQuoteRequest(
+        val cryptoQuote = CryptoQuoteRequest(
             countryCode = country,
             sourceAmount = sourceAmount,
             sourceCurrencyCode = sourceCurrencyCode,

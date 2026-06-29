@@ -1,5 +1,6 @@
 package com.blockstream.domain.meld
 
+import com.blockstream.data.meld.data.MeldTransactionStatus
 import com.blockstream.domain.base.ObservableUseCase
 import com.blockstream.domain.base.Result
 import com.blockstream.network.NetworkResponse
@@ -17,7 +18,7 @@ class GetPendingMeldTransactions(
 
         val response = meldRepository.getTransactions(
             externalCustomerId = walletIds.joinToString(","),
-            statuses = listOf(_root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.SETTLING)
+            statuses = listOf(MeldTransactionStatus.SETTLING)
         )
 
         when (response) {

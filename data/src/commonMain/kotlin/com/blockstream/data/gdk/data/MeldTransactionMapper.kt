@@ -1,15 +1,16 @@
 package com.blockstream.data.gdk.data
 
+import com.blockstream.data.meld.data.MeldTransactionStatus
 import kotlin.math.roundToLong
 import kotlin.time.Clock
 import kotlin.time.Instant
 
 fun com.blockstream.data.meld.models.MeldTransaction.toTransaction(account: Account): Transaction? {
-    if (status == _root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.CANCELLED.name ||
-        status == _root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.DECLINED.name ||
-        status == _root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.FAILED.name ||
-        status == _root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.ERROR.name ||
-        status == _root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.VOIDED.name
+    if (status == MeldTransactionStatus.CANCELLED.name ||
+        status == MeldTransactionStatus.DECLINED.name ||
+        status == MeldTransactionStatus.FAILED.name ||
+        status == MeldTransactionStatus.ERROR.name ||
+        status == MeldTransactionStatus.VOIDED.name
     ) {
         return null
     }
@@ -32,7 +33,7 @@ fun com.blockstream.data.meld.models.MeldTransaction.toTransaction(account: Acco
         (it * 100_000_000).roundToLong() 
     } ?: 0L
 
-    val txHash = if (status == _root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.SETTLED.name) {
+    val txHash = if (status == MeldTransactionStatus.SETTLED.name) {
         cryptoDetails?.blockchainTransactionId ?: id
     } else {
         id

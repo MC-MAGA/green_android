@@ -1,5 +1,6 @@
 package com.blockstream.domain.meld
 
+import com.blockstream.data.meld.data.MeldTransactionStatus
 import com.blockstream.domain.base.NetworkBoundInMemoryUseCase
 import com.blockstream.network.NetworkResponse
 import kotlinx.coroutines.flow.Flow
@@ -10,7 +11,7 @@ class GetLastSuccessfulPurchaseExchange(
     override suspend fun doWork(params: Params) {
         val response = meldRepository.getTransactions(
             params.externalCustomerId,
-            listOf(_root_ide_package_.com.blockstream.data.meld.data.MeldTransactionStatus.SETTLED)
+            listOf(MeldTransactionStatus.SETTLED)
         )
 
         if (response is NetworkResponse.Success && response.data.transactions.isNotEmpty()) {
