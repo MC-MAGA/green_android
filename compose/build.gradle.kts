@@ -2,7 +2,7 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
-    alias(libs.plugins.androidLibrary)
+    alias(libs.plugins.android.kotlin.multiplatform.library)
     alias(libs.plugins.jetbrainsCompose)
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.kotlinxSerialization)
@@ -23,7 +23,12 @@ kotlin {
 
     jvmToolchain(libs.versions.jvm.get().toInt())
 
-    androidTarget()
+    androidLibrary {
+        namespace = "com.blockstream.compose"
+        compileSdk = libs.versions.androidCompileSdk.get().toInt()
+        minSdk = libs.versions.androidMinSdk.get().toInt()
+        androidResources { enable = true }
+    }
 
     jvm("desktop")
 
@@ -106,6 +111,8 @@ kotlin {
             implementation(libs.zxing.android.embedded)
             /** ----------------------------------------------------------------------------------------- */
 
+            implementation(libs.ui.tooling.preview)
+
             /**  --- Rive ------------------------------------------------------------------------------- */
             api(libs.rive.android)
             /** ----------------------------------------------------------------------------------------- */
@@ -124,22 +131,3 @@ kotlin {
     }
 }
 
-android {
-    namespace = "com.blockstream.compose"
-    compileSdk = libs.versions.androidCompileSdk.get().toInt()
-
-    defaultConfig {
-        minSdk = libs.versions.androidMinSdk.get().toInt()
-    }
-
-    packaging {
-        jniLibs.pickFirsts.add("**/*.so")
-    }
-    buildFeatures {
-        compose = true
-        buildConfig = true
-    }
-    dependencies {
-        debugImplementation(libs.ui.tooling.preview)
-    }
-}

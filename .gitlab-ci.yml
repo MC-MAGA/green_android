@@ -36,7 +36,7 @@ cache:
 # Defaults applied to all jobs unless overridden
 default:
   image: # 5592d41c-20250213165311
-    name: blockstream/green_android@sha256:260afcc4b8d8defeb7f03981ccea1b0b046c2d4464d3e2fa14731e3399453664
+    name: blockstream/green_android@sha256:8e981cb6fa31a7846f3e1941471e7ce50d05c7dfde1c643513e865e9e083b88e
     entrypoint: [""]
   tags:
     - ga
@@ -76,6 +76,7 @@ build_default_image:
   #      - ${DOCKERFILE}
   script:
     - apk add jq curl
+    - echo "${DOCKERHUB_PASSWORD}" | docker login --username "${DOCKERHUB_USER}" --password-stdin
     - docker buildx build
       --push
       -f ${DOCKERFILE}

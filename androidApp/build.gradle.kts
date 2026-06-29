@@ -1,12 +1,10 @@
 
-import com.android.build.gradle.internal.api.ApkVariantOutputImpl
 import org.codehaus.groovy.runtime.ProcessGroovyMethods
 import java.io.FileInputStream
 import java.util.Properties
 
 plugins {
     alias(libs.plugins.androidApplication)
-    alias(libs.plugins.kotlinAndroid)
     alias(libs.plugins.kotlinxSerialization)
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.compose.compiler)
@@ -123,14 +121,10 @@ android {
             }
         }
     }
-    applicationVariants.all {
-        outputs.all {
-            (this as ApkVariantOutputImpl).versionCodeOverride = 22000000 + (android.defaultConfig.versionCode ?: 0)
-        }
-    }
     buildFeatures {
         compose = true
         buildConfig = true
+        resValues = true
     }
     buildTypes {
         getByName("release") {
@@ -162,6 +156,14 @@ android {
         abortOnError = false
         disable += listOf("MissingTranslation", "SpUsage", "Instantiatable")
         ignoreWarnings = false
+    }
+}
+
+androidComponents {
+    onVariants { variant ->
+        variant.outputs.forEach { output ->
+            output.versionCode.set(22000000 + (android.defaultConfig.versionCode ?: 0))
+        }
     }
 }
 
@@ -216,11 +218,12 @@ dependencies {
 
     /**  --- Koin   ----------------------------------------------------------------------------- */
     // For instrumentation tests
-     androidTestImplementation(libs.koin.test)
+    androidTestImplementation(platform(libs.koin.bom))
+    androidTestImplementation(libs.koin.test)
     // androidTestImplementation(libs.koin.test.junit4)
 
     // For local unit tests
-     testImplementation(libs.koin.test)
+    testImplementation(libs.koin.test)
     // testImplementation(libs.koin.test.junit4)
     /** ----------------------------------------------------------------------------------------- */
 

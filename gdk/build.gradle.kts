@@ -1,6 +1,5 @@
 plugins {
     alias(libs.plugins.androidLibrary)
-    alias(libs.plugins.kotlinAndroid)
 }
 
 android {
@@ -40,10 +39,8 @@ task("fetchAndroidBinaries") {
     outputs.upToDateWhen { false }
 }
 
-afterEvaluate {
-    android.libraryVariants.all {
-        preBuildProvider.configure { dependsOn("fetchAndroidBinaries") }
-    }
+tasks.named("preBuild") {
+    dependsOn("fetchAndroidBinaries")
 }
 
 tasks.getByName("clean").doFirst {
