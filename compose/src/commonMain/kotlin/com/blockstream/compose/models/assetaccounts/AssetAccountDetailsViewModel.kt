@@ -26,11 +26,11 @@ import com.blockstream.data.data.TransactionList
 import com.blockstream.data.extensions.hasUnconfirmedTransactions
 import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.launchSafe
+import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountBalance
 import com.blockstream.data.gdk.data.Transaction
-import com.blockstream.data.gdk.data.Transactions
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.swap.IsSwapAvailableUseCase
 import com.blockstream.domain.swap.IsSwapsEnabledUseCase
@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
@@ -135,9 +136,10 @@ class AssetAccountDetailsViewModel(
 
     override val asset: EnrichedAsset = accountAsset.asset
 
-    override val accountBalance: StateFlow<AccountBalance> = merge(flowOf(Unit), session.accountsAndBalanceUpdated).map {
-        AccountBalance.create(account = account, session = session)
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), AccountBalance.create(account = account))
+    override val accountBalance: StateFlow<AccountBalance> =
+        merge(flowOf(Unit), session.accountsAndBalanceUpdated).mapNotNull {
+            tryCatch { AccountBalance.create(account = account, session = session) }
+        }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), AccountBalance.create(account = account))
 
     override val showBuyButton: Boolean = accountAsset.asset.isBitcoin
 
