@@ -142,6 +142,7 @@ fun LightningInvoiceScreen(
                 GreenQR(
                     modifier = Modifier.fillMaxWidth(),
                     data = data.invoiceUri,
+                    testTag = "lightning_invoice_qr",
                     borderedProps = BorderedQrProps(
                         config = QrBorderConfig(
                             color = lightning,

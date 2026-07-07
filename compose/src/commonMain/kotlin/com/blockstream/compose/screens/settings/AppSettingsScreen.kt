@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -36,8 +37,6 @@ import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.ui.text.ParagraphStyle
-import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
@@ -80,8 +79,6 @@ import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.LocalDialog
 import com.blockstream.compose.components.GreenColumn
 import com.blockstream.compose.components.GreenRow
-import com.blockstream.compose.components.RichSpan
-import com.blockstream.compose.components.RichText
 import com.blockstream.compose.extensions.getStringList
 import com.blockstream.compose.models.settings.AppSettingsViewModel
 import com.blockstream.compose.models.settings.AppSettingsViewModelAbstract
@@ -290,22 +287,27 @@ fun AppSettingsScreen(
                                         modifier = Modifier.fillMaxWidth()
                                     )
 
-                                    RichText(
-                                        text = stringResource(Res.string.id_enable_limited_usage_data) + "\n" + stringResource(Res.string.id_more_info),
-                                        spans = listOf(
-                                            RichSpan(
-                                                text = stringResource(Res.string.id_more_info),
-                                                style = SpanStyle(color = MaterialTheme.colorScheme.primary),
-                                                onClick = {
-                                                    viewModel.postEvent(AppSettingsViewModel.LocalEvents.AnalyticsMoreInfo)
-                                                }
-                                            )
-                                        ),
-                                        paragraph = ParagraphStyle(textAlign = TextAlign.Start),
-                                        defaultStyle = MaterialTheme.typography.bodyMedium.copy(
+                                    Text(
+                                        text = stringResource(Res.string.id_enable_limited_usage_data),
+                                        style = MaterialTheme.typography.bodyMedium.copy(
                                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                                         ),
+                                        textAlign = TextAlign.Start,
                                         modifier = Modifier.fillMaxWidth()
+                                    )
+
+                                    Text(
+                                        text = stringResource(Res.string.id_more_info),
+                                        style = MaterialTheme.typography.bodyMedium.copy(
+                                            color = MaterialTheme.colorScheme.primary
+                                        ),
+                                        textAlign = TextAlign.Start,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .appTestTag("analytics_more_info")
+                                            .clickable {
+                                                viewModel.postEvent(AppSettingsViewModel.LocalEvents.AnalyticsMoreInfo)
+                                            }
                                     )
                                 }
 

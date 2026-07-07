@@ -105,6 +105,7 @@ class SendLightningAmountViewModel(
             _navData.value = NavData(
                 title = getString(Res.string.id_send_lightning_bitcoin),
                 titleIcon = accountAsset.account.network.id.getNetworkIcon(),
+                titleIconTestTag = "send_lightning_bitcoin_icon",
                 isCentered = true,
             )
         }

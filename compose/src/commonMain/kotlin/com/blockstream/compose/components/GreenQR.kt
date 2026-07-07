@@ -38,6 +38,7 @@ import blockstream_green.common.generated.resources.qr_code
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.theme.green
 import com.blockstream.compose.theme.md_theme_surfaceTint
+import com.blockstream.compose.utils.appTestTag
 import com.blockstream.compose.utils.ifTrue
 import com.blockstream.compose.utils.qrScannerFrame
 import com.blockstream.data.extensions.isNotBlank
@@ -66,6 +67,7 @@ fun GreenQR(
     isJadeQR: Boolean = false,
     isBordered: Boolean = false,
     borderedProps: BorderedQrProps? = null,
+    testTag: String? = null,
     onQrClick: (() -> Unit)? = null,
     visibilityClick: () -> Unit = {},
 ) {
@@ -78,6 +80,7 @@ fun GreenQR(
             data = data,
             modifier = modifier,
             config = props.config,
+            testTag = testTag,
             footer = props.footer
         )
     } else {
@@ -86,6 +89,7 @@ fun GreenQR(
             data = data,
             isVisible = isVisible,
             isJadeQR = isJadeQR,
+            testTag = testTag,
             onQrClick = onQrClick,
             visibilityClick = visibilityClick
         )
@@ -99,6 +103,7 @@ fun LegacyGreenQR(
     data: String?,
     isVisible: Boolean = true,
     isJadeQR: Boolean = false,
+    testTag: String? = null,
     onQrClick: (() -> Unit)? = null,
     visibilityClick: () -> Unit = {},
 ) {
@@ -122,6 +127,7 @@ fun LegacyGreenQR(
                     .align(Alignment.Center)
                     .widthIn(100.dp, 400.dp)
                     .aspectRatio(1f)
+                    .appTestTag(testTag)
                     .combinedClickable(
                         onClick = {
                             if (isVisibleAndNotBlank) {
@@ -174,7 +180,8 @@ private fun BorderedQR(
     data: String?,
     modifier: Modifier = Modifier,
     config: QrBorderConfig,
-    footer: @Composable ((openFullScreen: () -> Unit) -> Unit)? = null
+    testTag: String? = null,
+    footer: @Composable ((openFullScreen: () -> Unit) -> Unit)? = null,
 ) {
     var isFullscreen by remember { mutableStateOf(false) }
     val openTrigger = { isFullscreen = true }
@@ -216,6 +223,7 @@ private fun BorderedQR(
                 modifier = Modifier
                     .fillMaxSize()
                     .clip(cardShape)
+                    .appTestTag(testTag)
                     .clickable { openTrigger() }
             ) {
                 Image(

@@ -50,6 +50,7 @@ import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.theme.bodyLarge
 import com.blockstream.compose.theme.bodySmall
 import com.blockstream.compose.theme.titleMedium
+import com.blockstream.compose.utils.appTestTag
 import com.blockstream.compose.utils.ifTrue
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -158,7 +159,9 @@ fun GreenTopAppBar(
                                     Image(
                                         painter = painterResource(iconRes),
                                         contentDescription = null,
-                                        modifier = Modifier.size(20.dp),
+                                        modifier = Modifier
+                                            .size(20.dp)
+                                            .appTestTag(navData.titleIconTestTag),
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                 }
