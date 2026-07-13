@@ -2,12 +2,15 @@ package com.blockstream.domain.send
 
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.AccountAsset
+import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Utxo
 import kotlinx.serialization.json.JsonElement
 
 data class SpendableUtxo(
     val assetId: String,
     val utxo: Utxo,
+    val isDust: Boolean,
+    val isExpired: Boolean,
     // GDK expects the original UTXO JSON in CreateTransactionParams.
     val rawUtxo: JsonElement
 ) {
@@ -19,6 +22,9 @@ class GetSpendableUtxosUseCase {
         accountAsset: AccountAsset
     ): List<SpendableUtxo> {
         val unspentOutputs = session.getUnspentOutputs(accountAsset.account)
+        val blockHeight = session.block(accountAsset.account.network).value.height
+        val canExpire2FA = accountAsset.account.type != AccountType.TWO_OF_THREE &&
+            accountAsset.account.type != AccountType.AMP_LEGACY_ACCOUNT
 
         return unspentOutputs.unspentOutputs[accountAsset.assetId].orEmpty().mapIndexedNotNull { index, rawUtxo ->
                 val utxo = unspentOutputs.unspentOutputsAsUtxo[accountAsset.assetId]?.getOrNull(index)
@@ -27,6 +33,8 @@ class GetSpendableUtxosUseCase {
                 SpendableUtxo(
                     assetId = accountAsset.assetId,
                     utxo = utxo,
+                    isDust = !accountAsset.account.isLiquid && utxo.satoshi < DUST_COIN_THRESHOLD_SATS,
+                    isExpired = canExpire2FA && utxo.expiryHeight?.let { it <= blockHeight } == true,
                     rawUtxo = rawUtxo
                 )
             }
@@ -36,7 +44,9 @@ class GetSpendableUtxosUseCase {
     }
 
     companion object {
+        // App coin-control threshold used by Desktop/iOS for the Dust filter.
+        // This is not GDK's network dust limit.
+        const val DUST_COIN_THRESHOLD_SATS = 1092L
         private const val LOCKED_USER_STATUS = 1
     }
 }
-

@@ -111,6 +111,7 @@
     <string name="id_all">All</string>
     <string name="id_all_assets">All Assets</string>
     <string name="id_all_coins">(All coins)</string>
+    <string name="id_all_available_coins">All available coins.</string>
     <string name="id_all_networks">All networks</string>
     <string name="id_all_of_the_accounts_in_your">All of the accounts in your wallet need to be empty before deleting it.</string>
     <string name="id_all_the_coins_received_or">All the coins received or created as change.</string>
@@ -127,6 +128,7 @@
     <string name="id_amount_below_minimum_allowed">Amount below minimum allowed value</string>
     <string name="id_amount_is_above_the_maximum_payment_limit_of_s">Amount is above the maximum payment limit of %1$s</string>
     <string name="id_amount_below_the_dust_threshold">Amount below the dust threshold</string>
+    <string name="id_amount_below_the_dust_threshold_s">Amount below the dust threshold (%1$d sats).</string>
     <string name="id_amount_in_s">Amount in %1$s</string>
     <string name="id_amount_must_be_at_least_s">Amount must be at least %1$s</string>
     <string name="id_amount_must_be_at_most_s">Amount must be at most %1$s</string>
@@ -148,6 +150,8 @@
     <string name="id_any_wallet_found_will_be">Any wallet found will be displayed here.</string>
     <string name="id_app_access">APP ACCESS</string>
     <string name="id_app_settings">App Settings</string>
+    <string name="id_apply_filter">Apply filter</string>
+    <string name="id_apply_filters">Apply filters</string>
     <string name="id_applies_to_every_wallet">Applies to every wallet</string>
     <string name="id_archive">Archive</string>
     <string name="id_archive_account">Archive account</string>
@@ -1049,7 +1053,6 @@
     <string name="id_not_a_valid_phone_number">Not a valid phone number</string>
     <string name="id_not_a_valid_word">Not a valid word</string>
     <string name="id_not_available_noradio_build">Not available (No-radio build)</string>
-    <string name="id_not_confidential">Not confidential</string>
     <string name="id_not_connected_connecting_in_ds_">Not connected. Connecting in %1$ds …</string>
     <string name="id_not_initialized">Not initialized</string>
     <string name="id_not_now">Not now</string>
@@ -1338,6 +1341,7 @@
     <string name="id_segwit_bip84">SegWit (BIP84)</string>
     <string name="id_select_a_fiat_currency_and">Select a fiat currency and bitcoin denomination to show amounts in your wallet</string>
     <string name="id_select_a_new_value_to_change_csv">Select a new value to change csv</string>
+    <string name="id_select_all">Select all</string>
     <string name="id_select_account">Select Account</string>
     <string name="id_select_account__asset">Select account &amp; asset</string>
     <string name="id_select_an_account_for_receiving">Select an account for receiving bitcoin.</string>
@@ -1594,6 +1598,7 @@
     <string name="id_this_will_log_you_out_and">This will log you out and delete this wallet from the app and the Blockstream servers database.</string>
     <string name="id_ticker">Ticker</string>
     <string name="id_time_s">Time: %1$s</string>
+    <string name="id_timelock_passed_spend_to_refresh_protection">Timelock passed. Spend to refresh protection.</string>
     <string name="id_timeout">Timeout</string>
     <string name="id_tip_we_recommend_you_enable">Tip: We recommend you enable more than one 2FA method. If you only set up one 2FA method and then lose it, you&apos;ll have to wait at least one year until the 2FA expires.</string>
     <string name="id_tip_you_can_use_the">Tip: You can use the xPub/yPub/zPub to view your watch-only wallet in Green, or you may import it to another platform. Each account in your wallet has a separate xPub/yPub/zPub.</string>
@@ -1661,6 +1666,7 @@
     <string name="id_type_the_next_word">Type the next word</string>
     <string name="id_unable_to_contact_the_green">Unable to contact the Green service. Please check your network connection and wait to be reconnected.</string>
     <string name="id_unarchive">Unarchive</string>
+    <string name="id_unselect_all">Unselect all</string>
     <string name="id_unarchive_account">Unarchive account</string>
     <string name="id_unblinding_data">Unblinding data</string>
     <string name="id_unconfirmed">Unconfirmed</string>

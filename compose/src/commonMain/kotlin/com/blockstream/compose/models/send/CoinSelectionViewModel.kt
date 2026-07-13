@@ -34,11 +34,7 @@ import org.koin.core.component.inject
 @Serializable
 enum class CoinFilter {
     ALL,
-    CSV,
-    P2WSH,
-    P2SH,
     DUST,
-    NOT_CONFIDENTIAL,
     EXPIRED
 }
 
@@ -52,6 +48,7 @@ data class CoinSelectionListItem(
     val blockHeight: Long?,
     val expiryHeight: Long?,
     val isBlinded: Boolean?,
+    val labels: List<CoinFilter> = emptyList(),
     val isSelected: Boolean = false
 )
 
@@ -80,6 +77,7 @@ abstract class CoinSelectionViewModelAbstract(
     class LocalEvents {
         data class ToggleCoin(val id: String) : Event
         data class SelectFilter(val filter: CoinFilter) : Event
+        object ToggleVisibleCoinsSelection : Event
         object ConfirmSelection : Event
         object OpenFilters : Event
     }
@@ -89,8 +87,9 @@ abstract class CoinSelectionViewModelAbstract(
     abstract val coins: StateFlow<List<CoinSelectionListItem>>
     abstract val coinsCount: StateFlow<Int>
     abstract val summary: StateFlow<CoinSelectionSummary>
+    abstract val allVisibleCoinsSelected: StateFlow<Boolean>
     abstract val selectedFilter: StateFlow<CoinFilter>
-    abstract val availableFilters: List<CoinFilter>
+    abstract val availableFilters: StateFlow<List<CoinFilter>>
 }
 
 class CoinSelectionViewModel(
@@ -113,42 +112,34 @@ class CoinSelectionViewModel(
     private val _summary: MutableStateFlow<CoinSelectionSummary> = MutableStateFlow(CoinSelectionSummary())
     override val summary: StateFlow<CoinSelectionSummary> = _summary.asStateFlow()
 
+    private val _allVisibleCoinsSelected: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    override val allVisibleCoinsSelected: StateFlow<Boolean> = _allVisibleCoinsSelected.asStateFlow()
+
     private val _selectedFilter: MutableStateFlow<CoinFilter> = MutableStateFlow(CoinFilter.ALL)
     override val selectedFilter: StateFlow<CoinFilter> = _selectedFilter.asStateFlow()
 
-    override val availableFilters: List<CoinFilter> = buildList {
-        add(CoinFilter.ALL)
-        add(CoinFilter.CSV)
-        add(CoinFilter.P2WSH)
-
-        if (selectedAccountAsset.account.isLiquid) {
-            add(CoinFilter.NOT_CONFIDENTIAL)
-        } else {
-            add(CoinFilter.P2SH)
-            add(CoinFilter.DUST)
-        }
-
-        if (selectedAccountAsset.account.type != AccountType.TWO_OF_THREE &&
-            selectedAccountAsset.account.type != AccountType.AMP_LEGACY_ACCOUNT
-        ) {
-            add(CoinFilter.EXPIRED)
-        }
-    }
+    private val _availableFilters: MutableStateFlow<List<CoinFilter>> = MutableStateFlow(emptyList())
+    override val availableFilters: StateFlow<List<CoinFilter>> = _availableFilters.asStateFlow()
 
     init {
+        updateAvailableFilters()
         viewModelScope.launch {
             _navData.value = NavData(
                 title = getString(Res.string.id_select_your_coins),
-                actions = listOf(
-                    NavAction(
-                        title = getString(Res.string.id_filters),
-                        icon = Res.drawable.funnel,
-                        isMenuEntry = false,
-                        onClick = {
-                            postEvent(LocalEvents.OpenFilters)
-                        }
+                actions = if (_availableFilters.value.isEmpty()) {
+                    emptyList()
+                } else {
+                    listOf(
+                        NavAction(
+                            title = getString(Res.string.id_filters),
+                            icon = Res.drawable.funnel,
+                            isMenuEntry = false,
+                            onClick = {
+                                postEvent(LocalEvents.OpenFilters)
+                            }
+                        )
                     )
-                )
+                }
             )
         }
 
@@ -183,6 +174,10 @@ class CoinSelectionViewModel(
                         blockHeight = coin.utxo.blockHeight,
                         expiryHeight = coin.utxo.expiryHeight,
                         isBlinded = coin.utxo.isBlinded,
+                        labels = buildList {
+                            if (coin.isExpired) add(CoinFilter.EXPIRED)
+                            if (coin.isDust) add(CoinFilter.DUST)
+                        },
                         isSelected = coin.id in selectedUtxoIds
                     )
                 }
@@ -212,6 +207,10 @@ class CoinSelectionViewModel(
                 selectFilter(event.filter)
             }
 
+            is LocalEvents.ToggleVisibleCoinsSelection -> {
+                toggleVisibleCoinsSelection()
+            }
+
             is LocalEvents.ConfirmSelection -> {
                 confirmSelection()
             }
@@ -226,6 +225,25 @@ class CoinSelectionViewModel(
         allCoins = allCoins.map {
             if (it.id == id) {
                 it.copy(isSelected = !it.isSelected)
+            } else {
+                it
+            }
+        }
+        applyFilter()
+
+        viewModelScope.launch {
+            updateSummary(allCoins)
+        }
+    }
+
+    private fun toggleVisibleCoinsSelection() {
+        val visibleCoinIds = _coins.value.map { it.id }.toSet()
+        if (visibleCoinIds.isEmpty()) return
+
+        val shouldSelect = !_allVisibleCoinsSelected.value
+        allCoins = allCoins.map {
+            if (it.id in visibleCoinIds) {
+                it.copy(isSelected = shouldSelect)
             } else {
                 it
             }
@@ -260,28 +278,49 @@ class CoinSelectionViewModel(
     }
 
     private fun openFilters() {
+        if (availableFilters.value.isEmpty()) return
+
         postSideEffect(
             SideEffects.NavigateTo(
                 NavigateDestinations.CoinFilters(
                     selectedFilter = selectedFilter.value,
-                    availableFilters = availableFilters
+                    availableFilters = availableFilters.value
                 )
             )
         )
+    }
+
+    private fun updateAvailableFilters() {
+        val filters = buildList {
+            if (selectedAccountAsset.account.type != AccountType.TWO_OF_THREE &&
+                selectedAccountAsset.account.type != AccountType.AMP_LEGACY_ACCOUNT
+            ) {
+                add(CoinFilter.EXPIRED)
+            }
+            if (!selectedAccountAsset.account.isLiquid) {
+                add(CoinFilter.DUST)
+            }
+        }
+
+        _availableFilters.value = filters
+
+        if (_selectedFilter.value != CoinFilter.ALL && _selectedFilter.value !in filters) {
+            _selectedFilter.value = CoinFilter.ALL
+        }
     }
 
     private fun applyFilter() {
         _coins.value = allCoins.filter { coin ->
             when (_selectedFilter.value) {
                 CoinFilter.ALL -> true
-                CoinFilter.CSV -> coin.addressType == "csv"
-                CoinFilter.P2WSH -> coin.addressType == "p2wsh"
-                CoinFilter.P2SH -> coin.addressType == "p2sh"
-                CoinFilter.DUST -> coin.satoshi < GREEN_DUST_COIN_THRESHOLD_SATS
-                CoinFilter.NOT_CONFIDENTIAL -> coin.isBlinded != true
-                CoinFilter.EXPIRED -> coin.expiryHeight?.let { it <= session.block(selectedAccountAsset.account.network).value.height } == true
+                CoinFilter.DUST -> CoinFilter.DUST in coin.labels
+                CoinFilter.EXPIRED -> CoinFilter.EXPIRED in coin.labels
             }
-        }
+        }.sortedWith(
+            compareByDescending<CoinSelectionListItem> { CoinFilter.EXPIRED in it.labels }
+                .thenByDescending { CoinFilter.DUST in it.labels }
+        )
+        _allVisibleCoinsSelected.value = _coins.value.isNotEmpty() && _coins.value.all { it.isSelected }
     }
 
     private suspend fun updateSummary(coins: List<CoinSelectionListItem>) {
@@ -306,12 +345,6 @@ class CoinSelectionViewModel(
             canConfirm = selected.isNotEmpty() || selectedUtxoIds.isNotEmpty()
         )
     }
-
-    companion object {
-        // App coin-control threshold used by Desktop/iOS for the Dust filter.
-        // This is not GDK's network dust limit.
-        private const val GREEN_DUST_COIN_THRESHOLD_SATS = 1092L
-    }
 }
 
 class CoinSelectionViewModelPreview(
@@ -330,6 +363,7 @@ class CoinSelectionViewModelPreview(
                 blockHeight = 860_000,
                 expiryHeight = null,
                 isBlinded = false,
+                labels = listOf(CoinFilter.EXPIRED),
                 isSelected = true
             ),
             CoinSelectionListItem(
@@ -341,7 +375,8 @@ class CoinSelectionViewModelPreview(
                 addressType = "csv",
                 blockHeight = 859_940,
                 expiryHeight = null,
-                isBlinded = false
+                isBlinded = false,
+                labels = listOf(CoinFilter.DUST)
             )
         )
     )
@@ -354,8 +389,11 @@ class CoinSelectionViewModelPreview(
             canConfirm = true
         )
     )
+    override val allVisibleCoinsSelected: StateFlow<Boolean> = MutableStateFlow(false)
     override val selectedFilter: StateFlow<CoinFilter> = MutableStateFlow(CoinFilter.ALL)
-    override val availableFilters: List<CoinFilter> = CoinFilter.entries
+    override val availableFilters: StateFlow<List<CoinFilter>> = MutableStateFlow(
+        listOf(CoinFilter.EXPIRED, CoinFilter.DUST)
+    )
 
     companion object {
         fun preview() = CoinSelectionViewModelPreview(
