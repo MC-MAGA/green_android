@@ -39,17 +39,21 @@ import com.blockstream.domain.meld.MeldUseCase
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.network.dataOrThrow
 import com.blockstream.utils.Loggable
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.koin.core.component.inject
+import kotlin.time.Duration.Companion.milliseconds
 
 abstract class BuyViewModelAbstract(
     greenWallet: GreenWallet,
@@ -154,6 +158,7 @@ abstract class BuyViewModelAbstract(
     }
 }
 
+@OptIn(FlowPreview::class)
 class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? = null) :
     BuyViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = initialAccountAsset) {
 
@@ -232,7 +237,9 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
 
 
         session.ifConnected {
-            combine(amount, country) { amount, _ ->
+            combine(amount, country) { amount, country ->
+                amount to country
+            }.debounce(500L.milliseconds).distinctUntilChanged().onEach { (amount, _) ->
                 updateQuotes(amount)
             }.launchIn(this)
         }
@@ -329,9 +336,9 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
     private var updateQuotesJob: Job? = null
 
     private suspend fun mapMeldErrorToUserFriendly(errorMessage: String?): String {
-        return when (errorMessage) {
-            "INVALID_AMOUNT_TOO_LOW" -> getString(Res.string.id_amount_too_low)
-            "INVALID_AMOUNT_TOO_HIGH" -> getString(Res.string.id_amount_too_high)
+        return when {
+            errorMessage?.contains("INVALID_AMOUNT_TOO_LOW") == true -> getString(Res.string.id_amount_too_low)
+            errorMessage?.contains("INVALID_AMOUNT_TOO_HIGH") == true -> getString(Res.string.id_amount_too_high)
             else ->  getString(Res.string.id_something_went_wrong)
         }
     }
