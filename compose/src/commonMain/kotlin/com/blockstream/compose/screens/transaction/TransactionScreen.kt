@@ -48,6 +48,7 @@ import blockstream_green.common.generated.resources.id_received
 import blockstream_green.common.generated.resources.id_received_on
 import blockstream_green.common.generated.resources.id_redeposit
 import blockstream_green.common.generated.resources.id_redeposited
+import blockstream_green.common.generated.resources.id_reset_stuck_swap
 import blockstream_green.common.generated.resources.id_send_to
 import blockstream_green.common.generated.resources.id_sent
 import blockstream_green.common.generated.resources.id_share
@@ -104,6 +105,7 @@ import com.blockstream.compose.utils.SetupScreen
 import com.blockstream.compose.utils.appTestTag
 import com.blockstream.data.data.MenuEntry
 import com.blockstream.data.data.MenuEntryList
+import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.gdk.data.Transaction
 import org.jetbrains.compose.resources.StringResource
 import org.jetbrains.compose.resources.getString
@@ -455,6 +457,16 @@ fun TransactionScreen(
                         painterResource(Res.drawable.arrow_u_left_down)
                     ) {
                         viewModel.postEvent(TransactionViewModel.LocalEvents.RecoverFunds)
+                    }
+                }
+
+                if (swapId.isNotBlank()) {
+                    HorizontalDivider()
+                    MenuListItem(
+                        stringResource(Res.string.id_reset_stuck_swap),
+                        painterResource(Res.drawable.arrow_u_left_down)
+                    ) {
+                        viewModel.postEvent(TransactionViewModel.LocalEvents.ResetSwap)
                     }
                 }
 

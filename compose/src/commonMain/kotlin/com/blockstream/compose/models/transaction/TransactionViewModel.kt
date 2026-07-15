@@ -7,6 +7,7 @@ import blockstream_green.common.generated.resources.id_receiving
 import blockstream_green.common.generated.resources.id_redeposited
 import blockstream_green.common.generated.resources.id_sent
 import blockstream_green.common.generated.resources.id_swap
+import blockstream_green.common.generated.resources.id_swap_marked_for_retry
 import com.blockstream.compose.events.Event
 import com.blockstream.compose.extensions.details
 import com.blockstream.compose.extensions.previewAccountAsset
@@ -22,6 +23,7 @@ import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffect
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.BTC_POLICY_ASSET
 import com.blockstream.data.SATOSHI_UNIT
 import com.blockstream.data.data.Denomination
@@ -41,6 +43,7 @@ import com.blockstream.data.utils.getFiatCurrency
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.data.utils.toAmountLookOrNa
 import com.blockstream.data.utils.userNumberFormat
+import com.blockstream.domain.swap.ResetSwapUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -53,6 +56,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 import kotlin.time.Clock
 
 abstract class TransactionViewModelAbstract(
@@ -87,12 +91,15 @@ abstract class TransactionViewModelAbstract(
 class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
     TransactionViewModelAbstract(accountAssetOrNull = transaction.account.accountAsset, greenWallet = greenWallet) {
 
+    private val resetSwapUseCase: ResetSwapUseCase by inject()
+
     class LocalEvents {
         class SetNote(val note: String) : Event
         object ViewInBlockExplorer : Event
         class ShareTransaction(val liquidShareType: LiquidShareType? = null) : Event
         object BumpFee : Event
         object RecoverFunds : Event
+        object ResetSwap : Event
     }
 
     class LocalSideEffects {
@@ -231,6 +238,12 @@ class TransactionViewModel(transaction: Transaction, greenWallet: GreenWallet) :
                     )
                 )
             )
+        } else if (event is LocalEvents.ResetSwap) {
+            doAsync({
+                resetSwapUseCase(swapId.value ?: "")
+            }, onSuccess = {
+                postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_swap_marked_for_retry)))
+            })
         }
     }
 

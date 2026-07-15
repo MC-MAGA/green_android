@@ -424,7 +424,7 @@ abstract class CreateTransactionViewModelAbstract(
 
                 // Broadcast or just sign
                 if (broadcast) {
-                    if (network.isSinglesig || network.isAmp2 || isAtomicSwap || transaction.isSweep()) {
+                    (if (network.isSinglesig || network.isAmp2 || isAtomicSwap || transaction.isSweep()) {
                         session.broadcastTransaction(
                             network = network,
                             broadcastTransaction = BroadcastTransactionParams(
@@ -444,11 +444,11 @@ abstract class CreateTransactionViewModelAbstract(
                             isSendAll = transaction.isSendAll,
                             isBump = transaction.isBump(),
                             twoFactorResolver = this
-                        ).also {
-                            params.swap?.swapId?.also { swapId ->
-                                it.txHash?.also { txHash ->
-                                    database.setSwapTxHash(swapId, txHash)
-                                }
+                        )
+                    }).also {
+                        params.swap?.swapId?.also { swapId ->
+                            it.txHash?.also { txHash ->
+                                database.setSwapTxHash(swapId, txHash)
                             }
                         }
                     }

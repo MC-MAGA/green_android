@@ -2067,4 +2067,8 @@
     <string name="id_unlock_jade_and_scan_this_qr">Unlock Jade and scan this QR to enable swaps on this phone and generate a retrieval key in case of swap failure.</string>
     <string name="id_invoice_already_paid">Invoice already paid</string>
     <string name="id_bolt12_payment_is_only_available_via_lbtc">BOLT12 payment is only available via LBTC</string>
+    <string name="id_reset_stuck_swap">Reset Stuck Swap</string>
+    <string name="id_reset_stuck_swaps">Reset Stuck Swaps</string>
+    <string name="id_swaps_marked_for_retry">Swaps marked for retry. Any stuck swap will be reprocessed. Contact support for more info</string>
+    <string name="id_swap_marked_for_retry">Swap marked for retry. Contact support for more info</string>
 </resources>

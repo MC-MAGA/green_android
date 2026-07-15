@@ -22,6 +22,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
@@ -270,32 +271,39 @@ class Lwk(
 
         monitor.add(swapId)
 
-        tryCatch {
-            val json = Json.parseToJsonElement(data)
+        scope.launchSafe {
+            try {
+                val json = Json.parseToJsonElement(data)
 
-            when (val type = json.jsonObject["swap_type"]?.jsonPrimitive?.content) {
-                SWAP_TYPE_SUBMARINE -> {
-                    logger.d { "Restoring submarine swap {$swapId}..." }
-                    val pay = boltzSession.restorePreparePay(data)
-                    handlePay(pay)
-                }
+                when (val type = json.jsonObject["swap_type"]?.jsonPrimitive?.content) {
+                    SWAP_TYPE_SUBMARINE -> {
+                        logger.d { "Restoring submarine swap {$swapId}..." }
+                        val pay = boltzSession.restorePreparePay(data)
+                        handlePay(pay)
+                    }
 
-                SWAP_TYPE_REVERSE_SUBMARINE -> {
-                    logger.d { "Restoring reverse submarine swap $swapId..." }
-                    val response = boltzSession.restoreInvoice(data)
-                    handleInvoice(response)
-                }
+                    SWAP_TYPE_REVERSE_SUBMARINE -> {
+                        logger.d { "Restoring reverse submarine swap $swapId..." }
+                        val response = boltzSession.restoreInvoice(data)
+                        handleInvoice(response)
+                    }
 
-                SWAP_TYPE_CHAIN -> {
-                    logger.d { "Restoring chain swap $swapId..." }
-                    val response = boltzSession.restoreLockup(data)
-                    handleChainLockup(response)
-                }
+                    SWAP_TYPE_CHAIN -> {
+                        logger.d { "Restoring chain swap $swapId..." }
+                        val response = boltzSession.restoreLockup(data)
+                        handleChainLockup(response)
+                    }
 
-                else -> {
-                    logger.d { "Unknown swap type: $type , $data" }
-                    database.deleteSwap(swapId)
-                }
+                    else -> {
+                        logger.d { "Unknown swap type: $type , $data" }
+                        database.deleteSwap(swapId)
+                        null
+                    }
+                }?.join()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            } finally {
+                monitor.remove(swapId)
             }
         }
     }
@@ -610,8 +618,8 @@ class Lwk(
         )
     }
 
-    fun handleChainLockup(lockup: LockupResponse) {
-        scope.launchSafe {
+    fun handleChainLockup(lockup: LockupResponse): Job {
+        return scope.launchSafe {
             val swapId = lockup.swapId()
             logger.d { "Handle lockup $swapId" }
             do {
@@ -645,8 +653,8 @@ class Lwk(
         }
     }
 
-    private fun handleInvoice(invoice: InvoiceResponse) {
-        scope.launchSafe {
+    private fun handleInvoice(invoice: InvoiceResponse): Job {
+        return scope.launchSafe {
             val swapId = invoice.swapId()
             logger.d { "Handle invoice $swapId" }
             do {
@@ -686,8 +694,8 @@ class Lwk(
         }
     }
 
-    private fun handlePay(pay: PreparePayResponse) {
-        scope.launchSafe {
+    private fun handlePay(pay: PreparePayResponse): Job {
+        return scope.launchSafe {
             val swapId = pay.swapId()
             logger.d { "Handle invoice $swapId" }
             do {

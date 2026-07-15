@@ -4,46 +4,53 @@ package com.blockstream.compose.models.swap
 
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
+import blockstream_green.common.generated.resources.id_reset_stuck_swaps
 import blockstream_green.common.generated.resources.id_swap
 import blockstream_green.common.generated.resources.id_swap_from
 import blockstream_green.common.generated.resources.id_swap_to
+import blockstream_green.common.generated.resources.id_swaps_marked_for_retry
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.ArrowCounterClockwise
 import com.blockstream.compose.events.Events
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.extensions.previewAccountAsset
 import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.models.send.CreateTransactionViewModelAbstract
+import com.blockstream.compose.navigation.NavAction
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.AddressInputType
 import com.blockstream.data.TransactionSegmentation
 import com.blockstream.data.TransactionType
 import com.blockstream.data.banner.Banner
 import com.blockstream.data.data.DenominatedValue
+import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.FeePriority
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.extensions.launchSafe
 import com.blockstream.data.extensions.tryCatch
-import com.blockstream.data.data.Denomination
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountAssetBalance
 import com.blockstream.data.gdk.data.AccountAssetBalanceList
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.AssetBalance
 import com.blockstream.data.gdk.data.AssetBalanceList
-import com.blockstream.data.lightning.maxSendableSatoshi
 import com.blockstream.data.gdk.data.PendingTransaction
 import com.blockstream.data.gdk.params.CreateTransactionParams
+import com.blockstream.data.lightning.maxSendableSatoshi
 import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.QuoteMode
 import com.blockstream.data.swap.SwapErrorSide
 import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.feeRateWithUnit
-import com.blockstream.data.utils.ifNotNull
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
+import com.blockstream.domain.swap.ResetWalletSwapsUseCase
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.domain.swap.isSwapPairSupported
 import com.blockstream.domain.swap.isSwappableAsset
@@ -98,16 +105,13 @@ abstract class SwapViewModelAbstract(
 
     abstract fun swapPairs()
     abstract fun createSwap()
-
     abstract fun onAmountChanged(amount: String, isSendQuoteMode: Boolean)
-
     abstract fun onQuoteModeChanged(isSendQuoteMode: Boolean)
-
     abstract fun onAccountClick(isFrom: Boolean)
     abstract fun setAccount(accountAssetBalance: AccountAssetBalance)
-
     abstract fun onAssetClick(isFrom: Boolean)
     abstract fun setAsset(assetBalance: AssetBalance)
+    abstract fun resetSwaps()
 }
 
 class SwapViewModel(
@@ -119,6 +123,7 @@ class SwapViewModel(
 ) {
     private val swapUseCase: SwapUseCase by inject()
     private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
+    private val resetWalletSwapsUseCase: ResetWalletSwapsUseCase by inject()
 
     override val uiState: MutableStateFlow<SwapUiState> = MutableStateFlow(SwapUiState())
 
@@ -128,7 +133,19 @@ class SwapViewModel(
 
     init {
         viewModelScope.launch {
-            _navData.value = NavData(title = getString(Res.string.id_swap), subtitle = greenWallet.name)
+            _navData.value = NavData(
+                title = getString(Res.string.id_swap),
+                subtitle = greenWallet.name,
+                actions = listOfNotNull(
+                    NavAction(
+                        title = getString(Res.string.id_reset_stuck_swaps),
+                        imageVector = PhosphorIcons.Regular.ArrowCounterClockwise,
+                        isMenuEntry = true
+                    ) {
+                        resetSwaps()
+                    }
+                )
+            )
         }
 
         viewModelScope.ifConnected(session) {
@@ -529,6 +546,14 @@ class SwapViewModel(
     private suspend fun pickerTitle(isFrom: Boolean): String =
         getString(if (isFrom) Res.string.id_swap_from else Res.string.id_swap_to)
 
+    override fun resetSwaps() {
+        doAsync({
+            resetWalletSwapsUseCase(greenWallet.xPubHashId)
+        }, onSuccess = {
+            postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_swaps_marked_for_retry)))
+        })
+    }
+
     companion object : Loggable()
 }
 
@@ -545,6 +570,7 @@ class SwapViewModelPreview(greenWallet: GreenWallet) :
     override fun onAccountClick(isFrom: Boolean) {}
 
     override fun setAccount(accountAssetBalance: AccountAssetBalance) {}
+    override fun resetSwaps() {}
 
     override fun onAssetClick(isFrom: Boolean) {}
 

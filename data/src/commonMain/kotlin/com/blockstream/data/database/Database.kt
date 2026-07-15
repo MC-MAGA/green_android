@@ -24,7 +24,6 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapNotNull
 import kotlinx.coroutines.withContext
-import kotlin.collections.map
 
 const val DATABASE_NAME_WALLET = "green.sqlite"
 const val DATABASE_NAME_LOCAL = "local.sqlite"
@@ -382,6 +381,10 @@ class Database(driverFactory: DriverFactory, val settingsManager: SettingsManage
 
     suspend fun setSwapPending(id: String) = io {
         walletDB.boltzSwapsQueries.setSwapPending(id = id)
+    }
+
+    suspend fun setWalletSwapsPending(xPubHashId: String) = io {
+        walletDB.boltzSwapsQueries.setWalletSwapsPending(xpub_hash_id = xPubHashId)
     }
 
     suspend fun setSwapTxHash(id: String, txHash: String) = io {

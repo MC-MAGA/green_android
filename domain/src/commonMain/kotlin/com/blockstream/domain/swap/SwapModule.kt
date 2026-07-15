@@ -12,6 +12,8 @@ val swapModule = module {
     singleOf(::CreateChainSwapUseCase)
     singleOf(::CreateSwapUseCase)
     singleOf(::HandleSwapEventsUseCase)
+    singleOf(::ResetSwapUseCase)
+    singleOf(::ResetWalletSwapsUseCase)
     singleOf(::IsSwapsEnabledUseCase)
     singleOf(::CanSwapsBeDisabledUseCase)
     singleOf(::GetWalletFromSwapUseCase)

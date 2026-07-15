@@ -51,6 +51,9 @@ UPDATE boltzSwaps SET is_pending = 0 WHERE id = ?;
 setSwapPending:
 UPDATE boltzSwaps SET is_pending = 1 WHERE id = ?;
 
+setWalletSwapsPending:
+UPDATE boltzSwaps SET is_pending = 1 WHERE xpub_hash_id = ? AND is_magic = 0;
+
 setSwapTxHash:
 UPDATE boltzSwaps SET tx_hash = ? WHERE id = ?;
 
