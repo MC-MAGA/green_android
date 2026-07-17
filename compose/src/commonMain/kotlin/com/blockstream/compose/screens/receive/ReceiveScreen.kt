@@ -261,7 +261,13 @@ fun ReceiveScreen(
                         when {
                             account.isLightning -> null
                             account.isAmp -> stringResource(Res.string.id_account_type_amp)
-                            account.isAmpLegacy -> stringResource(Res.string.id_account_type_amp_legacy)
+                            account.isAmpLegacy -> stringResource(
+                                if (viewModel.session.isTestnet && viewModel.session.liquidAmp2 != null) {
+                                    Res.string.id_account_type_amp_legacy
+                                } else {
+                                    Res.string.id_account_type_amp
+                                }
+                            )
                             account.isMultisig -> stringResource(Res.string.id_account_type_2fa_protected)
                             account.isLiquid -> stringResource(Res.string.id_account_type_standard)
                             else -> null

@@ -104,7 +104,7 @@ fun GreenAccountCard(
                         )
 
                         Text(
-                            text = account.account.type.policyAndType().uppercase(),
+                            text = account.account.policyAndType(session).uppercase(),
                             style = bodyMedium,
                             color = whiteMedium
                         )

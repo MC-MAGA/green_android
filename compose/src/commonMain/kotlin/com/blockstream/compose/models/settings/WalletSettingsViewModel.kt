@@ -62,7 +62,6 @@ import com.blockstream.data.extensions.indexOfOrNull
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.extensions.logException
 import com.blockstream.data.extensions.tryCatch
-import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.gdk.data.Network
 import com.blockstream.data.gdk.data.Settings
@@ -157,8 +156,7 @@ class WalletSettingsViewModel(
         data object RecoveryPhrase : Event
         data object SupportId : Event
 
-        data class CopyAmpId(val account: Account? = null) : Event
-        data class CopyAmp2Id(val account: Account? = null) : Event
+        data object OpenAmpAccount : Event
         data class ChooseAccountType(val accountType: AccountType) : Event
         data object OpenLightningSettings : Event
         data class CreateAccount(val accountType: AccountType, val asset: EnrichedAsset? = null) : Event
@@ -179,8 +177,6 @@ class WalletSettingsViewModel(
         ) : SideEffect
 
         object LaunchBiometrics : SideEffect
-        data class CopyAmpId(val accounts: List<Account>) : SideEffect
-
         class ArchivedAccountDialog(event: Event) : SideEffects.SideEffectEvent(event) {
             constructor(sideEffect: SideEffect) : this(Events.EventSideEffect(sideEffect))
         }
@@ -397,13 +393,7 @@ class WalletSettingsViewModel(
 
                 if (!session.isWatchOnlyValue) {
                     accountSettings += listOfNotNull(
-                        WalletSetting.CreateAmpAccount.takeIf { session.accounts.value.find { it.type == AccountType.AMP_LEGACY_ACCOUNT } == null },
-                        WalletSetting.CopyAmpId.takeIf { session.accounts.value.any { it.type == AccountType.AMP_LEGACY_ACCOUNT } },
-                    )
-
-                    accountSettings += listOfNotNull(
-                        WalletSetting.CreateAmp2Account.takeIf { session.accounts.value.find { it.type == AccountType.AMP2_ACCOUNT } == null },
-                        WalletSetting.CopyAmp2Id.takeIf { session.accounts.value.any { it.type == AccountType.AMP2_ACCOUNT } },
+                        WalletSetting.AmpId.takeIf { canShowAmpAccountEntryPoint() },
                     )
 
                     val hasMultisig = session.activeBitcoinMultisig != null || session.activeLiquidMultisig != null
@@ -443,20 +433,8 @@ class WalletSettingsViewModel(
         super.handleEvent(event)
 
         when (event) {
-            is LocalEvents.CopyAmpId -> {
-                if (event.account == null) {
-                    postSideEffect(LocalSideEffects.CopyAmpId(session.accounts.value.filter { it.type == AccountType.AMP_LEGACY_ACCOUNT }))
-                } else {
-                    postSideEffect(SideEffects.CopyToClipboard(event.account.receivingId))
-                }
-            }
-
-            is LocalEvents.CopyAmp2Id -> {
-                if (event.account == null) {
-                    postSideEffect(LocalSideEffects.CopyAmpId(session.accounts.value.filter { it.type == AccountType.AMP2_ACCOUNT }))
-                } else {
-                    postSideEffect(SideEffects.CopyToClipboard(event.account.receivingId))
-                }
+            LocalEvents.OpenAmpAccount -> {
+                postSideEffect(SideEffects.NavigateTo(NavigateDestinations.AmpAccount(greenWallet = greenWallet)))
             }
 
             is LocalEvents.ChooseAccountType -> {
@@ -485,7 +463,6 @@ class WalletSettingsViewModel(
             is LocalEvents.CreateAccount -> {
                 createAccount(
                     accountType = event.accountType,
-                    accountName = event.accountType.toString(),
                     network = networkForAccountType(event.accountType, event.asset),
                 )
             }
@@ -686,7 +663,7 @@ class WalletSettingsViewModel(
 
     private fun createAccount(
         accountType: AccountType,
-        accountName: String,
+        accountName: String? = null,
         network: Network,
         mnemonic: String? = null,
         xpub: String? = null
@@ -796,6 +773,18 @@ class WalletSettingsViewModel(
             AccountType.LIGHTNING -> session.lightning
             AccountType.UNKNOWN -> throw Exception("Network not found")
         }
+    }
+
+    private fun canShowAmpAccountEntryPoint(): Boolean {
+        if (session.isWatchOnlyValue) return false
+
+        val hasAmpAccount = session.accounts.value.any { it.type.isAmpOrLecacy() }
+        val canCreateAmpAccount = when {
+            greenWallet.isHardware -> session.liquidMultisig != null
+            else -> session.liquidMultisig != null || (session.isTestnet && session.liquidAmp2 != null)
+        }
+
+        return hasAmpAccount || canCreateAmpAccount
     }
 
     private suspend fun isAccountAlreadyArchived(network: Network, accountType: AccountType): Boolean {

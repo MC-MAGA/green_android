@@ -157,7 +157,7 @@ data class Account constructor(
                 }
 
                 AccountType.AMP_LEGACY_ACCOUNT -> {
-                    "AMP Legacy"
+                    if (isLiquidMainnet) "AMP" else "AMP Legacy"
                 }
 
                 AccountType.AMP2_ACCOUNT -> {

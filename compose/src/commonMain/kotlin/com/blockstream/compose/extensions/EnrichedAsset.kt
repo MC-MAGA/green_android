@@ -8,7 +8,7 @@ fun EnrichedAsset.nameStringHolderOrNull(session: GdkSession?): StringHolder? = 
 
 //fun EnrichedAsset.nameOrNull(session: GdkSession?): StringHolder? {
 //    return if (isAnyAsset) {
-//        StringHolder(stringResource = if (isAmp) Res.string.id_receive_any_amp_asset else Res.string.id_receive_any_liquid_asset)
+//        StringHolder(stringResource = if (isAmp) Res.string.id_any_amp_asset else Res.string.id_any_liquid_asset)
 //    } else if (session != null && assetId.isPolicyAsset(session)) {
 //        when {
 //            assetId.isBitcoinPolicyAsset() -> "Bitcoin"

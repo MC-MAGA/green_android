@@ -45,7 +45,7 @@ object Urls {
     const val HELP_LIGHTNING_SHORTCUT = "https://help.blockstream.com/hc/en-us/articles/23020279153177"
     const val HELP_LIGHTNING_BETA = "https://help.blockstream.com/hc/en-us/articles/18788578831897-Understand-Lightning-support-in-the-Blockstream-app"
     const val HELP_JADE_AIRGAPPED = "https://help.blockstream.com/hc/en-us/sections/10426339090713-Air-gapped-Usage"
-    const val HELP_AMP_ASSETS = "https://help.blockstream.com/hc/en-us/articles/5301732614169-How-do-I-receive-AMP-assets-"
+    const val HELP_AMP_ASSETS = "https://help.blockstream.com/blockstream-app/use-liquid-bitcoin/generate-amp-id"
     const val HELP_QR_PIN_UNLOCK = "https://blockstream.zendesk.com/hc/en-us/articles/28264425434265"
     const val HELP_MASTER_BLINDING_KEY =
         "https://help.blockstream.com/hc/en-us/articles/4403675941017-What-are-the-implications-of-exporting-the-master-blinding-key"

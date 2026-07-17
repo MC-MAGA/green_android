@@ -102,10 +102,16 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
                 val isBitcoin = asset.asset.isBitcoin
                 val isLiquid = asset.asset.isLiquidNetwork(session)
 
-                if (asset.asset.isAmp) {
-                    list += AccountTypeLook(AccountType.AMP2_ACCOUNT)
+                if (asset.asset.isAmp && canCreateAmp2Account()) {
+                    list += AccountTypeLook(
+                        AccountType.AMP2_ACCOUNT,
+                        canBeAdded = !session.hasAmpAccount
+                    )
                 } else if (asset.asset.isAmpLegacy) {
-                    list += AccountTypeLook(AccountType.AMP_LEGACY_ACCOUNT)
+                    list += AccountTypeLook(
+                        AccountType.AMP_LEGACY_ACCOUNT,
+                        canBeAdded = !session.hasAmpLegacyAccount
+                    )
                 } else if (asset.asset.isLightning) {
                 if (session.supportsLightning() && settingsManager.isLightningAvailable() && !session.isTestnet) {
                     list += AccountTypeLook(
@@ -188,7 +194,6 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
             is LocalEvents.CreateAccount -> {
                 createAccount(
                     accountType = event.accountType,
-                    accountName = event.accountType.toString(),
                     network = networkForAccountType(event.accountType, asset.value.asset),
                 )
             }
@@ -269,6 +274,9 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
             ))
         } != null
     }
+
+    private fun canCreateAmp2Account(): Boolean =
+        session.isTestnet && session.liquidAmp2 != null
 }
 
 class ChooseAccountTypeViewModelPreview(greenWallet: GreenWallet) :

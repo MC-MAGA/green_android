@@ -36,7 +36,6 @@ class ReviewAddAccountViewModel(setupArgs: SetupArgs) : ReviewAddAccountViewMode
         if (event is Events.Continue) {
             createAccount(
                 accountType = setupArgs.accountType!!,
-                accountName = setupArgs.accountType.toString(),
                 network = setupArgs.network!!,
                 mnemonic = setupArgs.mnemonic,
                 xpub = setupArgs.xpub

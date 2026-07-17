@@ -51,7 +51,7 @@ data class AccountTypeLook(
     val title: StringResource
         get() = when (accountType) {
             AccountType.STANDARD -> Res.string.id_2fa_protected
-            AccountType.AMP_LEGACY_ACCOUNT -> Res.string.id_amp
+            AccountType.AMP2_ACCOUNT, AccountType.AMP_LEGACY_ACCOUNT -> Res.string.id_amp
             AccountType.TWO_OF_THREE -> Res.string.id_2of3_with_2fa
             AccountType.BIP44_LEGACY -> Res.string.id_legacy
             AccountType.BIP49_SEGWIT_WRAPPED -> Res.string.id_legacy_segwit
@@ -64,7 +64,7 @@ data class AccountTypeLook(
     val description: StringResource
         get() = when (accountType) {
             AccountType.STANDARD -> Res.string.id_quick_setup_2fa_account_ideal
-            AccountType.AMP_LEGACY_ACCOUNT -> Res.string.id_account_for_special_assets
+            AccountType.AMP2_ACCOUNT, AccountType.AMP_LEGACY_ACCOUNT -> Res.string.id_account_for_special_assets
             AccountType.TWO_OF_THREE -> Res.string.id_permanent_2fa_account_ideal_for
             AccountType.BIP44_LEGACY -> Res.string.id_legacy_account
             AccountType.BIP49_SEGWIT_WRAPPED -> Res.string.id_simple_portable_standard
@@ -77,7 +77,7 @@ data class AccountTypeLook(
     val policy: StringResource
         get() = when (accountType) {
             AccountType.STANDARD -> Res.string.id_2of2
-            AccountType.AMP_LEGACY_ACCOUNT -> Res.string.id_amp
+            AccountType.AMP2_ACCOUNT, AccountType.AMP_LEGACY_ACCOUNT -> Res.string.id_amp
             AccountType.TWO_OF_THREE -> Res.string.id_2of3
             AccountType.BIP44_LEGACY -> Res.string.id_legacy
             AccountType.BIP49_SEGWIT_WRAPPED -> Res.string.id_legacy_segwit

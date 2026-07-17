@@ -68,7 +68,13 @@ class GetReceiveAssetsUseCase(
             ).toSet()
 
             val popularAssets = (session.networkAssetManager.countlyAssetsFlow.value.takeIf { session.liquid != null }
-                ?.filter { (!it.isAmp || session.hasAmpAccount) && (!it.isAmpLegacy || session.hasAmpLegacyAccount) }?.map {
+                ?.filter {
+                    when {
+                        it.isAmp -> session.hasAmpAccount
+                        it.isAmpLegacy -> session.hasAmpLegacyAccount
+                        else -> true
+                    }
+                }?.map {
                     EnrichedAsset.create(session = session, assetId = it.assetId)
                 }?.toSet() ?: emptySet())
 

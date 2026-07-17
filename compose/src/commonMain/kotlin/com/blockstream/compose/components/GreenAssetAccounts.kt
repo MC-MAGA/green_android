@@ -29,9 +29,9 @@ import androidx.compose.ui.unit.dp
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.amp_asset
 import blockstream_green.common.generated.resources.id_create_new_account
-import blockstream_green.common.generated.resources.id_receive_any_amp_asset
-import blockstream_green.common.generated.resources.id_receive_any_amp_legacy_asset
-import blockstream_green.common.generated.resources.id_receive_any_liquid_asset
+import blockstream_green.common.generated.resources.id_any_amp_asset
+import blockstream_green.common.generated.resources.id_any_amp_legacy_asset
+import blockstream_green.common.generated.resources.id_any_liquid_asset
 import blockstream_green.common.generated.resources.id_s_is_a_liquid_asset_you_can
 import blockstream_green.common.generated.resources.id_s_is_a_liquid_asset_you_need_a
 import blockstream_green.common.generated.resources.id_s_is_an_amp_asset_you_can
@@ -160,12 +160,13 @@ fun GreenAssetAccounts(
                     contentAlignment = Alignment.CenterStart
                 ) {
                     if (asset.isAnyAsset) {
+                        val canCreateAmp = session?.isTestnet == true && session.liquidAmp2 != null
                         Text(
                             text = stringResource(
                                 when {
-                                    asset.isAnyAsset && asset.isAmp -> Res.string.id_receive_any_amp_asset
-                                    asset.isAnyAsset && asset.isAmpLegacy -> Res.string.id_receive_any_amp_legacy_asset
-                                    else -> Res.string.id_receive_any_liquid_asset
+                                    asset.isAnyAsset && asset.isAmp -> Res.string.id_any_amp_asset
+                                    asset.isAnyAsset && asset.isAmpLegacy -> if (canCreateAmp) Res.string.id_any_amp_legacy_asset else Res.string.id_any_amp_asset
+                                    else -> Res.string.id_any_liquid_asset
                                 }
                             ),
                             style = titleSmall,
@@ -224,7 +225,7 @@ fun GreenAssetAccounts(
                         ) {
 
                             Column(modifier = Modifier.weight(1f).padding(start = 6.dp)) {
-                                Text(it.type.policyAndType(), style = labelLarge)
+                                Text(it.policyAndType(session), style = labelLarge)
 
                                 Row {
                                     Icon(

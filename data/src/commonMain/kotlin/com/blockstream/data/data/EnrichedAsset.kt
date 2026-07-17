@@ -47,9 +47,9 @@ data class EnrichedAsset constructor(
     fun nameOrNull(session: GdkSession?): String? {
         return if (isAnyAsset) {
             when {
-                isAmp -> "id_receive_any_amp_asset"
-                isAmpLegacy -> "id_receive_any_amp_legacy_asset"
-                else -> "id_receive_any_liquid_asset"
+                isAmp -> "id_any_amp_asset"
+                isAmpLegacy -> if (session?.isTestnet == true && session.liquidAmp2 != null) "id_any_amp_legacy_asset" else "id_any_amp_asset"
+                else -> "id_any_liquid_asset"
             }
         } else if (session != null && assetId.isPolicyAsset(session)) {
             when {
@@ -170,17 +170,12 @@ data class EnrichedAsset constructor(
                 ticker = asset?.ticker,
                 entity = asset?.entity,
 
-                weight = when {
-                    isAmp -> -20
-                    isAmpLegacy ->30
-                    else -> -10
-                },
                 isAmp = isAmp,
                 isAmpLegacy = isAmpLegacy,
+                weight = if (isAmp) -20 else -10,
                 isAnyAsset = true
             )
 
         }
     }
 }
-

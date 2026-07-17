@@ -139,6 +139,7 @@
     <string name="id_amp_accounts_allow_you_to_send">AMP accounts allow you to send, receive, and store managed assets issued on the Liquid Network.</string>
     <string name="id_amp_accounts_are_only_available">AMP accounts are only available on Liquid wallets. You may be required to provide your account ID to issuers to receive an AMP Asset.</string>
     <string name="id_amp_id">AMP ID</string>
+    <string name="id_amp_legacy">AMP Legacy</string>
     <string name="id_amp2_id">AMP2 ID</string>
     <string name="id_amp_wallet">AMP Wallet</string>
     <string name="id_an_unidentified_error_occured">An unidentified error occured. The following error log can help you identify the issue:</string>
@@ -406,6 +407,7 @@
     <string name="id_create_a_pin_to_access_your">Create a PIN to access your wallet</string>
     <string name="id_create_a_wallet_for_bitcoin">Create a wallet for Bitcoin, Liquid or Testnet</string>
     <string name="id_create_account">Create Account</string>
+    <string name="id_create_amp_account">Create AMP Account</string>
     <string name="id_create_an_amp_account">Create an AMP Account</string>
     <string name="id_create_invoice">Create Invoice</string>
     <string name="id_create_new_account">Create New Account</string>
@@ -414,6 +416,7 @@
     <string name="id_create_wallet">Create Wallet</string>
     <string name="id_create_your_first_account_to">Create your first account to receive funds.</string>
     <string name="id_creating_wallet">Creating wallet…</string>
+    <string name="id_creating_amp_account">Creating AMP Account…</string>
     <string name="id_creating_your_s_account">Creating your %1$s account...</string>
     <string name="id_csv">Csv</string>
     <string name="id_currency">Currency</string>
@@ -1192,9 +1195,9 @@
     <string name="id_ready_to_start">Ready to start</string>
     <string name="id_receive">Receive</string>
     <string name="id_receive_amount">Receive Amount</string>
-    <string name="id_receive_any_amp_asset">Receive any AMP Asset</string>
-    <string name="id_receive_any_amp_legacy_asset">Receive any AMP Legacy Asset</string>
-    <string name="id_receive_any_liquid_asset">Receive any Liquid Asset</string>
+    <string name="id_any_amp_asset">Any AMP Asset</string>
+    <string name="id_any_amp_legacy_asset">Any AMP Legacy Asset</string>
+    <string name="id_any_liquid_asset">Any Liquid Asset</string>
     <string name="id_receive_email_notifications_for">Receive email notifications for sent and received transactions</string>
     <string name="id_receive_in">Receive in</string>
     <string name="id_receive_on">Receive on</string>
@@ -1429,6 +1432,7 @@
     <string name="id_share_pubkeydescriptors">Share pubkey/descriptors</string>
     <string name="id_share_transaction">Share Transaction</string>
     <string name="id_share_unblinding_data">Share unblinding data</string>
+    <string name="id_share_your_amp_id">Share your AMP ID with your security token issuer for authorization to move funds.</string>
     <string name="id_show">Show</string>
     <string name="id_show_address">Show Address</string>
     <string name="id_show_advanced_options">Show advanced options</string>
@@ -1814,6 +1818,7 @@
     <string name="id_you_can_use_your_descriptor_to">You can use your descriptor to view your balance in the Blockstream app while keeping private keys offline.</string>
     <string name="id_you_can_use_your_wallet_to">You can use your wallet to anonymously sign and authorize an action on:</string>
     <string name="id_you_cannot_add_more_than_one">You cannot add more than one Lightning Account.</string>
+    <string name="id_you_cannot_add_more_than_one_amp_account">You cannot add more than one AMP Account.</string>
     <string name="id_you_cannot_create_or_restore_a">You cannot create or restore a wallet on %1$s as you already have a PIN protected wallet.</string>
     <string name="id_you_cannot_receive_more_than_s">You cannot receive more than %1$s (%2$s) on this account. Reduce the amount and try again.</string>
     <string name="id_you_dont_have_a_lightning">You don&apos;t have a Lightning account</string>

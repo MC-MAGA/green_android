@@ -8,6 +8,11 @@ fun String?.padHex() = this?.replace("........".toRegex(), "$0 ")
 
 fun String?.cleanup(): String? = if (isNullOrBlank()) null else trim().replace("\n", "")
 
+fun String.middleTruncate(prefixLength: Int = 12, suffixLength: Int = 12): String {
+    if (length <= prefixLength + suffixLength + 3) return this
+    return "${take(prefixLength)}...${takeLast(suffixLength)}"
+}
+
 fun String.isDigitsOnly() = all(Char::isDigit) && isNotEmpty()
 
 fun List<String>?.startsWith(other: String?): Boolean = if (this == null) false else

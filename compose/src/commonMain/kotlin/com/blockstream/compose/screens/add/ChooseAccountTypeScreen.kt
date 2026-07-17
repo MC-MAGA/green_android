@@ -3,6 +3,7 @@ package com.blockstream.compose.screens.add
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -34,6 +36,7 @@ import blockstream_green.common.generated.resources.id_hide_advanced_options
 import blockstream_green.common.generated.resources.id_show_advanced_options
 import blockstream_green.common.generated.resources.id_there_is_already_an_archived
 import blockstream_green.common.generated.resources.id_you_cannot_add_more_than_one
+import blockstream_green.common.generated.resources.id_you_cannot_add_more_than_one_amp_account
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.LocalDialog
 import com.blockstream.compose.components.CaretRight
@@ -265,12 +268,27 @@ fun AccountType(accountType: AccountTypeLook, onClick: () -> Unit = {}) {
             Box(
                 modifier = Modifier
                     .align(Alignment.Center)
+                    .fillMaxWidth()
+                    .padding(horizontal = 24.dp)
             ) {
-                GreenColumn(space = 6, horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = stringResource(Res.string.id_added_already), style = labelLarge)
+                GreenColumn(space = 6, horizontalAlignment = Alignment.Start) {
                     Text(
-                        text = stringResource(Res.string.id_you_cannot_add_more_than_one),
-                        style = bodyMedium
+                        text = stringResource(Res.string.id_added_already),
+                        style = labelLarge,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Text(
+                        text = stringResource(
+                            if (accountType.accountType.isAmpOrLecacy()) {
+                                Res.string.id_you_cannot_add_more_than_one_amp_account
+                            } else {
+                                Res.string.id_you_cannot_add_more_than_one
+                            }
+                        ),
+                        style = bodyMedium,
+                        textAlign = TextAlign.Start,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }

@@ -22,6 +22,7 @@ import blockstream_green.common.generated.resources.generic_device
 import blockstream_green.common.generated.resources.id_2of2
 import blockstream_green.common.generated.resources.id_2of3
 import blockstream_green.common.generated.resources.id_amp
+import blockstream_green.common.generated.resources.id_amp_legacy
 import blockstream_green.common.generated.resources.id_fastest
 import blockstream_green.common.generated.resources.id_invalid_spv
 import blockstream_green.common.generated.resources.id_legacy
@@ -286,7 +287,7 @@ fun String.toImageVector(): ImageVector? = when (this) {
 @Composable
 fun AccountType.policyRes(): String = when (this) {
     AccountType.STANDARD -> stringResource(Res.string.id_2of2)
-    AccountType.AMP_LEGACY_ACCOUNT -> stringResource(Res.string.id_amp)
+    AccountType.AMP2_ACCOUNT, AccountType.AMP_LEGACY_ACCOUNT -> stringResource(Res.string.id_amp)
     AccountType.TWO_OF_THREE -> stringResource(Res.string.id_2of3)
     AccountType.BIP44_LEGACY -> stringResource(Res.string.id_legacy)
     AccountType.BIP49_SEGWIT_WRAPPED -> stringResource(Res.string.id_legacy_segwit)
@@ -301,4 +302,17 @@ fun AccountType.policyAndType(): String = when {
     this.isMutlisig() -> stringResource(Res.string.id_multisig__s, policyRes())
     this.isLightning() -> stringResource(Res.string.id_lightning)
     else -> stringResource(Res.string.id_singlesig__s, policyRes())
+}
+
+@Composable
+fun Account.policyRes(session: GdkSession?): String = when {
+    isAmpLegacy && session?.isTestnet == true && session.liquidAmp2 != null -> stringResource(Res.string.id_amp_legacy)
+    else -> type.policyRes()
+}
+
+@Composable
+fun Account.policyAndType(session: GdkSession?): String = when {
+    isMultisig -> stringResource(Res.string.id_multisig__s, policyRes(session))
+    isLightning -> stringResource(Res.string.id_lightning)
+    else -> stringResource(Res.string.id_singlesig__s, policyRes(session))
 }

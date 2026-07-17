@@ -36,7 +36,6 @@ import blockstream_green.common.generated.resources.id_2fa_methods
 import blockstream_green.common.generated.resources.id_2fa_threshold
 import blockstream_green.common.generated.resources.id_a_screen_lock_must_be_enabled
 import blockstream_green.common.generated.resources.id_add_a_pgp_public_key_to_receive
-import blockstream_green.common.generated.resources.id_amp2_id
 import blockstream_green.common.generated.resources.id_amp_id
 import blockstream_green.common.generated.resources.id_archived_account
 import blockstream_green.common.generated.resources.id_archived_accounts
@@ -47,7 +46,6 @@ import blockstream_green.common.generated.resources.id_biometric_login_is_disabl
 import blockstream_green.common.generated.resources.id_biometric_login_is_enabled
 import blockstream_green.common.generated.resources.id_change_pin
 import blockstream_green.common.generated.resources.id_continue
-import blockstream_green.common.generated.resources.id_copy_amp_id
 import blockstream_green.common.generated.resources.id_copy_support_id
 import blockstream_green.common.generated.resources.id_create_a_new_account
 import blockstream_green.common.generated.resources.id_denomination
@@ -135,8 +133,6 @@ import com.blockstream.data.data.LogoutReason
 import com.blockstream.data.data.SupportData
 import com.blockstream.data.data.TwoFactorMethod
 import com.blockstream.data.data.TwoFactorSetupAction
-import com.blockstream.data.gdk.data.AccountAssetBalance
-import com.blockstream.data.gdk.data.AccountAssetBalanceList
 import com.blockstream.data.gdk.data.AccountType
 import com.blockstream.data.utils.getBitcoinOrLiquidUnit
 import kotlinx.coroutines.launch
@@ -269,14 +265,6 @@ fun WalletSettingsScreen(
         }
     }
 
-    NavigateDestinations.Accounts.getResult<AccountAssetBalance> {
-        if (it.account.isAmp) {
-            viewModel.postEvent(LocalEvents.CopyAmp2Id(it.account))
-        } else {
-            viewModel.postEvent(LocalEvents.CopyAmpId(it.account))
-        }
-    }
-
     val items by viewModel.items.collectAsStateWithLifecycle()
     val innerPadding = LocalInnerPadding.current
     val dialog = LocalDialog.current
@@ -289,19 +277,6 @@ fun WalletSettingsScreen(
         onProgressStyle = OnProgressStyle.Full(bluBackground = true),
         sideEffectsHandler = {
             when (it) {
-                is LocalSideEffects.CopyAmpId -> {
-                    viewModel.postEvent(
-                        NavigateDestinations.Accounts(
-                            greenWallet = viewModel.greenWallet,
-                            title = getString(Res.string.id_copy_amp_id),
-                            accounts = AccountAssetBalanceList(it.accounts.map { it.accountAssetBalance }),
-                            withAsset = false,
-                            withAssetIcon = false,
-                            withArrow = false,
-                        )
-                    )
-                }
-
                 is LocalSideEffects.ArchivedAccountDialog -> {
                     launch {
                         dialog.openDialog(
@@ -744,47 +719,14 @@ fun WalletSettingsScreen(
                         )
                     }
 
-                    is WalletSetting.CopyAmpId -> {
+                    WalletSetting.AmpId -> {
                         Setting(
                             title = stringResource(Res.string.id_amp_id),
                             imageVector = PhosphorIcons.Regular.CaretRight,
                             modifier = Modifier.clickable {
-                                viewModel.postEvent(LocalEvents.CopyAmpId())
+                                viewModel.postEvent(LocalEvents.OpenAmpAccount)
                             },
                             testTag = "amp_account"
-                        )
-                    }
-
-                    is WalletSetting.CopyAmp2Id -> {
-                        Setting(
-                            title = stringResource(Res.string.id_amp2_id),
-                            imageVector = PhosphorIcons.Regular.CaretRight,
-                            modifier = Modifier.clickable {
-                                viewModel.postEvent(LocalEvents.CopyAmp2Id())
-                            },
-                            testTag = "amp_account"
-                        )
-                    }
-
-                    WalletSetting.CreateAmpAccount -> {
-                        Setting(
-                            title = stringResource(Res.string.id_amp_id),
-                            imageVector = PhosphorIcons.Regular.CaretRight,
-                            modifier = Modifier.clickable {
-                                viewModel.postEvent(LocalEvents.ChooseAccountType(AccountType.AMP_LEGACY_ACCOUNT))
-                            },
-                            testTag = "amp_account"
-                        )
-                    }
-
-                    WalletSetting.CreateAmp2Account -> {
-                        Setting(
-                            title = stringResource(Res.string.id_amp2_id),
-                            imageVector = PhosphorIcons.Regular.CaretRight,
-                            modifier = Modifier.clickable {
-                                viewModel.postEvent(LocalEvents.ChooseAccountType(AccountType.AMP2_ACCOUNT))
-                            },
-                            testTag = "amp2_account"
                         )
                     }
 
@@ -952,4 +894,3 @@ fun Setting(
         }
     }
 }
-

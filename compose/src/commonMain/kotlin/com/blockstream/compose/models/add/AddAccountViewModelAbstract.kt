@@ -41,7 +41,7 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
 
     protected fun createAccount(
         accountType: AccountType,
-        accountName: String,
+        accountName: String? = null,
         network: Network,
         mnemonic: String? = null,
         xpub: String? = null

@@ -205,6 +205,9 @@ sealed class NavigateDestinations : NavigateDestination() {
     ) : NavigateDestination()
 
     @Serializable
+    data class AmpAccount(val greenWallet: GreenWallet) : NavigateDestination()
+
+    @Serializable
     data class SecurityLevel(val greenWallet: GreenWallet) : NavigateDestination()
 
     @Serializable
@@ -229,15 +232,21 @@ sealed class NavigateDestinations : NavigateDestination() {
                                 viewModel.session.liquid?.policyAsset
                             ),
                         ) + (viewModel.session.networkAssetManager.countlyAssetsFlow.value.takeIf { viewModel.session.liquid != null }
-                            ?.filter { (!it.isAmp || viewModel.session.hasAmpAccount) || (!it.isAmpLegacy || viewModel.session.hasAmpLegacyAccount)}?.map {
+                            ?.filter {
+                                when {
+                                    it.isAmp -> viewModel.session.hasAmpAccount
+                                    it.isAmpLegacy -> viewModel.session.hasAmpLegacyAccount
+                                    else -> true
+                                }
+                            }?.map {
                                 EnrichedAsset.create(session = viewModel.session, assetId = it.assetId)
                             } ?: listOf()) + listOfNotNull(
                             EnrichedAsset.createAnyAsset(session = viewModel.session)
-                                .takeIf { viewModel.session.hasAmpAccount || viewModel.session.hasAmpLegacyAccount },
+                                .takeIf { viewModel.session.liquid != null },
                             EnrichedAsset.createAnyAsset(session = viewModel.session, isAmp = true)
-                                .takeIf { !viewModel.session.isHwWatchOnly },
+                                .takeIf { !viewModel.session.isHwWatchOnly && viewModel.session.hasAmpAccount },
                             EnrichedAsset.createAnyAsset(session = viewModel.session, isAmpLegacy = true)
-                                .takeIf { !viewModel.session.isHwWatchOnly }
+                                .takeIf { !viewModel.session.isHwWatchOnly && viewModel.session.hasAmpLegacyAccount }
                         ).sortedWith(ComparatorEnrichedAssets(viewModel.session))).let { list ->
                             list.map {
                                 AssetBalance.create(it)

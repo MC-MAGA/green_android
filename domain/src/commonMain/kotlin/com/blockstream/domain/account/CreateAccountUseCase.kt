@@ -39,6 +39,13 @@ class CreateAccountUseCase(
         xpub: String? = null,
         hwInteraction: HardwareWalletInteraction? = null
     ): Account {
+        check(accountType != AccountType.AMP2_ACCOUNT || canCreateAmp2Account(session, network)) {
+            "AMP2 account creation is only available for software testnet wallets"
+        }
+        check(!hasActiveAccount(session, accountType, network)) {
+            "An account of type $accountType already exists"
+        }
+
         return (if (accountType.isLightning()) {
             val isEmptyWallet = session.accounts.value.isEmpty()
 
@@ -91,8 +98,9 @@ class CreateAccountUseCase(
             val accountsWithSameType =
                 session.allAccounts.value.filter { it.type == accountType && it.network == network }.size
 
-            val name = (accountName.cleanup() ?: accountType.toString()).let { name ->
-                "$name ${(accountsWithSameType + 1).takeIf { it > 1 } ?: ""}".trim()
+            val name = accountName.cleanup() ?: when (accountType) {
+                AccountType.AMP2_ACCOUNT, AccountType.AMP_LEGACY_ACCOUNT -> "AMP Liquid"
+                else -> "$accountType ${(accountsWithSameType + 1).takeIf { it > 1 } ?: ""}".trim()
             }
 
             val params = SubAccountParams(
@@ -130,4 +138,13 @@ class CreateAccountUseCase(
             countly.createAccount(session, it)
         }
     }
+
+    private fun canCreateAmp2Account(session: GdkSession, network: Network): Boolean =
+        isAmp2Available(session) && network == session.liquidAmp2
+
+    private fun isAmp2Available(session: GdkSession): Boolean =
+        session.isTestnet && session.liquidAmp2 != null
+
+    private fun hasActiveAccount(session: GdkSession, accountType: AccountType, network: Network): Boolean =
+        accountType.isAmpOrLecacy() && session.accounts.value.any { it.type == accountType && it.network == network }
 }

@@ -44,11 +44,7 @@ sealed class WalletSetting {
 
     data class LostTwoFactor(val network: Network) : WalletSetting()
 
-    data object CopyAmpId : WalletSetting()
-    data object CopyAmp2Id : WalletSetting()
-
-    data object CreateAmpAccount : WalletSetting()
-    data object CreateAmp2Account : WalletSetting()
+    data object AmpId : WalletSetting()
     
     data object CreateNewAccount : WalletSetting()
 

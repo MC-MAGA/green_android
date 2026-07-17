@@ -84,6 +84,7 @@ import com.blockstream.compose.models.send.SendLightningConfirmViewModel
 import com.blockstream.compose.models.send.SendViewModel
 import com.blockstream.compose.models.send.SweepViewModel
 import com.blockstream.compose.models.settings.AppSettingsViewModel
+import com.blockstream.compose.models.settings.AmpAccountViewModel
 import com.blockstream.compose.models.settings.SwapsSettingsViewModel
 import com.blockstream.compose.models.settings.TwoFactorAuthenticationViewModel
 import com.blockstream.compose.models.settings.TwoFactorSetupViewModel
@@ -174,6 +175,7 @@ import com.blockstream.compose.screens.swap.SwapScreen
 import com.blockstream.compose.screens.transaction.TransactionScreen
 import com.blockstream.compose.screens.twofactor.ReEnable2FAScreen
 import com.blockstream.compose.sheets.AccountRenameBottomSheet
+import com.blockstream.compose.sheets.AmpAccountBottomSheet
 import com.blockstream.compose.sheets.AccountsBottomSheet
 import com.blockstream.compose.sheets.AnalyticsBottomSheet
 import com.blockstream.compose.sheets.AskJadeUnlockBottomSheet
@@ -1172,6 +1174,15 @@ fun Router(
                     withAssetIcon = args.withAssetIcon,
                     withArrow = args.withArrow,
                     withAction = args.withAction,
+                    onDismissRequest = navController.onDismissRequest()
+                )
+            }
+            appBottomSheet<NavigateDestinations.AmpAccount> {
+                val args = it.toRoute<NavigateDestinations.AmpAccount>()
+                AmpAccountBottomSheet(
+                    viewModel = viewModel {
+                        AmpAccountViewModel(greenWallet = args.greenWallet)
+                    },
                     onDismissRequest = navController.onDismissRequest()
                 )
             }

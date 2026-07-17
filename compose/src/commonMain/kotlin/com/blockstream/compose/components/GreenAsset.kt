@@ -21,7 +21,9 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import blockstream_green.common.generated.resources.Res
+import blockstream_green.common.generated.resources.amp_asset
 import blockstream_green.common.generated.resources.id_select_asset
+import blockstream_green.common.generated.resources.liquid_asset
 import blockstream_green.common.generated.resources.pencil_simple_line
 import blockstream_green.common.generated.resources.unknown
 import com.blockstream.compose.extensions.assetIcon
@@ -55,9 +57,9 @@ fun GreenAsset(
 
         when {
             asset?.isAnyAsset == true -> {
-                when{
-                    asset.isAmp -> "any_amp_asset"
+                when {
                     asset.isAmpLegacy -> "any_amp_legacy_asset"
+                    asset.isAmp -> "any_amp_asset"
                     else -> "any_liquid_asset"
                 }
             }
@@ -76,8 +78,11 @@ fun GreenAsset(
         ) {
             Box {
                 Image(
-                    painter = assetBalance?.asset?.assetId?.assetIcon(session = session)
-                        ?: painterResource(Res.drawable.unknown),
+                    painter = when (assetBalance?.asset?.isAnyAsset) {
+                        true if !assetBalance.asset.isAmp2OrLegacy -> painterResource(Res.drawable.liquid_asset)
+                        true if assetBalance.asset.isAmp2OrLegacy -> painterResource(Res.drawable.amp_asset)
+                        else -> assetBalance?.asset?.assetId?.assetIcon(session = session) ?: painterResource(Res.drawable.unknown)
+                    },
                     contentDescription = null,
                     contentScale = ContentScale.Fit,
                     modifier = Modifier

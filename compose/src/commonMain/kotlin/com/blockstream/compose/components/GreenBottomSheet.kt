@@ -22,6 +22,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.navigation.get
 import com.blockstream.compose.models.GreenViewModel
@@ -44,9 +45,11 @@ import kotlinx.coroutines.CoroutineScope
 fun GreenBottomSheet(
     title: String? = null,
     subtitle: String? = null,
+    titleTextAlign: TextAlign = TextAlign.Center,
     viewModel: GreenViewModel? = null,
     withHorizontalPadding: Boolean = true,
     withBottomPadding: Boolean = true,
+    bottomPadding: Dp = 48.dp,
     sheetState: SheetState = rememberModalBottomSheetState(),
     properties: ModalBottomSheetProperties = ModalBottomSheetDefaults.properties,
     sideEffectHandler: CoroutineScope.(sideEffect: SideEffect) -> Unit = {},
@@ -79,7 +82,7 @@ fun GreenBottomSheet(
             modifier = Modifier
                 .fillMaxWidth()
                 .ifTrue(withBottomPadding) {
-                    it.padding(bottom = 48.dp)
+                    it.padding(bottom = bottomPadding)
                 }
                 .ifTrue(withHorizontalPadding) {
                     it.padding(horizontal = 16.dp)
@@ -101,7 +104,7 @@ fun GreenBottomSheet(
                         Text(
                             text = title,
                             style = titleMedium,
-                            textAlign = TextAlign.Center,
+                            textAlign = titleTextAlign,
                             color = whiteHigh,
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -114,8 +117,9 @@ fun GreenBottomSheet(
                             text = subtitle,
                             style = bodyLarge,
                             color = whiteMedium,
-                            textAlign = TextAlign.Center,
+                            textAlign = titleTextAlign,
                             modifier = Modifier
+                                .fillMaxWidth()
                                 .align(Alignment.CenterHorizontally)
                         )
                     }
