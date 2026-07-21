@@ -181,6 +181,7 @@ import com.blockstream.compose.sheets.AnalyticsBottomSheet
 import com.blockstream.compose.sheets.AskJadeUnlockBottomSheet
 import com.blockstream.compose.sheets.AssetDetailsBottomSheet
 import com.blockstream.compose.sheets.AssetsAccountsBottomSheet
+import com.blockstream.compose.screens.swap.SwapAssetsBottomSheet
 import com.blockstream.compose.sheets.AssetsBottomSheet
 import com.blockstream.compose.sheets.Bip39PassphraseBottomSheet
 import com.blockstream.compose.sheets.BuyQuotesBottomSheet
@@ -1238,6 +1239,8 @@ fun Router(
                     swapFee = args.swapFee,
                     totalFees = args.totalFees,
                     totalFeesFiat = args.totalFeesFiat,
+                    lightningSetupFee = args.lightningSetupFee,
+                    isNetworkFeeOnLiquid = args.isNetworkFeeOnLiquid,
                     onDismissRequest = navController.onDismissRequest()
                 )
             }
@@ -1263,6 +1266,20 @@ fun Router(
                         )
                     },
                     assetBalance = args.assets,
+                    onDismissRequest = navController.onDismissRequest()
+                )
+            }
+            appBottomSheet<NavigateDestinations.SwapAssets> {
+                val args = it.toRoute<NavigateDestinations.SwapAssets>()
+
+                SwapAssetsBottomSheet(
+                    viewModel = viewModel {
+                        SimpleGreenViewModel(
+                            greenWalletOrNull = args.greenWallet,
+                        )
+                    },
+                    assetBalance = args.assets,
+                    title = args.title,
                     onDismissRequest = navController.onDismissRequest()
                 )
             }

@@ -22,7 +22,6 @@ class SwapUseCase constructor(
     val createChainSwapUseCase: CreateChainSwapUseCase,
     val createSwapUseCase: CreateSwapUseCase,
     val getQuoteUseCase: GetQuoteUseCase,
-    val getSwappableAccountsUseCase: GetSwappableAccountsUseCase,
     val getSwapAmountUseCase: GetSwapAmountUseCase,
     val prepareSwapTransactionUseCase: PrepareSwapTransactionUseCase,
     val handleSwapEventsUseCase: HandleSwapEventsUseCase,

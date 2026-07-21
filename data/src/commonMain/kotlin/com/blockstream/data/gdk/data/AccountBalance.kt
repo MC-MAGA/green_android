@@ -59,6 +59,11 @@ data class AccountBalance constructor(
                 return create(account)
             }
 
+            // Backend deregistered (eg. Lightning disabled): skip backend reads that would throw.
+            if (session.networkBackendOrNull(account.network) == null) {
+                return if (createOnlyIfBalance) null else create(account)
+            }
+
             val isLoading = session.accountAssets(account).value.isLoading
 
             return account.balance(session).takeIf { !createOnlyIfBalance || it > 0 }?.let { balance ->

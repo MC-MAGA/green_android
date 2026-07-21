@@ -11,7 +11,6 @@ val swapModule = module {
     singleOf(::CreateNormalSubmarineSwapUseCase)
     singleOf(::CreateChainSwapUseCase)
     singleOf(::CreateSwapUseCase)
-    singleOf(::GetSwappableAccountsUseCase)
     singleOf(::HandleSwapEventsUseCase)
     singleOf(::IsSwapsEnabledUseCase)
     singleOf(::CanSwapsBeDisabledUseCase)

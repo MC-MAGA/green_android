@@ -18,6 +18,7 @@ data class TransactionConfirmation constructor(
 
     val swapFee: String? = null,
     val networkFee: String? = null,
+    val lightningSetupFee: String? = null,
 
     val fee: String? = null, val feeFiat: String? = null, val feeRate: String? = null, val feeAssetId: String? = null,
 

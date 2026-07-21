@@ -67,9 +67,10 @@ class PrepareSwapTransactionUseCase(
             amount = satoshi
         )
 
+        // Fund the swap's required lockup (swap.fromAmount), not the raw entered amount which underfunds submarine lockups.
         val addressParams = AddressParams(
             address = swap.address,
-            satoshi = satoshi,
+            satoshi = swap.fromAmount,
             assetId = from.assetId.takeIf { from.account.network.isLiquid }
         )
 

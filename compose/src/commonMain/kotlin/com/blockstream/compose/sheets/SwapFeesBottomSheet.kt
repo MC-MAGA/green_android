@@ -11,6 +11,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,10 +20,14 @@ import androidx.compose.ui.unit.dp
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.arrow_square_out
 import blockstream_green.common.generated.resources.id_covers_swap_service
+import blockstream_green.common.generated.resources.id_covers_your_first_lightning_payment
 import blockstream_green.common.generated.resources.id_fees_are_not_collected_by_short
+import blockstream_green.common.generated.resources.id_learn_more
+import blockstream_green.common.generated.resources.id_lightning_setup_fee
+import blockstream_green.common.generated.resources.id_miner_fee_to_send_btc_on_bitcoin
+import blockstream_green.common.generated.resources.id_miner_fee_to_send_lbtc_on_liquid
 import blockstream_green.common.generated.resources.id_network_fee
 import blockstream_green.common.generated.resources.id_paid_for_transaction_confirmation
-import blockstream_green.common.generated.resources.id_read_more
 import blockstream_green.common.generated.resources.id_swap_fee
 import blockstream_green.common.generated.resources.id_total
 import blockstream_green.common.generated.resources.id_total_fees
@@ -50,12 +55,16 @@ fun SwapFeesBottomSheet(
     swapFee: String,
     totalFees: String,
     totalFeesFiat: String?,
+    lightningSetupFee: String? = null,
+    isNetworkFeeOnLiquid: Boolean? = null,
     onDismissRequest: () -> Unit,
 ) {
     val platformManager = LocalPlatformManager.current
 
     GreenBottomSheet(
         title = stringResource(Res.string.id_total_fees),
+        // Open fully expanded so the trailing link is never stuck behind the navigation bar
+        sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
         onDismissRequest = onDismissRequest
     ) {
         GreenColumn(
@@ -81,7 +90,13 @@ fun SwapFeesBottomSheet(
                             color = whiteHigh
                         )
                         Text(
-                            text = stringResource(Res.string.id_paid_for_transaction_confirmation),
+                            text = stringResource(
+                                when (isNetworkFeeOnLiquid) {
+                                    true -> Res.string.id_miner_fee_to_send_lbtc_on_liquid
+                                    false -> Res.string.id_miner_fee_to_send_btc_on_bitcoin
+                                    null -> Res.string.id_paid_for_transaction_confirmation
+                                }
+                            ),
                             style = bodySmall,
                             color = whiteMedium
                         )
@@ -116,6 +131,33 @@ fun SwapFeesBottomSheet(
                         style = labelLarge,
                         color = whiteHigh
                     )
+                }
+            }
+
+            lightningSetupFee?.let { setupFee ->
+                Column(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = stringResource(Res.string.id_lightning_setup_fee),
+                                style = labelLarge,
+                                color = whiteHigh
+                            )
+                            Text(
+                                text = stringResource(Res.string.id_covers_your_first_lightning_payment),
+                                style = bodySmall,
+                                color = whiteMedium
+                            )
+                        }
+                        Text(
+                            text = setupFee,
+                            style = labelLarge,
+                            color = whiteHigh
+                        )
+                    }
                 }
             }
 
@@ -160,7 +202,7 @@ fun SwapFeesBottomSheet(
                     }
                 ) {
                     Text(
-                        text = stringResource(Res.string.id_read_more),
+                        text = stringResource(Res.string.id_learn_more),
                         style = bodyMedium,
                         color = green,
                         textDecoration = TextDecoration.Underline

@@ -41,11 +41,24 @@ class CreateReverseSubmarineSwapUseCase(
 
         val xPubHashId = session.xPubHashId ?: throw Exception("xPubHashId should not be null")
 
-        val invoice = session.lwk.createReverseSubmarineSwap(
-            address = getReceiveAddressUseCase(session, account).address,
-            amount = amount,
-            description = description
-        )
+        val claimAddress = getReceiveAddressUseCase(session, account).address
+
+        // Lightning -> Bitcoin onchain uses lnToBtc (reverse swap claiming to a BTC address),
+        // Lightning -> Liquid uses the LBTC reverse swap. Both produce an InvoiceResponse and are
+        // persisted/monitored identically as SwapType.ReverseSubmarine.
+        val invoice = if (account.isBitcoin) {
+            session.lwk.lnToBtc(
+                address = claimAddress,
+                amount = amount,
+                description = description
+            )
+        } else {
+            session.lwk.createReverseSubmarineSwap(
+                address = claimAddress,
+                amount = amount,
+                description = description
+            )
+        }
 
         database.setSwap(
             id = invoice.swapId(),

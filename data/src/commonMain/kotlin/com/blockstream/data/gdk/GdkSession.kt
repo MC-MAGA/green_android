@@ -239,7 +239,11 @@ class GdkSession constructor(
     val walletTotalBalance get() = _walletTotalBalanceSharedFlow.asStateFlow()
     val walletTotalBalanceDenominationStateFlow = MutableStateFlow<Denomination>(Denomination.BTC)
 
-    fun accountAssets(account: Account): StateFlow<Assets> = accountBackend(account).assets
+    // Fallback when a network backend is deregistered (eg. Lightning disabled).
+    private val emptyAssetsStateFlow: StateFlow<Assets> = MutableStateFlow(Assets(emptyMap()))
+
+    fun accountAssets(account: Account): StateFlow<Assets> =
+        accountBackendOrNull(account)?.assets ?: emptyAssetsStateFlow
 
     val accountsAndBalanceUpdated get() = _accountsAndBalanceUpdatedSharedFlow.asSharedFlow()
 
@@ -1862,6 +1866,11 @@ class GdkSession constructor(
 
     fun networkBackend(network: Network): NetworkBackend =
         networkBackends[network] ?: throw Exception("${network.id} not initialized")
+
+    fun networkBackendOrNull(network: Network): NetworkBackend? = networkBackends[network]
+
+    fun accountBackendOrNull(account: Account): AccountBackend? =
+        networkBackendOrNull(account.network)?.accountBackend(account)
 
     private inline fun <reified T : NetworkBackend> backendOrNull(network: Network): T? =
         networkBackends[network] as? T

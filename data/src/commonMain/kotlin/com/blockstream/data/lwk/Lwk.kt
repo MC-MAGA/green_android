@@ -154,13 +154,17 @@ class Lwk(
                         // Restore swaps after connection (only user's lockups)
                         tryCatch {
                             val cloudSwaps = boltzSession.swapRestore()
-                            liquidAddress?.let { Address(it) }?.also { liquidAddress ->
-                                boltzSession.restorableSubmarineSwaps(cloudSwaps, liquidAddress).forEach { submarineSwap ->
-                                    val pay = boltzSession.restorePreparePay(submarineSwap)
+                            val restoreLiquidAddress = liquidAddress?.let { Address(it) }
+                            val restoreBitcoinAddress = bitcoinAddress?.let { BitcoinAddress(it) }
+
+                            suspend fun restoreSubmarines(swaps: List<String>) {
+                                swaps.forEach { data ->
+                                    val pay = boltzSession.restorePreparePay(data)
                                     val txHash = pay.lockupTxid()
 
                                     if (txHash != null) {
                                         val swapId = pay.swapId()
+                                        logger.d { "Restoring submarine swap $swapId" }
                                         database.setSwap(
                                             id = swapId,
                                             walletId = walletId,
@@ -173,30 +177,62 @@ class Lwk(
                                         database.setSwapTxHash(id = swapId, txHash = txHash)
                                     }
                                 }
+                            }
 
-                                bitcoinAddress?.let { BitcoinAddress(it) }?.also { bitcoinAddress ->
-                                    val restorableLbtcToBtc =
-                                        boltzSession.restorableLbtcToBtcSwaps(cloudSwaps, bitcoinAddress, liquidAddress)
-                                    val restorableBtcToLbtc =
-                                        boltzSession.restorableBtcToLbtcSwaps(cloudSwaps, liquidAddress, bitcoinAddress)
+                            // Reverse swaps only matter once Boltz locked up (invoice paid); no tx_hash link, matching creation
+                            suspend fun restoreReverses(swaps: List<String>) {
+                                swaps.forEach { data ->
+                                    val invoice = boltzSession.restoreInvoice(data)
 
-                                    (restorableLbtcToBtc + restorableBtcToLbtc).forEach { data ->
-                                        val lockup = boltzSession.restoreLockup(data)
-                                        val txHash = lockup.lockupTxid()
+                                    if (invoice.lockupTxid() != null) {
+                                        val swapId = invoice.swapId()
+                                        logger.d { "Restoring reverse swap $swapId" }
+                                        database.setSwap(
+                                            id = swapId,
+                                            walletId = walletId,
+                                            xPubHashId = xPubHashId,
+                                            swapType = SwapType.ReverseSubmarine,
+                                            isAutoSwap = false,
+                                            isMagic = false,
+                                            data = invoice.serialize()
+                                        )
+                                    }
+                                }
+                            }
 
-                                        if (txHash != null) {
-                                            val swapId = lockup.swapId()
-                                            database.setSwap(
-                                                id = swapId,
-                                                walletId = walletId,
-                                                xPubHashId = xPubHashId,
-                                                swapType = SwapType.Chain,
-                                                isAutoSwap = false,
-                                                isMagic = false,
-                                                data = lockup.serialize()
-                                            )
-                                            database.setSwapTxHash(id = swapId, txHash = txHash)
-                                        }
+                            restoreLiquidAddress?.also { liquid ->
+                                restoreSubmarines(boltzSession.restorableSubmarineSwaps(cloudSwaps, liquid))
+                                restoreReverses(boltzSession.restorableReverseSwaps(cloudSwaps, liquid))
+                            }
+
+                            restoreBitcoinAddress?.also { bitcoin ->
+                                restoreSubmarines(boltzSession.restorableSubmarineBtcSwaps(cloudSwaps, bitcoin))
+                                restoreReverses(boltzSession.restorableReverseBtcSwaps(cloudSwaps, bitcoin))
+                            }
+
+                            if (restoreLiquidAddress != null && restoreBitcoinAddress != null) {
+                                val restorableLbtcToBtc =
+                                    boltzSession.restorableLbtcToBtcSwaps(cloudSwaps, restoreBitcoinAddress, restoreLiquidAddress)
+                                val restorableBtcToLbtc =
+                                    boltzSession.restorableBtcToLbtcSwaps(cloudSwaps, restoreLiquidAddress, restoreBitcoinAddress)
+
+                                (restorableLbtcToBtc + restorableBtcToLbtc).forEach { data ->
+                                    val lockup = boltzSession.restoreLockup(data)
+                                    val txHash = lockup.lockupTxid()
+
+                                    if (txHash != null) {
+                                        val swapId = lockup.swapId()
+                                        logger.d { "Restoring chain swap $swapId" }
+                                        database.setSwap(
+                                            id = swapId,
+                                            walletId = walletId,
+                                            xPubHashId = xPubHashId,
+                                            swapType = SwapType.Chain,
+                                            isAutoSwap = false,
+                                            isMagic = false,
+                                            data = lockup.serialize()
+                                        )
+                                        database.setSwapTxHash(id = swapId, txHash = txHash)
                                     }
                                 }
                             }
@@ -280,9 +316,14 @@ class Lwk(
         boltzSession.restorePreparePay(data)
     }
 
-    // Reverse Submarine Swaps (Lightning -> Chain)
+    // Reverse Submarine Swaps (Lightning -> Liquid)
     suspend fun createReverseSubmarineSwap(address: String, amount: Long, description: String?): InvoiceResponse = ioExceptionHandler {
         boltzSession.invoice(amount = amount.toULong(), description = description, claimAddress = Address(address), webhook = webhook())
+    }
+
+    // Reverse Submarine Swaps (Lightning -> Bitcoin onchain)
+    suspend fun lnToBtc(address: String, amount: Long, description: String?): InvoiceResponse = ioExceptionHandler {
+        boltzSession.lnToBtc(amount = amount.toULong(), description = description, claimAddress = BitcoinAddress(address), webhook = webhook())
     }
 
     /**
@@ -446,6 +487,30 @@ class Lwk(
             boltzSession.preparePay(
                 lightningPayment = lightningPayment,
                 refundAddress = Address(refundAddress),
+                webhook = webhook(),
+            )
+        } finally {
+            lightningPayment.close()
+        }
+    }
+
+    /**
+     * Submarine swap paying a Lightning instruction from Bitcoin onchain funds (BTC -> Lightning).
+     *
+     * Mirrors [createNormalSubmarineSwap] but the refund leg is a Bitcoin address, so a failed swap
+     * refunds onchain BTC. Resolves BOLT11/BOLT12/LNURL/BIP-353 the same way.
+     */
+    suspend fun btcToLn(
+        input: String,
+        refundAddress: String,
+        amountSats: Long? = null,
+    ): PreparePayResponse = ioExceptionHandler {
+        val normalizedInput = input.removePrefix("lightning:")
+        val lightningPayment = resolveToLightningPayment(normalizedInput, amountSats)
+        try {
+            boltzSession.btcToLn(
+                lightningPayment = lightningPayment,
+                refundAddress = BitcoinAddress(refundAddress),
                 webhook = webhook(),
             )
         } finally {

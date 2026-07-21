@@ -1513,6 +1513,8 @@
     <string name="id_support_page">Support Page</string>
     <string name="id_support_request_created">Support Request Created</string>
     <string name="id_swap">Swap</string>
+    <string name="id_swap_from">Swap from</string>
+    <string name="id_swap_to">Swap to</string>
     <string name="id_swap_in_progress">Swap in progress</string>
     <string name="id_swap_is_in_progress">Swap is in progress</string>
     <string name="id_swap_proposal">Swap Proposal</string>
@@ -1811,6 +1813,7 @@
     <string name="id_years">years</string>
     <string name="id_yes_create_a_shortcut">Yes, Create a Shortcut</string>
     <string name="id_you_already_have_a_lightning">You already have a lightning account. Only one per wallet can be created</string>
+    <string name="id_minimum_receive_is_s">Minimum receive is %1$s (≈ %2$s)</string>
     <string name="id_you_are_not_connected">You are not connected</string>
     <string name="id_you_are_not_connected_please">You are not connected, please wait</string>
     <string name="id_you_are_now_connected">You are now connected</string>
@@ -2023,11 +2026,15 @@
     <string name="id_lightning_balance_too_low_to_send">Lightning balance too low to send. Receive more sats to make it spendable.</string>
     <string name="id_not_enough_lbtc_to_cover_swap_fees_s">Not enough LBTC to cover swap fees. Need %1$s more.</string>
     <string name="id_swap_id">Swap ID</string>
+    <string name="id_this_swap_pair_is_not_supported_yet">This swap pair is not supported yet</string>
+    <string name="id_lightning_setup_fee">Lightning Setup Fee</string>
     <string name="id_paid_for_transaction_confirmation">Paid for transaction confirmation</string>
     <string name="id_includes_swap_and_lightning_routing">Includes service and Lightning routing.</string>
     <string name="id_swap_fee">Swap Fee</string>
     <string name="id_covers_swap_service">Covers swap service</string>
+    <string name="id_covers_your_first_lightning_payment">Covers your first Lightning payment</string>
     <string name="id_miner_fee_to_send_lbtc_on_liquid">Miner fee to send L-BTC on Liquid.</string>
+    <string name="id_miner_fee_to_send_btc_on_bitcoin">Miner fee to send BTC on Bitcoin.</string>
     <string name="id_service_fee">Service Fee</string>
     <string name="id_amount_you_will_receive">Amount you will Receive</string>
     <string name="id_use_biometrics_for_quick_access">Use Biometrics for Quick Access</string>

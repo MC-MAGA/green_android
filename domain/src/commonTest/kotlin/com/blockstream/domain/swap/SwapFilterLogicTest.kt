@@ -34,49 +34,40 @@ class SwapFilterLogicTest {
         isLightning = true
     )
 
-    // Replicates the filter from GetSwappableAccountsUseCase
-    private fun isSwapAllowed(from: Network, to: Network): Boolean {
-        return when {
-            from.isSameNetwork(to) -> false
-            from.isLightning || to.isLightning -> false
-            else -> true
-        }
-    }
-
     @Test
     fun btcToLiquid_allowed() {
-        assertTrue(isSwapAllowed(btcNetwork, liquidNetwork))
+        assertTrue(isSwapPairSupported(btcNetwork, liquidNetwork))
     }
 
     @Test
     fun liquidToBtc_allowed() {
-        assertTrue(isSwapAllowed(liquidNetwork, btcNetwork))
+        assertTrue(isSwapPairSupported(liquidNetwork, btcNetwork))
     }
 
     @Test
     fun sameNetwork_blocked() {
-        assertFalse(isSwapAllowed(btcNetwork, btcNetwork))
-        assertFalse(isSwapAllowed(liquidNetwork, liquidNetwork))
-        assertFalse(isSwapAllowed(lightningNetwork, lightningNetwork))
+        assertFalse(isSwapPairSupported(btcNetwork, btcNetwork))
+        assertFalse(isSwapPairSupported(liquidNetwork, liquidNetwork))
+        assertFalse(isSwapPairSupported(lightningNetwork, lightningNetwork))
     }
 
     @Test
-    fun lightningToBtc_blocked() {
-        assertFalse(isSwapAllowed(lightningNetwork, btcNetwork))
+    fun lightningToBtc_allowed() {
+        assertTrue(isSwapPairSupported(lightningNetwork, btcNetwork))
     }
 
     @Test
-    fun btcToLightning_blocked() {
-        assertFalse(isSwapAllowed(btcNetwork, lightningNetwork))
+    fun btcToLightning_allowed() {
+        assertTrue(isSwapPairSupported(btcNetwork, lightningNetwork))
     }
 
     @Test
     fun lightningToLiquid_blocked() {
-        assertFalse(isSwapAllowed(lightningNetwork, liquidNetwork))
+        assertFalse(isSwapPairSupported(lightningNetwork, liquidNetwork))
     }
 
     @Test
     fun liquidToLightning_blocked() {
-        assertFalse(isSwapAllowed(liquidNetwork, lightningNetwork))
+        assertFalse(isSwapPairSupported(liquidNetwork, lightningNetwork))
     }
 }

@@ -8,6 +8,7 @@ import com.blockstream.compose.events.Event
 import com.blockstream.compose.extensions.previewAccountAsset
 import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.navigation.NavData
+import com.blockstream.compose.navigation.toSwapFeesDestination
 import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.data.Denomination
@@ -99,7 +100,7 @@ class SendLightningConfirmViewModel(
                             _invoiceAmount.value = invoiceSats.toAmountLook(
                                 session = session,
                                 assetId = invoiceAssetId,
-                                denomination = Denomination.SATOSHI,
+                                denomination = _denomination.value,
                                 withUnit = true,
                                 withGrouping = true,
                             )
@@ -152,12 +153,20 @@ class SendLightningConfirmViewModel(
         _failureMessage.value = null
     }
 
+    class LocalEvents {
+        object ClickTotalFees : Event
+    }
+
     override suspend fun handleEvent(event: Event) {
         super.handleEvent(event)
 
         if (event is CreateTransactionViewModelAbstract.LocalEvents.SignTransaction) {
             session.pendingTransaction?.also { pending ->
                 sendLightningNativeTransaction(pending)
+            }
+        } else if (event is LocalEvents.ClickTotalFees) {
+            _transactionConfirmation.value?.let { look ->
+                postSideEffect(SideEffects.NavigateTo(look.toSwapFeesDestination()))
             }
         }
     }

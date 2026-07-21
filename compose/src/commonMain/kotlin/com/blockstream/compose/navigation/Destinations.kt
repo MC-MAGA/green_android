@@ -211,6 +211,15 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class SecurityLevel(val greenWallet: GreenWallet) : NavigateDestination()
 
     @Serializable
+    data class SwapAssets(
+        val greenWallet: GreenWallet,
+        val assets: AssetBalanceList,
+        val title: String? = null
+    ) : NavigateDestination() {
+        companion object
+    }
+
+    @Serializable
     data class Assets constructor(val greenWallet: GreenWallet, val assets: AssetBalanceList) : NavigateDestination() {
         companion object {
 
@@ -304,7 +313,9 @@ sealed class NavigateDestinations : NavigateDestination() {
         val swapFee: String,
         val networkFee: String,
         val totalFees: String,
-        val totalFeesFiat: String?
+        val totalFeesFiat: String?,
+        val lightningSetupFee: String? = null,
+        val isNetworkFeeOnLiquid: Boolean? = null
     ) : NavigateDestination()
 
     @Serializable
@@ -621,3 +632,14 @@ sealed class NavigateDestinations : NavigateDestination() {
     @Serializable
     data object TorWarning : NavigateDestination()
 }
+
+fun TransactionConfirmation.toSwapFeesDestination() = NavigateDestinations.SwapFees(
+    swapFee = swapFee ?: "",
+    networkFee = networkFee ?: "",
+    totalFees = totalFees ?: "",
+    totalFeesFiat = totalFeesFiat,
+    lightningSetupFee = lightningSetupFee,
+    // The miner fee is paid on the non-Lightning side: the lockup chain for submarine
+    // swaps, the claim chain for reverse swaps.
+    isNetworkFeeOnLiquid = listOfNotNull(from, to).firstOrNull { !it.account.isLightning }?.account?.network?.isLiquid
+)

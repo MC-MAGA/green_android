@@ -22,6 +22,7 @@ import com.blockstream.data.data.SetupArgs
 import com.blockstream.data.lightning.LightningManager
 import com.blockstream.data.lightning.channelsBalanceSatoshi
 import com.blockstream.data.lightning.maxPayableSatoshi
+import com.blockstream.data.lightning.maxSendableSatoshi
 import com.blockstream.data.lightning.maxReceivableSatoshi
 import com.blockstream.data.lightning.maxSinglePaymentAmountSatoshi
 import com.blockstream.data.lightning.onchainBalanceSatoshi
@@ -102,6 +103,13 @@ class LightningNodeViewModel(greenWallet: GreenWallet) :
                     ),
                     StringHolder.create(Res.string.id_max_payable_amount) to StringHolder.create(
                         it.maxPayableSatoshi().toAmountLookOrNa(
+                            session = session,
+                            withUnit = true,
+                            withGrouping = true
+                        )
+                    ),
+                    StringHolder.create("Max sendable amount") to StringHolder.create(
+                        it.maxSendableSatoshi().toAmountLookOrNa(
                             session = session,
                             withUnit = true,
                             withGrouping = true

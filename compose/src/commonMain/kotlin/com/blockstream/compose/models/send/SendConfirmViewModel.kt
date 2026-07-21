@@ -3,7 +3,7 @@ package com.blockstream.compose.models.send
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_add_note
-import blockstream_green.common.generated.resources.id_review
+import blockstream_green.common.generated.resources.id_confirm_transaction
 import blockstream_green.common.generated.resources.id_sign_transaction
 import blockstream_green.common.generated.resources.id_the_address_is_valid
 import blockstream_green.common.generated.resources.note_pencil
@@ -16,6 +16,7 @@ import com.blockstream.compose.models.sheets.NoteType
 import com.blockstream.compose.navigation.NavAction
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
+import com.blockstream.compose.navigation.toSwapFeesDestination
 import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.BTC_POLICY_ASSET
@@ -90,7 +91,7 @@ class SendConfirmViewModel constructor(
     init {
         onProgressSending.onEach { onProgressSending ->
             _navData.value = NavData(
-                title = getString(Res.string.id_review),
+                title = getString(Res.string.id_confirm_transaction),
                 isVisible = !onProgressSending,
                 actions = listOfNotNull(
                     NavAction(
@@ -216,16 +217,7 @@ class SendConfirmViewModel constructor(
 
             is LocalEvents.ClickTotalFees -> {
                 _transactionConfirmation.value?.let { look ->
-                    postSideEffect(
-                        SideEffects.NavigateTo(
-                            NavigateDestinations.SwapFees(
-                                swapFee = look.swapFee ?: "",
-                                networkFee = look.networkFee ?: "",
-                                totalFees = look.totalFees ?: "",
-                                totalFeesFiat = look.totalFeesFiat
-                            )
-                        )
-                    )
+                    postSideEffect(SideEffects.NavigateTo(look.toSwapFeesDestination()))
                 }
             }
         }

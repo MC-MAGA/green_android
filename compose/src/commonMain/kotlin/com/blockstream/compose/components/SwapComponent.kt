@@ -2,17 +2,15 @@ package com.blockstream.compose.components
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -23,7 +21,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -33,18 +30,20 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.FocusState
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -55,6 +54,7 @@ import blockstream_green.common.generated.resources.id_to
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.ArrowsDownUp
+import com.adamglin.phosphoricons.regular.CaretRight
 import com.blockstream.compose.extensions.assetIcon
 import com.blockstream.compose.extensions.policyIcon
 import com.blockstream.compose.extensions.previewAccountAsset
@@ -64,18 +64,20 @@ import com.blockstream.compose.theme.bodyLarge
 import com.blockstream.compose.theme.bodyMedium
 import com.blockstream.compose.theme.bodySmall
 import com.blockstream.compose.theme.green
-import com.blockstream.compose.theme.md_theme_onError
+import com.blockstream.compose.theme.md_theme_error
+import com.blockstream.compose.theme.red
 import com.blockstream.compose.theme.textLow
 import com.blockstream.compose.theme.whiteHigh
 import com.blockstream.compose.theme.whiteLow
+import com.blockstream.compose.theme.whiteMedium
 import com.blockstream.compose.utils.DecimalFormatter
 import com.blockstream.compose.utils.appTestTag
 import com.blockstream.compose.utils.ifTrue
-import com.blockstream.compose.utils.noRippleClickable
 import com.blockstream.data.data.Denomination
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountAssetBalance
+import com.blockstream.data.swap.SwapErrorSide
 import com.blockstream.data.utils.DecimalFormat
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.painterResource
@@ -96,6 +98,8 @@ fun SwapComponent(
     amountToFiat: String,
     denomination: Denomination? = null,
     error: String? = null,
+    errorSide: SwapErrorSide = SwapErrorSide.NONE,
+    isPairSupported: Boolean = true,
     focusRequester: FocusRequester? = null,
     session: GdkSession? = null,
     onAmountChanged: (String, Boolean) -> Unit,
@@ -109,7 +113,9 @@ fun SwapComponent(
     var isFromFocused by remember { mutableStateOf(false) }
     var isToFocused by remember { mutableStateOf(false) }
 
-    val upstreamError = error.takeIf { amountFrom.isNotBlank() }
+    // Amount errors (min/max/insufficient) only make sense once an amount is entered, but an
+    // unsupported-pair error is a property of the selected pair, so surface it immediately.
+    val upstreamError = error.takeIf { amountFrom.isNotBlank() || !isPairSupported }
 
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -124,12 +130,10 @@ fun SwapComponent(
     GreenCard(
         padding = 0,
         helperText = error,
-        colors = CardDefaults.outlinedCardColors(containerColor = if (error == null) Color.Transparent else Color.Unspecified),
-        border = if (error == null) BorderStroke(1.dp, Color.Transparent) else null
+        colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
+        border = BorderStroke(1.dp, if (error != null) md_theme_error else Color.Transparent)
     ) {
-        Box(modifier = Modifier.ifTrue(error != null) {
-            it.background(md_theme_onError)
-        }) {
+        Box {
             GreenColumn(
                 modifier = Modifier.fillMaxWidth(), space = 16, padding = 0,
                 horizontalAlignment = Alignment.CenterHorizontally
@@ -145,6 +149,7 @@ fun SwapComponent(
                     denomination = denomination,
                     amountFiat = amountFromFiat,
                     showAccountSelector = fromAccounts.size > 1,
+                    isAmountError = error != null && errorSide == SwapErrorSide.FROM,
                     focusRequester = focusRequester,
                     session = session,
                     onValueChange = {
@@ -173,6 +178,7 @@ fun SwapComponent(
                     denomination = denomination,
                     amountFiat = amountToFiat,
                     showAccountSelector = toAccounts.size > 1,
+                    isAmountError = error != null && errorSide == SwapErrorSide.TO,
                     session = session,
                     onValueChange = {
                         if (!isFromEntry) {
@@ -221,6 +227,7 @@ private fun SwapCard(
     denomination: Denomination? = null,
     amountFiat: String,
     showAccountSelector: Boolean = true,
+    isAmountError: Boolean = false,
     focusRequester: FocusRequester? = null,
     onValueChange: (String) -> Unit,
     onAccountClick: () -> Unit,
@@ -231,13 +238,18 @@ private fun SwapCard(
 ) {
     val colors = TextFieldDefaults.colors()
 
+    val maxFontSize = 22.sp
+    val minFontSize = 10.sp
+
     val textStyle = LocalTextStyle.current.merge(
         TextStyle(
-            color = whiteHigh,
+            color = if (isAmountError) red else whiteHigh,
             textAlign = TextAlign.End,
-            fontSize = 22.sp
+            fontSize = maxFontSize
         )
     )
+
+    val textMeasurer = rememberTextMeasurer()
 
     val formatter = remember {
         DecimalFormatter(
@@ -251,7 +263,7 @@ private fun SwapCard(
             modifier = modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp)
-                .padding(bottom = 16.dp)
+                .padding(vertical = 16.dp)
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
@@ -260,18 +272,17 @@ private fun SwapCard(
                     color = textLow
                 )
 
-                TextButton(
-                    onClick = onAccountClick,
-                    enabled = showAccountSelector,
-                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 4.dp),
-                    content = {
-                        Text(
-                            accountAsset.account.name,
-                            style = bodyMedium,
-                            color = if (showAccountSelector) green else textLow
-                        )
-                    }
-                )
+                if (showAccountSelector) {
+                    Text(
+                        accountAsset.account.name,
+                        style = bodyMedium,
+                        color = green,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable(onClick = onAccountClick)
+                            .padding(horizontal = 4.dp, vertical = 4.dp)
+                    )
+                }
             }
 
             // Currency and amount row
@@ -284,11 +295,12 @@ private fun SwapCard(
                 // Currency selector
                 GreenRow(
                     modifier = Modifier
-                        .noRippleClickable(onClick = onAssetClick),
+                        .clip(RoundedCornerShape(8.dp))
+                        .clickable(onClick = onAssetClick),
                     verticalAlignment = Alignment.CenterVertically,
                     padding = 0, space = 4
                 ) {
-                    Box {
+                    Box(modifier = Modifier.padding(end = 4.dp)) {
                         Image(
                             painter = (accountAsset.asset.assetId).assetIcon(
                                 session = session,
@@ -297,7 +309,8 @@ private fun SwapCard(
                             contentDescription = null,
                             contentScale = ContentScale.Fit,
                             modifier = Modifier
-                                .padding(end = 8.dp)
+                                .padding(vertical = 9.dp)
+                                .padding(end = 9.dp)
                                 .size(24.dp)
                         )
 
@@ -306,10 +319,8 @@ private fun SwapCard(
                             contentDescription = "Policy",
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .offset(y = 10.dp)
                                 .size(18.dp)
                         )
-
                     }
 
                     Text(
@@ -318,12 +329,24 @@ private fun SwapCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         color = whiteHigh,
-                        modifier = Modifier.widthIn(max = 120.dp)
+                        modifier = Modifier.widthIn(max = 220.dp)
+                    )
+
+                    Icon(
+                        PhosphorIcons.Regular.CaretRight,
+                        contentDescription = null,
+                        tint = whiteMedium,
+                        modifier = Modifier.size(16.dp)
                     )
                 }
 
+                val fadeSolidWidth = 4.dp
+                val fadeGradientWidth = 12.dp
+
                 GradientEdgeBox(
-                    startSolidWidth = 16.dp,
+                    modifier = Modifier.weight(1f),
+                    startSolidWidth = fadeSolidWidth,
+                    gradientWidth = fadeGradientWidth,
                     endSolidWidth = 0.dp
                 ) {
 
@@ -332,26 +355,49 @@ private fun SwapCard(
                         padding = 0, space = 8,
                     ) {
 
-                        BasicTextField(
-                            value = value,
-                            onValueChange = {
-                                onValueChange(formatter.cleanup(it))
-                            },
-                            textStyle = textStyle,
-                            singleLine = true,
-                            keyboardOptions = KeyboardOptions.Default.copy(
-                                keyboardType = KeyboardType.Decimal,
-                                imeAction = ImeAction.Done
-                            ),
-                            cursorBrush = SolidColor(colors.cursorColor),
+                        // Shrink the amount to fit the width left of the start fade, so long values don't
+                        // clip or slide under it.
+                        BoxWithConstraints(
                             modifier = Modifier
                                 .weight(1f)
-                                .onFocusChanged(onFocusChanged)
-                                .ifTrue(focusRequester != null) {
-                                    it.focusRequester(focusRequester!!)
+                                .padding(start = fadeSolidWidth + fadeGradientWidth)
+                        ) {
+                            val amountFontSize = remember(value, constraints.maxWidth) {
+                                var candidate = maxFontSize
+                                while (candidate > minFontSize && value.isNotEmpty()) {
+                                    val width = textMeasurer.measure(
+                                        text = value,
+                                        style = textStyle.copy(fontSize = candidate),
+                                        maxLines = 1,
+                                        softWrap = false
+                                    ).size.width
+                                    if (width <= constraints.maxWidth) break
+                                    candidate = (candidate.value - 1f).sp
                                 }
-                                .appTestTag("amount")
-                        )
+                                candidate
+                            }
+
+                            BasicTextField(
+                                value = value,
+                                onValueChange = {
+                                    onValueChange(formatter.cleanup(it))
+                                },
+                                textStyle = textStyle.copy(fontSize = amountFontSize),
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions.Default.copy(
+                                    keyboardType = KeyboardType.Decimal,
+                                    imeAction = ImeAction.Done
+                                ),
+                                cursorBrush = SolidColor(colors.cursorColor),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .onFocusChanged(onFocusChanged)
+                                    .ifTrue(focusRequester != null) {
+                                        it.focusRequester(focusRequester!!)
+                                    }
+                                    .appTestTag("amount")
+                            )
+                        }
 
                         Text(
                             text = session?.let {
@@ -360,11 +406,10 @@ private fun SwapCard(
                                     assetId = accountAsset.assetId
                                 )
                             } ?: denomination?.denomination ?: accountAsset.asset.ticker ?: accountAsset.assetId,
-                            style = textStyle,
+                            style = textStyle.copy(color = green),
                             modifier = Modifier.clickable {
                                 onDenominationClick()
-                            },
-                            textDecoration = TextDecoration.Underline
+                            }
                         )
                     }
                 }

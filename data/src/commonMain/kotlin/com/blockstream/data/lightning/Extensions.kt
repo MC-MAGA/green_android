@@ -106,6 +106,14 @@ fun LightningNodeState.totalInboundLiquiditySatoshi() = this.totalInboundLiquidi
 fun LightningNodeState.maxSinglePaymentAmountSatoshi() = this.maxSinglePaymentAmountMsat.satoshi()
 fun LightningNodeState.maxPayableSatoshi() = this.maxPayableMsat.satoshi()
 
+// Max actually sendable over Lightning. Greenlight's TrampolinePay adds a routing-fee budget of
+// max(0.5%, 5 sats) on top of the amount, so sending exactly maxPayable is rejected by the node.
+// Reserve that budget here; gate send/swap screens on this, not raw maxPayable.
+fun LightningNodeState.maxSendableSatoshi(): Long {
+    val maxPayable = maxPayableSatoshi()
+    return minOf(maxPayable * 1000 / 1005, maxPayable - 5).coerceAtLeast(0)
+}
+
 fun LightningPayment.amountSatoshi() = amountMsat.satoshi() * if (paymentType == LightningPaymentType.RECEIVED) 1 else -1
 fun LightningPayment.amountTotalSatoshi() = amountTotalMsat.satoshi() * if (paymentType == LightningPaymentType.RECEIVED) 1 else -1
 

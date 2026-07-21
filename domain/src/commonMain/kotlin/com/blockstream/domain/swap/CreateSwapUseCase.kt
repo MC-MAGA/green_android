@@ -26,10 +26,12 @@ class CreateSwapUseCase(
      *
      * Routing Rules:
      * - **Chain Swap**: Used when both source and destination are on-chain (Bitcoin or Liquid).
-     * - **Normal Submarine Swap**: Used when swapping from Liquid to Lightning. An invoice is
-     *   internally generated and then prepared for payment via an on-chain Liquid transaction.
-     * - **Reverse Submarine Swap**: Used when swapping from Lightning to Liquid. A BOLT11 invoice
-     *   is created for the user to pay from their Lightning balance.
+     * - **Normal Submarine Swap**: Used when swapping from an on-chain account (Liquid or Bitcoin) to
+     *   Lightning. An invoice is generated from the user's own Lightning account and then funded via
+     *   an on-chain transaction.
+     * - **Reverse Submarine Swap**: Used when swapping from Lightning to an on-chain account (Liquid or
+     *   Bitcoin). A BOLT11 invoice is created for the user to pay from their Lightning balance, claiming
+     *   to their own on-chain address.
      *
      * @param wallet the active [GreenWallet] identifying the user's wallet
      * @param session the current [GdkSession]
@@ -49,8 +51,10 @@ class CreateSwapUseCase(
         amount: Long?
     ): SwapDetails {
 
-        if (from.account.network.isSameNetwork(to.account.network)) {
-            throw Exception("Network must be different to do a swap")
+        // Single source of truth with the UI validation: blocks unsupported pairs
+        // (Liquid <-> Lightning, same network) even if invoked with stale state.
+        if (!isSwapPairSupported(from, to)) {
+            throw Exception("id_this_swap_pair_is_not_supported_yet")
         }
 
         val amountNotNull = requireNotNull(amount) { "Amount is required for swap creation" }
@@ -70,9 +74,14 @@ class CreateSwapUseCase(
                 )
             }
 
-            from.account.isLiquid && to.account.isLightning -> {
+            // On-chain (Bitcoin/Liquid) -> Lightning, normal submarine. Bitcoin source also carries
+            // the Lightning channel-open setup fee.
+            to.account.isLightning -> {
 
-                val invoice = session.createLightningInvoice(satoshi = amountNotNull, description = "")
+                // Mirror the chain-swap model: the entered amount is what the user spends, and the
+                // invoice is the quoted receive amount (entered minus swap fees) - the same figure
+                // the swap screen quotes and the review screen confirms.
+                val invoice = session.createLightningInvoice(satoshi = quote?.receiveAmount ?: amountNotNull, description = "")
 
                 createNormalSubmarineSwapUseCase(
                     wallet = wallet,
@@ -80,16 +89,19 @@ class CreateSwapUseCase(
                     isAutoSwap = false,
                     account = from.account,
                     invoice = invoice.invoice.bolt11
-                )
+                ).let { if (from.account.isBitcoin) it.copy(lightningSetupFee = invoice.openingFeeSatoshi) else it }
             }
 
-            from.account.isLightning && to.account.isLiquid -> {
+            // Lightning -> on-chain (Bitcoin/Liquid), reverse submarine. Claim onto the Bitcoin
+            // destination account when present; the Liquid path claims via the Lightning account's
+            // (Liquid) receive address.
+            from.account.isLightning -> {
 
                 createReverseSubmarineSwapUseCase(
                     wallet = wallet,
                     session = session,
                     isAutoSwap = false,
-                    account = from.account,
+                    account = if (to.account.isBitcoin) to.account else from.account,
                     amount = amountNotNull
                 ).let { swap ->
                     SwapDetails(

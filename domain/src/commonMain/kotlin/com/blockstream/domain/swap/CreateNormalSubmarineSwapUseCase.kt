@@ -14,6 +14,7 @@ import com.blockstream.data.swap.SwapDetails
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import lwk.Bolt11Invoice
 import lwk.LwkException
+import lwk.PreparePayResponse
 import kotlin.uuid.ExperimentalUuidApi
 import kotlin.uuid.Uuid
 
@@ -98,7 +99,7 @@ class CreateNormalSubmarineSwapUseCase(
         val swap = boltzSwap?.takeIf { !it.is_magic }?.letTryCatch {
             session.lwk.restorePreparePay(it.data_)
         } ?: try {
-            session.lwk.createNormalSubmarineSwap(input = normalizedInput, refundAddress = refundAddress)
+            createSubmarine(session = session, account = account, input = normalizedInput, refundAddress = refundAddress)
         } catch (hint: LwkException.MagicRoutingHint) {
             val swap = SwapDetails(
                 swapId = Uuid.generateV7().toString(),
@@ -139,17 +140,17 @@ class CreateNormalSubmarineSwapUseCase(
             data = swap.serialize()
         )
 
-        return SwapDetails(
-            swapId = swap.swapId(),
-            address = swap.uriAddress().toString(),
-            fromAmount = swap.uriAmount().toLong(),
-            fromAssetId = account.network.policyAsset,
-            submarineInvoiceTo = normalizedInput,
-            toAmount = bolt11Invoice.amountMilliSatoshis()?.satoshi() ?: 0,
-            toAssetId = session.lightning.policyAsset,
-            providerFee = swap.boltzFee()?.toLong() ?: 0,
-            claimNetworkFee = (swap.fee()?.toLong() ?: 0) - (swap.boltzFee()?.toLong() ?: 0)
-        )
+        val lockupAmount = swap.uriAmount().toLong()
+        val invoiceAmount = bolt11Invoice.amountMilliSatoshis()?.satoshi() ?: 0
+
+        // Lockup must exceed the invoice (Boltz deducts its fees from it); else the swap fails as lockupFailed.
+        if (lockupAmount <= invoiceAmount) {
+            throw Exception(
+                "Submarine lockup ($lockupAmount) does not exceed invoice ($invoiceAmount) for swap ${swap.swapId()}; refusing to broadcast underfunded swap"
+            )
+        }
+
+        return swap.toSwapDetails(account = account, session = session, submarineInvoiceTo = normalizedInput, toAmount = invoiceAmount)
     }
 
     private suspend fun createForInstruction(
@@ -168,7 +169,9 @@ class CreateNormalSubmarineSwapUseCase(
         val swap = existing?.takeIf { !it.is_magic }?.letTryCatch {
             session.lwk.restorePreparePay(it.data_)
         } ?: run {
-            val newSwap = session.lwk.createNormalSubmarineSwap(
+            val newSwap = createSubmarine(
+                session = session,
+                account = account,
                 input = input,
                 refundAddress = refundAddress,
                 amountSats = amountSats,
@@ -186,19 +189,49 @@ class CreateNormalSubmarineSwapUseCase(
             newSwap
         }
 
+        return swap.toSwapDetails(account = account, session = session, submarineInvoiceTo = input, toAmount = amountSats ?: 0)
+    }
+
+    // Builds the funding [SwapDetails] from a submarine [PreparePayResponse]. uriAddress() builds a
+    // BIP21 Liquid URI and is Liquid-only; Bitcoin submarine swaps expose the funding address via
+    // lockupAddress().
+    private fun PreparePayResponse.toSwapDetails(
+        account: Account,
+        session: GdkSession,
+        submarineInvoiceTo: String,
+        toAmount: Long,
+    ): SwapDetails {
+        val boltzFee = boltzFee()?.toLong() ?: 0
         return SwapDetails(
-            swapId = swap.swapId(),
-            address = swap.uriAddress().toString(),
-            fromAmount = swap.uriAmount().toLong(),
+            swapId = swapId(),
+            address = if (account.isBitcoin) lockupAddress() else uriAddress().toString(),
+            fromAmount = uriAmount().toLong(),
             fromAssetId = account.network.policyAsset,
-            submarineInvoiceTo = input,
-            toAmount = amountSats ?: 0,
+            submarineInvoiceTo = submarineInvoiceTo,
+            toAmount = toAmount,
             toAssetId = session.lightning.policyAsset,
-            providerFee = swap.boltzFee()?.toLong() ?: 0,
-            claimNetworkFee = (swap.fee()?.toLong() ?: 0) - (swap.boltzFee()?.toLong() ?: 0),
+            providerFee = boltzFee,
+            claimNetworkFee = (fee()?.toLong() ?: 0) - boltzFee,
         )
     }
 
     private fun instructionDedupKey(input: String, amountSats: Long?): String =
         "$input|amountSats=$amountSats"
+
+    /**
+     * Routes submarine-swap creation by funding network: Bitcoin onchain uses [Lwk.btcToLn]
+     * (BTC refund leg), Liquid uses the LBTC submarine swap. Both return a [PreparePayResponse]
+     * and are persisted/monitored identically as [SwapType.NormalSubmarine].
+     */
+    private suspend fun createSubmarine(
+        session: GdkSession,
+        account: Account,
+        input: String,
+        refundAddress: String,
+        amountSats: Long? = null,
+    ): PreparePayResponse = if (account.isBitcoin) {
+        session.lwk.btcToLn(input = input, refundAddress = refundAddress, amountSats = amountSats)
+    } else {
+        session.lwk.createNormalSubmarineSwap(input = input, refundAddress = refundAddress, amountSats = amountSats)
+    }
 }

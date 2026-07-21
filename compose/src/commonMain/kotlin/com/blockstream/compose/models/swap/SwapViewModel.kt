@@ -5,6 +5,8 @@ package com.blockstream.compose.models.swap
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_swap
+import blockstream_green.common.generated.resources.id_swap_from
+import blockstream_green.common.generated.resources.id_swap_to
 import com.blockstream.compose.events.Events
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.extensions.previewAccountAsset
@@ -24,19 +26,27 @@ import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.extensions.launchSafe
 import com.blockstream.data.extensions.tryCatch
+import com.blockstream.data.data.Denomination
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountAssetBalance
 import com.blockstream.data.gdk.data.AccountAssetBalanceList
+import com.blockstream.data.gdk.data.AccountType
+import com.blockstream.data.gdk.data.AssetBalance
+import com.blockstream.data.gdk.data.AssetBalanceList
+import com.blockstream.data.lightning.maxSendableSatoshi
 import com.blockstream.data.gdk.data.PendingTransaction
 import com.blockstream.data.gdk.params.CreateTransactionParams
 import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.QuoteMode
+import com.blockstream.data.swap.SwapErrorSide
 import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.feeRateWithUnit
 import com.blockstream.data.utils.ifNotNull
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.domain.swap.SwapUseCase
+import com.blockstream.domain.swap.isSwapPairSupported
+import com.blockstream.domain.swap.isSwappableAsset
 import com.blockstream.jade.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -67,6 +77,7 @@ data class SwapUiState(
     val amountTo: String = "",
     val amountToExchange: String = "",
     val error: String? = null,
+    val errorSide: SwapErrorSide = SwapErrorSide.NONE,
     val isValidQuote: Boolean = false
 )
 
@@ -94,6 +105,9 @@ abstract class SwapViewModelAbstract(
 
     abstract fun onAccountClick(isFrom: Boolean)
     abstract fun setAccount(accountAssetBalance: AccountAssetBalance)
+
+    abstract fun onAssetClick(isFrom: Boolean)
+    abstract fun setAsset(assetBalance: AssetBalance)
 }
 
 class SwapViewModel(
@@ -120,87 +134,58 @@ class SwapViewModel(
         viewModelScope.ifConnected(session) {
             // Update From Accounts
             uiState.update { uiState ->
-                val fromAccounts = session.accountAsset.value
-                    .filter { it.asset.isPolicyAsset(session) && !it.account.isLightning }
+                val swappable = swappableAccounts()
 
-                val accountsWithBalance = fromAccounts.filter {
+                val accountsWithBalance = swappable.filter {
                     it.balance(session) > 0
                 }
 
-                val from = accountAssetOrNull?.takeIf { !it.account.isLightning }
+                val from = accountAssetOrNull
                     ?: accountsWithBalance.firstOrNull()
-                    ?: fromAccounts.firstOrNull()
+                    ?: swappable.firstOrNull()
 
                 uiState.copy(
                     from = from
                 )
             }
-
-            session.accountAsset.value
-                .filter { it.asset.isPolicyAsset(session) && !it.account.isLightning }
-                .mapNotNull {
-                    AccountAssetBalance.createIfBalance(
-                        accountAsset = it,
-                        session = sessionOrNull
-                    )
-                }
         }
 
-        // Update Balance
+        // From row: balance, account selector list and destination default
         combine(uiState.map { it.from }.filterNotNull().distinctUntilChanged(), denomination) { from, denomination ->
-
-            val fromAccounts = session.accountAsset.value
-                .filter { it.asset.isPolicyAsset(session) && !it.account.isLightning }
-
-            val accountsWithBalance = fromAccounts.mapNotNull {
-                AccountAssetBalance.createIfBalance(
-                    accountAsset = it,
-                    session = sessionOrNull,
-                    denomination = denomination
-                )
-            }
-
 
             uiState.update { uiState ->
                 uiState.copy(
-                    fromBalance = from.balance(session).toAmountLook(
+                    fromBalance = swapBalance(from).toAmountLook(
                         session = session,
                         assetId = from.assetId,
                         withUnit = true,
                         denomination = denomination
                     ),
-                    fromAccounts = accountsWithBalance
+                    fromAccounts = accountsFor(row = from, denomination = denomination)
                 )
             }
 
-            // Update To Accounts
-            swapUseCase.getSwappableAccountsUseCase(session = session, swapFrom = uiState.value.from).also { toAccounts ->
-                uiState.update { uiState ->
-                    uiState.copy(
-                        to = toAccounts.find { it == uiState.to } ?: toAccounts.firstOrNull(),
-                        toAccounts = toAccounts.map {
-                            AccountAssetBalance.create(
-                                accountAsset = it,
-                                session = sessionOrNull,
-                                isMaxPayable = true,
-                                denomination = denomination
-                            )
-                        }
-                    )
-                }
+            // Keep the current destination unless it now collides with the source asset;
+            // otherwise fall back to the per-source default (Bitcoin -> L-BTC, else -> Bitcoin).
+            uiState.update { uiState ->
+                uiState.copy(
+                    to = uiState.to?.takeIf { !it.account.network.isSameNetwork(from.account.network) }
+                        ?: defaultTo(from = from, accounts = swappableAccounts())
+                )
             }
         }.launchIn(this)
 
-        // Update Balance
+        // To row: balance and account selector list
         combine(uiState.map { it.to }.filterNotNull().distinctUntilChanged(), denomination) { to, denomination ->
             uiState.update { uiState ->
                 uiState.copy(
-                    toBalance = to.balance(session).toAmountLook(
+                    toBalance = swapBalance(to).toAmountLook(
                         session = session,
                         assetId = to.assetId,
                         withUnit = true,
                         denomination = denomination
-                    )
+                    ),
+                    toAccounts = accountsFor(row = to, denomination = denomination)
                 )
             }
         }.launchIn(this)
@@ -235,6 +220,7 @@ class SwapViewModel(
                     amountFromExchange = it.amountFromExchange ?: "",
                     amountToExchange = it.amountToExchange ?: "",
                     error = it.error,
+                    errorSide = it.errorSide,
                     isValidQuote = it.isValid
                 )
 
@@ -326,30 +312,76 @@ class SwapViewModel(
 
     override fun onAccountClick(isFrom: Boolean) {
         _pendingSetAccountFrom = isFrom
-        postSideEffect(
-            SideEffects.NavigateTo(
-                NavigateDestinations.Accounts(
-                    greenWallet = greenWallet,
-                    accounts = AccountAssetBalanceList(
-                        (if (isFrom) uiState.value.fromAccounts else uiState.value.toAccounts)
-                    ),
-                    withAsset = isFrom,
-                    withArrow = false
-                )
+        doAsync({
+            // Build the list from the row's current value to avoid showing a stale
+            // (pre asset-change) account list from uiState.
+            val row = checkNotNull(if (isFrom) uiState.value.from else uiState.value.to)
+            NavigateDestinations.Accounts(
+                greenWallet = greenWallet,
+                accounts = AccountAssetBalanceList(accountsFor(row = row, denomination = denomination.value)),
+                title = pickerTitle(isFrom),
+                withAsset = false,
+                withArrow = false
             )
-        )
+        }, onSuccess = {
+            postSideEffect(SideEffects.NavigateTo(it))
+        })
+    }
+
+    override fun onAssetClick(isFrom: Boolean) {
+        _pendingSetAccountFrom = isFrom
+        doAsync({
+            // The sheet offers the supported counterparties of the opposite row (eg. opposite
+            // Bitcoin -> Lightning + Liquid). With a single counterparty the opposite's own asset
+            // is offered too - selecting it flips the rows (eg. opposite Lightning -> Lightning + Bitcoin).
+            val opposite = if (isFrom) uiState.value.to else uiState.value.from
+            val distinct = swappableAccounts().distinctBy { it.account.network.canonicalNetworkId }
+            val counterparts = distinct.filter { opposite == null || isSwapPairSupported(it, opposite) }
+            val entries = if (opposite != null && counterparts.size <= 1) {
+                listOfNotNull(distinct.firstOrNull { it.account.network.isSameNetwork(opposite.account.network) }) + counterparts
+            } else {
+                counterparts
+            }
+            NavigateDestinations.SwapAssets(
+                greenWallet = greenWallet,
+                assets = AssetBalanceList(entries.map { AssetBalance.create(it.asset) }),
+                title = pickerTitle(isFrom)
+            )
+        }, onSuccess = {
+            postSideEffect(SideEffects.NavigateTo(it))
+        })
+    }
+
+    // Selecting an asset picks its default account (standard singlesig, or the single Lightning
+    // account); the row-flip collision handling in setAccount applies as usual.
+    override fun setAsset(assetBalance: AssetBalance) {
+        val current = if (_pendingSetAccountFrom) uiState.value.from else uiState.value.to
+        // Re-selecting the row's current asset keeps the user's account choice.
+        if (current?.assetId == assetBalance.assetId) return
+
+        swappableAccounts()
+            .filter { it.assetId == assetBalance.assetId }
+            .let { accounts ->
+                // The source must be fundable, so prefer a balance-bearing account for the From
+                // row; otherwise the standard singlesig account, falling back to the first one.
+                accounts.takeIf { _pendingSetAccountFrom }?.firstOrNull { it.balance(session) > 0 }
+                    ?: accounts.firstOrNull { it.account.type == AccountType.BIP84_SEGWIT }
+                    ?: accounts.firstOrNull()
+            }
+            ?.also { setAccount(AccountAssetBalance.create(it)) }
     }
 
     override fun setAccount(accountAssetBalance: AccountAssetBalance) {
+        val selected = accountAssetBalance.accountAsset
         uiState.update { uiState ->
             if (_pendingSetAccountFrom) {
-                uiState.copy(
-                    from = accountAssetBalance.accountAsset
-                )
+                // The two rows can never reference the same asset: if the new source collides with the
+                // destination, move the old source into the destination row so the user's pick is kept.
+                val collision = uiState.to?.account?.network?.isSameNetwork(selected.account.network) == true
+                if (collision) uiState.copy(from = selected, to = uiState.from) else uiState.copy(from = selected)
             } else {
-                uiState.copy(
-                    to = accountAssetBalance.accountAsset
-                )
+                val collision = uiState.from?.account?.network?.isSameNetwork(selected.account.network) == true
+                if (collision) uiState.copy(to = selected, from = uiState.to) else uiState.copy(to = selected)
             }
         }
     }
@@ -388,11 +420,25 @@ class SwapViewModel(
             )
 
             SideEffects.NavigateTo(
-                NavigateDestinations.SendConfirm(
-                    greenWallet = greenWallet,
-                    accountAsset = from,
-                    denomination = denomination.value
-                )
+                if (from.account.isLightning) {
+                    // Lightning source: the reverse-swap invoice is paid from the Lightning balance
+                    // via sendLightningTransaction, so route to the Lightning confirm screen.
+                    NavigateDestinations.SendLightningConfirm(
+                        greenWallet = greenWallet,
+                        accountAsset = from,
+                        invoice = params.swap?.address ?: "",
+                        // The Lightning balance is debited for the invoice amount (fromAmount), not
+                        // the BTC the user receives (toAmount).
+                        amountSatoshi = params.swap?.fromAmount,
+                        denomination = denomination.value
+                    )
+                } else {
+                    NavigateDestinations.SendConfirm(
+                        greenWallet = greenWallet,
+                        accountAsset = from,
+                        denomination = denomination.value
+                    )
+                }
             )
 
         }, onSuccess = {
@@ -445,6 +491,44 @@ class SwapViewModel(
         }
     }
 
+    // Available balance shown per row: the spendable channel balance for Lightning, the account
+    // balance otherwise.
+    private fun swapBalance(accountAsset: AccountAsset): Long =
+        if (accountAsset.account.isLightning) {
+            // Fee-adjusted so the shown "Available" is an amount the user can actually swap.
+            session.lightningSdkOrNull?.nodeInfoStateFlow?.value?.maxSendableSatoshi() ?: 0L
+        } else {
+            accountAsset.balance(session)
+        }
+
+    // Default destination for a given source asset: Bitcoin -> Liquid Bitcoin, otherwise -> Bitcoin
+    // (Lightning -> Bitcoin, Liquid -> Bitcoin).
+    private fun defaultTo(from: AccountAsset, accounts: List<AccountAsset>): AccountAsset? =
+        (if (from.account.isBitcoin) {
+            accounts.firstOrNull { it.account.isLiquid }
+        } else {
+            accounts.firstOrNull { it.account.isBitcoin }
+        }) ?: accounts.firstOrNull { !it.account.network.isSameNetwork(from.account.network) }
+
+    private fun swappableAccounts(): List<AccountAsset> =
+        session.accountAsset.value.filter { it.isSwappableAsset(session) }
+
+    // Account selector entries for a row: only the accounts of the row's selected asset.
+    private suspend fun accountsFor(row: AccountAsset, denomination: Denomination): List<AccountAssetBalance> =
+        swappableAccounts()
+            .filter { it.account.network.isSameNetwork(row.account.network) }
+            .map {
+                AccountAssetBalance.create(
+                    accountAsset = it,
+                    session = sessionOrNull,
+                    isMaxPayable = it.account.isLightning,
+                    denomination = denomination
+                )
+            }
+
+    private suspend fun pickerTitle(isFrom: Boolean): String =
+        getString(if (isFrom) Res.string.id_swap_from else Res.string.id_swap_to)
+
     companion object : Loggable()
 }
 
@@ -461,6 +545,10 @@ class SwapViewModelPreview(greenWallet: GreenWallet) :
     override fun onAccountClick(isFrom: Boolean) {}
 
     override fun setAccount(accountAssetBalance: AccountAssetBalance) {}
+
+    override fun onAssetClick(isFrom: Boolean) {}
+
+    override fun setAsset(assetBalance: AssetBalance) {}
 
     override fun swapPairs() {}
 

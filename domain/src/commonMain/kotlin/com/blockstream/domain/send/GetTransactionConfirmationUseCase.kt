@@ -34,6 +34,7 @@ class GetTransactionConfirmationUseCase() {
 
         var swapFee: String? = null
         var networkFee: String? = null
+        var lightningSetupFee: String? = null
 
         var totalFees: String? = null
         var totalFeesFiat: String? = null
@@ -76,49 +77,40 @@ class GetTransactionConfirmationUseCase() {
                     amountFiat = null
                 }
 
-                swapFee = swap.providerFee.toAmountLook(
+                suspend fun Long.look(assetId: String? = account.network.policyAsset) = toAmountLook(
                     session = session,
-                    assetId = account.network.policyAsset,
+                    assetId = assetId,
                     withMinimumDigits = true,
                     denomination = if (isAddressVerificationOnDevice) Denomination.BTC else denomination
                 )
 
-                networkFee = (swap.claimNetworkFee + (transaction.fee ?: 0)).toAmountLook(
+                suspend fun Long.lookFiat(assetId: String? = account.network.policyAsset) = toAmountLook(
                     session = session,
-                    assetId = account.network.policyAsset,
+                    assetId = assetId,
                     withMinimumDigits = true,
-                    denomination = if (isAddressVerificationOnDevice) Denomination.BTC else denomination
+                    denomination = Denomination.fiat(session)
                 )
 
-                // total fees
-                (swap.providerFee + swap.claimNetworkFee + (transaction.fee ?: 0)).also {
-                    totalFees = it.toAmountLook(
-                        session = session,
-                        assetId = account.network.policyAsset,
-                        withMinimumDigits = true,
-                        denomination = if (isAddressVerificationOnDevice) Denomination.BTC else denomination
-                    )
-                    totalFeesFiat = it.toAmountLook(
-                        session = session,
-                        assetId = account.network.policyAsset,
-                        withMinimumDigits = true,
-                        denomination = Denomination.fiat(session)
-                    )
+                swapFee = swap.providerFee.look()
+
+                networkFee = (swap.claimNetworkFee + (transaction.fee ?: 0)).look()
+
+                // Lightning channel setup fee (Bitcoin -> Lightning when a new channel is opened).
+                if (swap.lightningSetupFee > 0) {
+                    lightningSetupFee = swap.lightningSetupFee.look()
                 }
 
-                swap.toAmount.also {
-                    recipientReceives = it.toAmountLook(
-                        session = session,
-                        assetId = swap.toAssetId,
-                        withMinimumDigits = true,
-                        denomination = if (isAddressVerificationOnDevice) Denomination.BTC else denomination
-                    )
-                    recipientReceivesFiat = it.toAmountLook(
-                        session = session,
-                        assetId = swap.toAssetId,
-                        withMinimumDigits = true,
-                        denomination = Denomination.fiat(session)
-                    )
+                // total fees
+                (swap.providerFee + swap.claimNetworkFee + swap.lightningSetupFee + (transaction.fee ?: 0)).also {
+                    totalFees = it.look()
+                    totalFeesFiat = it.lookFiat()
+                }
+
+                // Net of the Lightning setup fee: the LSP deducts the channel-open fee from the
+                // received amount, so what actually lands is toAmount minus the setup fee (0 otherwise).
+                ((swap.toAmount ?: 0) - swap.lightningSetupFee).also {
+                    recipientReceives = it.look(swap.toAssetId)
+                    recipientReceivesFiat = it.lookFiat(swap.toAssetId)
                 }
 
                 if (isAddressVerificationOnDevice) {
@@ -241,6 +233,7 @@ class GetTransactionConfirmationUseCase() {
             utxos = utxos,
             swapFee = swapFee,
             networkFee = networkFee,
+            lightningSetupFee = lightningSetupFee,
             fee = fee,
             feeFiat = feeFiat,
             feeRate = feeRate,

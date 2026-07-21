@@ -58,6 +58,7 @@ fun GreenAccountAsset(
     message: String? = null,
     selectText: String? = null,
     withAsset: Boolean = true,
+    withAccountName: Boolean = true,
     withAssetIcon: Boolean = true,
     withEditIcon: Boolean = false,
     withArrow: Boolean = false,
@@ -145,7 +146,7 @@ fun GreenAccountAsset(
                                 }) {
                             val primary =
                                 if (withAsset) accountAssetBalance.asset.nameStringHolder(session) else StringHolder.create(accountAssetBalance.account.name)
-                            val secondary = if (withAsset) accountAssetBalance.account.name else null
+                            val secondary = if (withAsset && withAccountName) accountAssetBalance.account.name else null
 
                             // Asset or Account
                             Text(
@@ -168,13 +169,15 @@ fun GreenAccountAsset(
                             }
 
                             // Account Policy
-                            Text(
-                                text = accountAssetBalance.account.policyRes(session).uppercase(),
-                                style = labelMedium.copy(fontSize = 8.sp, lineHeight = 12.sp),
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                                color = whiteLow
-                            )
+                            if (withAccountName) {
+                                Text(
+                                    text = accountAssetBalance.account.policyRes(session).uppercase(),
+                                    style = labelMedium.copy(fontSize = 8.sp, lineHeight = 12.sp),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                    color = whiteLow
+                                )
+                            }
 
                             message?.also {
                                 Text(

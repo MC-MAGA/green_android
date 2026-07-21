@@ -23,7 +23,7 @@ fun mapLightningSendError(error: Throwable): String {
         "timeout" in msg || "timed out" in msg -> "id_lightning_payment_timed_out"
         "expired" in msg -> "id_invoice_expired"
         "already paid" in msg -> "id_invoice_already_paid"
-        "insufficient funds" in msg || "insufficient balance" in msg -> "id_insufficient_funds"
+        "insufficient funds" in msg || "insufficient balance" in msg || "fee budget" in msg -> "id_insufficient_funds"
         "invalid amount" in msg -> "id_invalid_amount"
         else -> "id_your_transaction_could_not_reach_network"
     }

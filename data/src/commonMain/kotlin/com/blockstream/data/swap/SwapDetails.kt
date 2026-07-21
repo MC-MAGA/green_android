@@ -14,6 +14,7 @@ data class SwapDetails constructor(
     val toAssetId: String,
     val providerFee: Long = 0,
     val claimNetworkFee: Long = 0,
+    val lightningSetupFee: Long = 0,
 ) : SimpleJson<SwapDetails>() {
     override fun kSerializer() = serializer()
 }

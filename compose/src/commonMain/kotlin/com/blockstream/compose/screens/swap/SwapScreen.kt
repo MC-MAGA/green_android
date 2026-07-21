@@ -3,11 +3,9 @@ package com.blockstream.compose.screens.swap
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -17,11 +15,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_fee_rate
-import blockstream_green.common.generated.resources.id_next
+import blockstream_green.common.generated.resources.id_continue
 import blockstream_green.common.generated.resources.id_set_custom_fee_rate
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.components.GreenButton
@@ -29,6 +26,7 @@ import com.blockstream.compose.components.GreenButtonSize
 import com.blockstream.compose.components.GreenColumn
 import com.blockstream.compose.components.NetworkFeeLine
 import com.blockstream.compose.components.SwapComponent
+import com.blockstream.domain.swap.isSwapPairSupported
 import com.blockstream.compose.dialogs.TextDialog
 import com.blockstream.compose.events.Events
 import com.blockstream.compose.models.send.CreateTransactionViewModelAbstract
@@ -42,6 +40,8 @@ import com.blockstream.compose.utils.stringResourceFromIdOrNull
 import com.blockstream.data.data.DenominatedValue
 import com.blockstream.data.data.FeePriority
 import com.blockstream.data.gdk.data.AccountAssetBalance
+import com.blockstream.data.gdk.data.AssetBalance
+import com.blockstream.data.swap.SwapErrorSide
 import com.blockstream.data.utils.DecimalFormat
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -53,6 +53,10 @@ fun SwapScreen(
 
     NavigateDestinations.Accounts.getResult<AccountAssetBalance> {
         viewModel.setAccount(it)
+    }
+
+    NavigateDestinations.SwapAssets.getResult<AssetBalance> {
+        viewModel.setAsset(it)
     }
 
     NavigateDestinations.FeeRate.getResult<FeePriority> {
@@ -94,15 +98,6 @@ fun SwapScreen(
 
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val denomination by viewModel.denomination.collectAsStateWithLifecycle()
-    val onProgress by viewModel.onProgress.collectAsStateWithLifecycle()
-
-    AnimatedVisibility(visible = onProgress) {
-        LinearProgressIndicator(
-            modifier = Modifier
-                .height(1.dp)
-                .fillMaxWidth()
-        )
-    }
 
     SetupScreen(
         viewModel = viewModel,
@@ -142,17 +137,19 @@ fun SwapScreen(
                         session = viewModel.session,
                         focusRequester = focusRequester,
                         error = stringResourceFromIdOrNull(uiState.error),
+                        errorSide = uiState.errorSide,
+                        isPairSupported = isSwapPairSupported(uiState.from!!, uiState.to!!),
                         onFromAccountClick = {
                             viewModel.onAccountClick(isFrom = true)
                         },
                         onFromAssetClick = {
-
+                            viewModel.onAssetClick(isFrom = true)
                         },
                         onToAccountClick = {
                             viewModel.onAccountClick(isFrom = false)
                         },
                         onToAssetClick = {
-
+                            viewModel.onAssetClick(isFrom = false)
                         },
                         onTogglePairsClick = {
                             viewModel.swapPairs()
@@ -179,7 +176,7 @@ fun SwapScreen(
 
             val buttonEnabled by viewModel.buttonEnabled.collectAsStateWithLifecycle()
             GreenButton(
-                text = stringResource(Res.string.id_next),
+                text = stringResource(Res.string.id_continue),
                 size = GreenButtonSize.BIG,
                 enabled = buttonEnabled,
                 modifier = Modifier.fillMaxWidth()

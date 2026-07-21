@@ -38,10 +38,10 @@ import blockstream_green.common.generated.resources.id_verify_address_on_device
 import blockstream_green.common.generated.resources.id_you_are_paying_this_lightning_invoice
 import blockstream_green.common.generated.resources.id_your_redeposit_address
 import blockstream_green.common.generated.resources.info
-import blockstream_green.common.generated.resources.pencil_simple_line
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.components.Banner
 import com.blockstream.compose.components.GreenAccountAsset
+import com.blockstream.domain.swap.hasMultipleSwapAccounts
 import com.blockstream.compose.components.GreenButton
 import com.blockstream.compose.components.GreenButtonColor
 import com.blockstream.compose.components.GreenButtonType
@@ -146,7 +146,9 @@ fun SendConfirmScreen(
                             accountAssetBalance = it.accountAssetBalance,
                             session = viewModel.sessionOrNull,
                             title = stringResource(Res.string.id_from),
-                            withAsset = false
+                            // Swaps lead with the asset (account as subtitle); transfers stay account-only.
+                            withAsset = look.isSwap,
+                            withAccountName = !look.isSwap || hasMultipleSwapAccounts(viewModel.sessionOrNull, it)
                         )
                     }
 
@@ -155,7 +157,8 @@ fun SendConfirmScreen(
                             accountAssetBalance = it.accountAssetBalance,
                             session = viewModel.sessionOrNull,
                             title = stringResource(Res.string.id_to),
-                            withAsset = false
+                            withAsset = look.isSwap,
+                            withAccountName = !look.isSwap || hasMultipleSwapAccounts(viewModel.sessionOrNull, it)
                         )
                     }
 
