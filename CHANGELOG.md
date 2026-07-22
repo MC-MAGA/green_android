@@ -3,6 +3,34 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
+## [Unreleased]
+
+## [5.6.0] - 2026-07-28
+
+### Added
+
+- Manual coin selection for Bitcoin and Liquid Bitcoin sends
+- AMP2 account support backed by LWK
+- Stuck swap recovery actions
+- Greenlight notification handling in development builds
+- Security policy and vulnerability reporting guidance
+
+### Changed
+
+- Temporarily disabled new swaps (Bitcoin/Liquid/Lightning) due to Boltz service interruption; in progress swaps are not affected
+- Rebuild session state around per-network backends
+- Redesign AMP and AMP2 account UI
+- Improve MELD quote debounce and amount-limit errors
+- Update Android dependencies and build tooling
+- Update LWK to version 0.18.3
+
+### Fixed
+
+- Improved sensitive-data redaction in diagnostic logs
+- Address authentication bottom sheet bouncing
+- Missing Android UI locators
+- Stale Lightning balance updates after disabling Lightning
+
 ## [5.5.1] - 2026-06-15
 
 - Update GDK to Release 0.77.6
