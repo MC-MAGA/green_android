@@ -45,7 +45,10 @@ class GetTransactionConfirmationUseCase() {
             params.swap != null -> {
                 val swap = requireNotNull(params.swap)
 
-                val satoshi = if (isAddressVerificationOnDevice) swap.fromAmount else swap.toAmount
+                val recipientReceiveSatoshi = swap.toAmount?.let {
+                    (it - swap.lightningSetupFee).coerceAtLeast(0)
+                }
+                val satoshi = if (isAddressVerificationOnDevice) swap.fromAmount else recipientReceiveSatoshi
                 val satoshiAssetId = if (isAddressVerificationOnDevice) swap.fromAssetId else swap.toAssetId
                 val displayAssetId = if (params.isLiquidToLightningSwap) account.network.policyAsset else satoshiAssetId
 
@@ -108,10 +111,9 @@ class GetTransactionConfirmationUseCase() {
 
                 // Net of the Lightning setup fee: the LSP deducts the channel-open fee from the
                 // received amount, so what actually lands is toAmount minus the setup fee (0 otherwise).
-                ((swap.toAmount ?: 0) - swap.lightningSetupFee).also {
-                    recipientReceives = it.look(swap.toAssetId)
-                    recipientReceivesFiat = it.lookFiat(swap.toAssetId)
-                }
+                val recipientReceiveDisplaySatoshi = recipientReceiveSatoshi ?: 0L
+                recipientReceives = recipientReceiveDisplaySatoshi.look(swap.toAssetId)
+                recipientReceivesFiat = recipientReceiveDisplaySatoshi.lookFiat(swap.toAssetId)
 
                 if (isAddressVerificationOnDevice) {
                     utxos = transaction.utxoViews(
