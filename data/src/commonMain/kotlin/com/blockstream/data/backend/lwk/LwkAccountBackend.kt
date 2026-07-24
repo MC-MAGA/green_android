@@ -26,9 +26,6 @@ import lwk.Pset
 import lwk.Signer
 import lwk.WalletTxOut
 import lwk.Wollet
-import kotlin.collections.component1
-import kotlin.collections.component2
-import kotlin.time.Clock
 import lwk.Address as LwkLibAddress
 
 class LwkAccountBackend constructor(
@@ -129,7 +126,7 @@ class LwkAccountBackend constructor(
 
     override suspend fun createTransaction(
         params: CreateTransactionParams
-    ): CreateTransaction = try {
+    ): CreateTransaction {
         val addressees = params.addresseesAsParams.orEmpty()
         check(addressees.size <= 1)
 
@@ -143,7 +140,7 @@ class LwkAccountBackend constructor(
             .filter { param -> param.contains("=") }
             .associate { param -> param.substringBefore("=") to param.substringAfter("=") }
 
-        val assetId = checkNotNull(query["assetid"] ?: addressParams.assetId ) { "Recipient without assetId" }
+        val assetId = checkNotNull(query["assetid"] ?: addressParams.assetId) { "Recipient without assetId" }
 
         val bip21Params = query["amount"]?.let {
             Bip21Params(amount = it, assetId = assetId)
@@ -152,35 +149,7 @@ class LwkAccountBackend constructor(
         val address = addressParams.address.substringBefore("?").substringAfter(":")
         val satoshi = query["amount"]?.let(::bip21AmountToSatoshi) ?: addressParams.satoshi
 
-        val builder = networkBackend.lwkNetwork.txBuilder()
-
-        params.feeRate?.let { builder.feeRate(it.toFloat()) }
-
-        if (addressParams.isGreedy && assetId.isPolicyAsset(networkBackend.network)) {
-            builder.drainLbtcWallet() // spend all L-BTC inputs
-            builder.drainLbtcTo(LwkLibAddress(address))
-        } else {
-            builder.addRecipient(
-                address = LwkLibAddress(address),
-                satoshi = satoshi.toULong(),
-                asset = assetId
-            )
-        }
-
-        val pset = builder.finish(wollet)
-        val balance = wollet.psetDetails(pset).balance()
-        val tx = pset.extractTx()
-
-        val outputs = balance.recipients().map {
-            Output(
-                address = it.address()?.toString(),
-                assetId = it.asset(),
-                satoshi = it.value()?.toLong() ?: 0L,
-                isChange = false,
-            )
-        }
-
-        CreateTransaction(
+        val createTransaction = CreateTransaction(
             addressees = listOf(
                 Addressee(
                     address = address,
@@ -190,30 +159,62 @@ class LwkAccountBackend constructor(
                     bip21Params = bip21Params
                 )
             ),
-            satoshi = balance.balances().mapValues {
-                when (it.key) {
-                    networkBackend.network.policyAsset if addressParams.isGreedy -> (wollet.balance()[addressParams.assetId]?.toLong()
-                        ?: 0L) - balance.fee().toLong()
-
-                    networkBackend.network.policyAsset -> it.value + balance.fee().toLong() // Remove the lbtc fee from the amount
-                    else -> it.value
-                }
-            },
-
-            fee = balance.fee().toLong(),
             feeRate = params.feeRate,
-            outputs = outputs,
             memo = params.memo,
-            transaction = tx.toBytes().toHex(),
-            txHash = tx.txid().toString(),
-            pset = pset.toString()
         )
-    } catch (e: LwkException.Generic) {
-        if (e.msg.startsWith("InvalidAmount")) {
-            CreateTransaction(error = "id_invalid_amount")
-        } else if (e.msg.startsWith("InsufficientFunds")) {
-            CreateTransaction(error = "id_insufficient_funds")
-        } else throw e
+
+        return try {
+            val builder = networkBackend.lwkNetwork.txBuilder()
+
+            params.feeRate?.let { builder.feeRate(it.toFloat()) }
+
+            if (addressParams.isGreedy && assetId.isPolicyAsset(networkBackend.network)) {
+                builder.drainLbtcWallet() // spend all L-BTC inputs
+                builder.drainLbtcTo(LwkLibAddress(address))
+            } else {
+                builder.addRecipient(
+                    address = LwkLibAddress(address),
+                    satoshi = satoshi.toULong(),
+                    asset = assetId
+                )
+            }
+
+            val pset = builder.finish(wollet)
+            val balance = wollet.psetDetails(pset).balance()
+            val tx = pset.extractTx()
+
+            val outputs = balance.recipients().map {
+                Output(
+                    address = it.address()?.toString(),
+                    assetId = it.asset(),
+                    satoshi = it.value()?.toLong() ?: 0L,
+                    isChange = false,
+                )
+            }
+
+            createTransaction.copy(
+                satoshi = balance.balances().mapValues {
+                    when (it.key) {
+                        networkBackend.network.policyAsset if addressParams.isGreedy -> (wollet.balance()[addressParams.assetId]?.toLong()
+                            ?: 0L) - balance.fee().toLong()
+
+                        networkBackend.network.policyAsset -> it.value + balance.fee().toLong() // Remove the lbtc fee from the amount
+                        else -> it.value
+                    }
+                },
+                fee = balance.fee().toLong(),
+                outputs = outputs,
+                transaction = tx.toBytes().toHex(),
+                txHash = tx.txid().toString(),
+                pset = pset.toString()
+            )
+        } catch (e: LwkException.Generic) {
+            if (e.msg.startsWith("InvalidAmount")) {
+                createTransaction.copy(error = "id_invalid_amount")
+            } else if (e.msg.startsWith("InsufficientFunds")) {
+                createTransaction.copy(error = "id_insufficient_funds")
+            } else throw e
+        }
     }
 
     override suspend fun getUnspentOutputs(isBump: Boolean, isExpired: Boolean, expiredAt: Long?): UnspentOutputs {

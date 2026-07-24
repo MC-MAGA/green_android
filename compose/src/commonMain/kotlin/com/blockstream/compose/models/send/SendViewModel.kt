@@ -436,7 +436,7 @@ class SendViewModel(
 
                 tx.addressees.firstOrNull()?.also { addressee ->
                     // For amountless swap inputs the user must enter the amount — keep the field editable.
-                    _isAmountLocked.value = (addressee.isAmountLocked == true || isSwap) && !isAmountlessInstruction
+                    _isAmountLocked.value = (addressee.isAmountLocked || isSwap) && !isAmountlessInstruction
 
                     _metadataDomain.value = addressee.domain?.let { getString(Res.string.id_payment_requested_by_s, it) }
                     _metadataImage.value = addressee.metadata.lnUrlPayImage()
