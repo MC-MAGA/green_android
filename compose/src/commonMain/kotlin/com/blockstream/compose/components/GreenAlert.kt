@@ -22,9 +22,9 @@ import blockstream_green.common.generated.resources.id_back_up_your_wallet_now
 import blockstream_green.common.generated.resources.id_learn_more
 import blockstream_green.common.generated.resources.id_lightning_account
 import blockstream_green.common.generated.resources.id_lightning_service_is_undergoing
+import blockstream_green.common.generated.resources.id_network_issues_detected_you_may
 import blockstream_green.common.generated.resources.id_passphrase_protected
 import blockstream_green.common.generated.resources.id_reenable_2fa
-import blockstream_green.common.generated.resources.id_some_accounts_cannot_be_logged
 import blockstream_green.common.generated.resources.id_some_coins_are_no_longer_2fa_protected
 import blockstream_green.common.generated.resources.id_system_message
 import blockstream_green.common.generated.resources.id_the_lightning_service_is
@@ -188,7 +188,7 @@ fun GreenAlert(modifier: Modifier = Modifier, alertType: AlertType, viewModel: G
             GreenAlert(
                 modifier = modifier,
                 title = stringResource(Res.string.id_warning),
-                message = stringResource(Res.string.id_some_accounts_cannot_be_logged),
+                message = stringResource(Res.string.id_network_issues_detected_you_may),
                 primaryButton = stringResource(Res.string.id_try_again),
                 icon = PhosphorIcons.Regular.Warning,
                 onPrimaryClick = {

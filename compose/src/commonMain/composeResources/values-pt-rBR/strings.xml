@@ -805,7 +805,7 @@
     <string name="id_jade_is_trying_to_connect_to_a">Jade is trying to connect to a non-default blind PIN oracle. Contact support immediately for further information.</string>
     <string name="id_jade_unlocked">Jade desbloqueada</string>
     <string name="id_jade_was_initialized_for_testnet">A Jade foi inicializada na rede de testes</string>
-    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Green app. Jade will not be needed to authorize lightning transactions, because Green will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
+    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Blockstream app. Jade will not be needed to authorize lightning transactions, because Blockstream app will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
     <string name="id_just_a_few_more_steps_to_get">Faltam apenas mais algumas etapas para restaurar a carteira.</string>
     <string name="id_keep_your_keys_encrypted_on">Suas chaves criptografadas na Jade, facilmente acessíveis com PIN</string>
     <string name="id_keep_your_recovery_phrase_fully">Keep your recovery phrase fully offline and stored somewhere secret. Anyone with a copy of these words can steal your funds.</string>
@@ -953,6 +953,7 @@
     <string name="id_network_configuration">Configurações de rede</string>
     <string name="id_network_fee">Taxa de rede</string>
     <string name="id_network_fees">Taxa paga</string>
+    <string name="id_network_issues_detected_you_may">Network issues detected. You may not be able to log into some wallets. Please try again or come back later.</string>
     <string name="id_network_monitor">Monitor de rede</string>
     <string name="id_networks">Redes</string>
     <string name="id_new_account_created">Nova conta criada</string>
@@ -1132,7 +1133,7 @@
     <string name="id_pseudonymous_identifier_country">Identificador pseudônimo, país</string>
     <string name="id_qr_airgapped_mode">Conexão offline via QR</string>
     <string name="id_qr_code">Código QR</string>
-    <string name="id_qr_mode_allows_you_to">O modo QR permite que você se comunique com a Green usando a câmera e os códigos QR da Jade (em vez de USB ou Bluetooth).</string>
+    <string name="id_qr_mode_allows_you_to">O modo QR permite que você se comunique com o aplicativo Blockstream usando a câmera e os códigos QR da Jade (em vez de USB ou Bluetooth).</string>
     <string name="id_qr_pin_unlock">Desbloquear via QR</string>
     <string name="id_qr_scanner">Leitor de código QR</string>
     <string name="id_quick_setup_2fa_account_ideal">Conta conjunta 2de2 protegida por 2FA, ideal para quem realiza transações com muita frequência (a proteção por 2FA expira se você não movimentar os fundos por 1 ano).</string>
@@ -1413,7 +1414,6 @@
     <string name="id_socks5_hostname">Nome do host Socks5</string>
     <string name="id_socks5_port">Porta do Socks5</string>
     <string name="id_socks5_proxy_and_port_must_be">É necessário definir o SOCKS5 proxy e a porta</string>
-    <string name="id_some_accounts_cannot_be_logged">Algumas contas não podem ser acessadas devido a problemas de rede. Atualize o aplicativo Green e tente novamente mais tarde.</string>
     <string name="id_some_coins_are_no_longer_2fa">Algumas moedas não estão protegidas por 2FA.</string>
     <string name="id_some_coins_in_your_wallet">Algumas moedas na sua carteira não se moveram por um longo período de tempo, então o 2FA expirou para mantê-lo no controle. Para reativar o 2FA:\n\n• Realize uma transação qualquer e atualize o 2FA nas moedas de troca (otimiza taxas)\n• Redeposite todas as suas moedas 2FA expiradas</string>
     <string name="id_something_went_wrong">Algo deu errado</string>
@@ -1496,7 +1496,7 @@
     <string name="id_the_importance_of_twofactor">A importância da autenticação 2FA</string>
     <string name="id_the_lightning_service_is">A carteira relâmpago está indisponível no momento. Pedimos desculpas pela interrupção, estamos trabalhando para restaurar os serviços.</string>
     <string name="id_the_liquid_network_is_a_bitcoin">Liquid é uma rede alternativa de Bitcoin que permite a liquidação e emissão de ativos digitais, como moedas estáveis, tokens de valores mobiliários e outros instrumentos financeiros.</string>
-    <string name="id_the_network_selected_on_the">A rede selecionada no aplicativo Green é diferente da rede selecionada na carteira física. Selecione a mesma rede nos dois aparelhos.</string>
+    <string name="id_the_network_selected_on_the">A rede selecionada no aplicativo Blockstream é diferente da rede selecionada na carteira física. Selecione a mesma rede nos dois aparelhos.</string>
     <string name="id_the_new_email_will_be_used_for">O novo e-mail será usado como método 2FA quando a redefinição for concluída. A redefinição leva 12 meses mais o período restante do timelock. </string>
     <string name="id_the_new_firmware_requires_you">O novo firmware exige que você desemparelhe sua Jade nas configurações de Bluetooth.</string>
     <string name="id_the_password_cant_be_empty">A senha não pode ficar em branco</string>
@@ -1598,7 +1598,7 @@
     <string name="id_type_an_amount_between_s_and_s">Digite um valor entre %1$s e %2$s. Uma taxa mínima de configuração de %3$s será aplicada ao valor recebido.</string>
     <string name="id_type_pin">Digite o PIN</string>
     <string name="id_type_the_next_word">Digite a próxima palavra</string>
-    <string name="id_unable_to_contact_the_green">Impossível contatar o serviço Green. Por favor, verifique sua conexão de rede e aguarde para ser reconectado.</string>
+    <string name="id_unable_to_contact_the_green">Impossível contatar o serviço do aplicativo Blockstream. Por favor, verifique sua conexão de rede e aguarde para ser reconectado.</string>
     <string name="id_unarchive">Desarquivar</string>
     <string name="id_unarchive_account">Desarquivar conta</string>
     <string name="id_unblinding_data">Dados confidenciais</string>
@@ -1771,7 +1771,7 @@
     <string name="id_you_have_no_coins_to_send">Esta conta não possui saldo. Clique em receber para gerar um endereço bitcoin.</string>
     <string name="id_you_have_received_s">Você recebeu %1$s</string>
     <string name="id_you_have_successfully_changed">PIN alterado com sucesso</string>
-    <string name="id_you_have_successfully_sent_a">Você realizou uma transação com sucesso. Por favor, deixe sua opinião para que possamos melhorar a Green.</string>
+    <string name="id_you_have_successfully_sent_a">Você realizou uma transação com sucesso. Por favor, deixe sua opinião para que possamos melhorar o aplicativo Blockstream.</string>
     <string name="id_you_have_to_authenticate_to">Você precisa se autenticar para desbloquear seu dispositivo</string>
     <string name="id_you_have_to_authenticate_using">Você tem que autenticar usando biometria</string>
     <string name="id_you_have_tor_enabled_are_you">Você ativou o Tor, tem certeza que deseja abrir esta página da web?</string>
@@ -1794,7 +1794,7 @@
     <string name="id_youll_need_your_recovery_phrase">Você vai precisar da sua frase de recuperação para restaurar esta carteira</string>
     <string name="id_youll_see_your_coins_here_when">Suas moedas irão aparecer aqui quando você receber fundos</string>
     <string name="id_your_1d_total_balance_is_the">Seu saldo total de %1$d é a soma dos saldos dessas contas.</string>
-    <string name="id_your_2fa_expires_so_that_if_you">A proteção 2FA expira para permitir que você recupere seus fundos mesmo que o serviço da Blockstream Green fique indisponível ou caso você perca o acesso aos seus métodos de autenticação. Você sempre pode recuperar seus bitcoins usando a ferramenta de recuperação</string>
+    <string name="id_your_2fa_expires_so_that_if_you">A proteção 2FA expira para permitir que você recupere seus fundos mesmo que o serviço do aplicativo Blockstream fique indisponível ou caso você perca o acesso aos seus métodos de autenticação. Você sempre pode recuperar seus bitcoins usando a ferramenta de recuperação</string>
     <string name="id_your_amp_account_is_set_up_and">Sua conta AMP está configurada e pronta para ser usada. Copie seu ID AMP e compartilhe-o com o emissor do seu token de segurança para receber autorização para movimentar fundos.</string>
     <string name="id_your_bitcoin_and_liquid_assets">Seus ativos Bitcoin e Liquid são armazenados na blockchain e só podem ser gastos usando as chaves que estão no dispositivo Jade.</string>
     <string name="id_your_bluetooth_adapter_is">Seu adaptador Bluetooth está desativado</string>

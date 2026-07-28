@@ -805,7 +805,7 @@
     <string name="id_jade_is_trying_to_connect_to_a">Jade is trying to connect to a non-default blind PIN oracle. Contact support immediately for further information.</string>
     <string name="id_jade_unlocked">Jade розблоковано</string>
     <string name="id_jade_was_initialized_for_testnet">Jade було ініціалізовано для тестнету</string>
-    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Green app. Jade will not be needed to authorize lightning transactions, because Green will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
+    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Blockstream app. Jade will not be needed to authorize lightning transactions, because Blockstream app will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
     <string name="id_just_a_few_more_steps_to_get">Ще кілька кроків для настройки.</string>
     <string name="id_keep_your_keys_encrypted_on">Keep your keys encrypted on Jade, easily accessible with PIN</string>
     <string name="id_keep_your_recovery_phrase_fully">Keep your recovery phrase fully offline and stored somewhere secret. Anyone with a copy of these words can steal your funds.</string>
@@ -953,6 +953,7 @@
     <string name="id_network_configuration">Конфігурація мережі</string>
     <string name="id_network_fee">Мережева комісія</string>
     <string name="id_network_fees">Network fees</string>
+    <string name="id_network_issues_detected_you_may">Network issues detected. You may not be able to log into some wallets. Please try again or come back later.</string>
     <string name="id_network_monitor">Монітор мережі</string>
     <string name="id_networks">Мережі</string>
     <string name="id_new_account_created">Створено новий обліковий запис</string>
@@ -1132,7 +1133,7 @@
     <string name="id_pseudonymous_identifier_country">Псевдонімний ідентифікатор, країна</string>
     <string name="id_qr_airgapped_mode">QR Airgapped Mode</string>
     <string name="id_qr_code">QR-код</string>
-    <string name="id_qr_mode_allows_you_to">QR Mode allows you to communicate with Green using Jade&apos;s camera and QR codes (instead of USB or Bluetooth).</string>
+    <string name="id_qr_mode_allows_you_to">QR Mode allows you to communicate with Blockstream app using Jade&apos;s camera and QR codes (instead of USB or Bluetooth).</string>
     <string name="id_qr_pin_unlock">QR PIN Unlock</string>
     <string name="id_qr_scanner">QR-сканер</string>
     <string name="id_quick_setup_2fa_account_ideal">Швидке налаштування 2FA акаунту, ідеально підходить для активних користувачів (2FA припиняється, якщо ви не переміщували кошти протягом 1 року).</string>
@@ -1413,7 +1414,6 @@
     <string name="id_socks5_hostname">Ім&apos;я хоста Socks5</string>
     <string name="id_socks5_port">Порт Socks5</string>
     <string name="id_socks5_proxy_and_port_must_be">Проксі і порт SOCKS5 повинні бути налаштовані</string>
-    <string name="id_some_accounts_cannot_be_logged">Some accounts cannot be logged into due to network issues. Please update the Green app and try again later.</string>
     <string name="id_some_coins_are_no_longer_2fa">Some coins are no longer 2FA protected.</string>
     <string name="id_some_coins_in_your_wallet">Some coins in your wallet haven&apos;t moved for a long time, so 2FA expired to keep you in control. To reactivate 2FA:\n\n• Send normally and refresh the 2FA on change coins (optimizes fees)\n• Redeposit all your expired 2FA coins</string>
     <string name="id_something_went_wrong">Щось пішло не так</string>
@@ -1496,7 +1496,7 @@
     <string name="id_the_importance_of_twofactor">The Importance of Two-Factor Authentication</string>
     <string name="id_the_lightning_service_is">The Lightning service is currently unavailable. We apologize for the disruption, we are working to bring the service back online.</string>
     <string name="id_the_liquid_network_is_a_bitcoin">Liquid Network – це рішення рівня-2 для Біткоїна, що забезпечує швидке та конфіденційне здійснення операцій з цифровими активами, такими як стейблкоїни, security-токени та інші фінансові інструменти, на основі ланцюжка Біткоїну.</string>
-    <string name="id_the_network_selected_on_the">Мережа, обрана в додатку Green, відрізняється від мережі, обраної в апаратному гаманці. Виберіть одну і ту ж мережу на обох пристроях.</string>
+    <string name="id_the_network_selected_on_the">Мережа, обрана в застосунку Blockstream, відрізняється від мережі, обраної в апаратному гаманці. Виберіть одну і ту ж мережу на обох пристроях.</string>
     <string name="id_the_new_email_will_be_used_for">Нова адреса електронної пошти буде використовуватися для двофакторної аутентифікації після завершення скидання. Скидання займає 12 місяців плюс залишившийся час блокування.</string>
     <string name="id_the_new_firmware_requires_you">Нова прошивка вимагає, щоб ви від&apos;єднали ваш пристрій Jade в налаштуваннях Bluetooth.</string>
     <string name="id_the_password_cant_be_empty">Поле пароля не може залишатись порожнім</string>
@@ -1598,7 +1598,7 @@
     <string name="id_type_an_amount_between_s_and_s">Type an amount between %1$s and %2$s. A minimum setup fee of %3$s will be applied to the received amount.</string>
     <string name="id_type_pin">Type PIN</string>
     <string name="id_type_the_next_word">Type the next word</string>
-    <string name="id_unable_to_contact_the_green">Не вдалося зв&apos;язатися зі службою підтримки Green. Перевірте підключення до мережі і дочекайтеся повторного підключення.</string>
+    <string name="id_unable_to_contact_the_green">Не вдалося зв&apos;язатися зі службою застосунку Blockstream. Перевірте підключення до мережі і дочекайтеся повторного підключення.</string>
     <string name="id_unarchive">Розархівувати</string>
     <string name="id_unarchive_account">Розархівувати акаунт</string>
     <string name="id_unblinding_data">Розкриття даних</string>
@@ -1771,7 +1771,7 @@
     <string name="id_you_have_no_coins_to_send">У вас немає монет для відправки. Створіть адресу для отримання біткоінів.</string>
     <string name="id_you_have_received_s">Ви отримали %1$s</string>
     <string name="id_you_have_successfully_changed">Ви успішно змінили свій PIN-код</string>
-    <string name="id_you_have_successfully_sent_a">Ви успішно відправили транзакцію. Будь ласка, залиште свій відгук, щоб покращити Green.</string>
+    <string name="id_you_have_successfully_sent_a">Ви успішно відправили транзакцію. Будь ласка, залиште свій відгук, щоб покращити застосунок Blockstream.</string>
     <string name="id_you_have_to_authenticate_to">You have to Authenticate to unlock your device</string>
     <string name="id_you_have_to_authenticate_using">Вам необхідно пройти аутентифікацію за допомогою біометричних даних</string>
     <string name="id_you_have_tor_enabled_are_you">У вас включений Tor, ви впевнені, що хочете відкрити цю веб-сторінку?</string>
@@ -1794,7 +1794,7 @@
     <string name="id_youll_need_your_recovery_phrase">Вам знадобиться фраза відновлення, щоб відновити цей гаманець</string>
     <string name="id_youll_see_your_coins_here_when">Ви побачите тут свої монети тоді, коли отримаєте кошти</string>
     <string name="id_your_1d_total_balance_is_the">Your %1$d total balance is the sum of the balances across these accounts.</string>
-    <string name="id_your_2fa_expires_so_that_if_you">Термін дії вашої 2FA закінчується, тому, якщо ви втратите доступ до свого методу 2FA або служба Blockstream Green стане недоступною, ви завжди можете відновити свої біткоіни за допомогою цього інструменту з відкритим вихідним кодом.</string>
+    <string name="id_your_2fa_expires_so_that_if_you">Термін дії вашої 2FA закінчується, тому, якщо ви втратите доступ до свого методу 2FA або служба застосунку Blockstream стане недоступною, ви завжди можете відновити свої біткоіни за допомогою цього інструменту з відкритим вихідним кодом.</string>
     <string name="id_your_amp_account_is_set_up_and">Your AMP account is set up and ready to be used. Copy your AMP ID and share it with your security token issuer to receive authorization to move funds.</string>
     <string name="id_your_bitcoin_and_liquid_assets">Ваші біткоїни та активи Liquid зберігаються на блокчейні і можуть бути витрачені тільки з використанням ключів, що зберігаються на Jade.</string>
     <string name="id_your_bluetooth_adapter_is">Ваш адаптер Bluetooth вимкнено</string>

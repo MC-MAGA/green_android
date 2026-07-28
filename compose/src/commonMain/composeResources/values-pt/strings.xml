@@ -685,7 +685,7 @@
     <string name="id_jade_is_trying_to_connect_to_a">Jade is trying to connect to a non-default blind PIN oracle. Contact support immediately for further information.</string>
     <string name="id_jade_unlocked">Jade desbloqueada</string>
     <string name="id_jade_was_initialized_for_testnet">A Jade foi inicializada na rede de testes</string>
-    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Blockstream App app. Jade will not be needed to authorize lightning transactions, because Blockstream App will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
+    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Blockstream App. Jade will not be needed to authorize lightning transactions, because Blockstream App will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
     <string name="id_just_a_few_more_steps_to_get">Faltam apenas mais algumas etapas para restaurar a carteira.</string>
     <string name="id_label">Rótulo</string>
     <string name="id_language">Idioma</string>
@@ -815,6 +815,7 @@
     <string name="id_network_configuration">Configurações de rede</string>
     <string name="id_network_fee">Taxa de rede</string>
     <string name="id_network_fees">Taxa paga</string>
+    <string name="id_network_issues_detected_you_may">Network issues detected. You may not be able to log into some wallets. Please try again or come back later.</string>
     <string name="id_network_monitor">Monitor de rede</string>
     <string name="id_networks">Redes</string>
     <string name="id_new_account_created">Nova conta criada</string>
@@ -1206,7 +1207,6 @@
     <string name="id_socks5_hostname">Nome do host Socks5</string>
     <string name="id_socks5_port">Porta do Socks5</string>
     <string name="id_socks5_proxy_and_port_must_be">É necessário definir o SOCKS5 proxy e a porta</string>
-    <string name="id_some_accounts_cannot_be_logged">Some accounts cannot be logged into due to network issues. Please update the Blockstream App app and try again later.</string>
     <string name="id_some_coins_in_your_wallet">Algumas moedas na sua carteira não se moveram por um longo período de tempo, então o 2FA expirou para mantê-lo no controle. Para reativar o 2FA:\n\n• Realize uma transação qualquer e atualize o 2FA nas moedas de troca (otimiza taxas)\n• Redeposite todas as suas moedas 2FA expiradas</string>
     <string name="id_something_went_wrong">Algo deu errado</string>
     <string name="id_speed_up_transaction">Speed up Transaction</string>
@@ -1498,7 +1498,7 @@
     <string name="id_you_have_no_coins_to_send">Esta conta não possui saldo. Clique em receber para gerar um endereço bitcoin.</string>
     <string name="id_you_have_received_s">Você recebeu %1$s</string>
     <string name="id_you_have_successfully_changed">PIN alterado com sucesso</string>
-    <string name="id_you_have_successfully_sent_a">Você realizou uma transação com sucesso. Por favor, deixe sua opinião para que possamos melhorar a Green.</string>
+    <string name="id_you_have_successfully_sent_a">Você realizou uma transação com sucesso. Por favor, deixe sua opinião para que possamos melhorar a Blockstream App.</string>
     <string name="id_you_have_to_authenticate_to">You have to Authenticate to unlock your device</string>
     <string name="id_you_have_to_authenticate_using">Você tem que autenticar usando biometria</string>
     <string name="id_you_have_tor_enabled_are_you">Você ativou o Tor, tem certeza que deseja abrir esta página da web?</string>

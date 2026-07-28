@@ -842,7 +842,7 @@
     <string name="id_jade_is_trying_to_connect_to_a">Jade is trying to connect to a non-default blind PIN oracle. Contact support immediately for further information.</string>
     <string name="id_jade_unlocked">Jade unlocked</string>
     <string name="id_jade_was_initialized_for_testnet">Jade was initialized for testnet</string>
-    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Blockstream app. Jade will not be needed to authorize lightning transactions, because Green will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
+    <string name="id_jade_will_securely_create_and">Jade will securely create and transfer a new key to your Blockstream app. Jade will not be needed to authorize lightning transactions, because Blockstream app will use this new key for your lightning transactions.\n\nDon&apos;t worry about any new backups, your existing recovery phrase backup will be sufficient to restore both your funds onchain and on lightning.</string>
     <string name="id_jade_will_generate_a_new_key">Jade will generate a new key for the Blockstream app to authorize Lightning transactions.</string>
     <string name="id_just_a_few_more_steps_to_get">Just a few more steps to get you set up.</string>
     <string name="id_keep_your_keys_encrypted_on">Keep your keys encrypted on Jade, easily accessible with PIN</string>
@@ -1001,6 +1001,7 @@
     <string name="id_network_configuration">Network Configuration</string>
     <string name="id_network_fee">Network Fee</string>
     <string name="id_network_fees">Network fees</string>
+    <string name="id_network_issues_detected_you_may">Network issues detected. You may not be able to log into some wallets. Please try again or come back later.</string>
     <string name="id_network_monitor">Network Monitor</string>
     <string name="id_networks">Networks</string>
     <string name="id_new_account_created">New account created</string>
@@ -1183,7 +1184,7 @@
     <string name="id_pseudonymous_identifier_country">Pseudonymous identifier, country</string>
     <string name="id_qr_airgapped_mode">QR Airgapped Mode</string>
     <string name="id_qr_code">QR Code</string>
-    <string name="id_qr_mode_allows_you_to">QR Mode allows you to communicate with Green using Jade&apos;s camera and QR codes (instead of USB or Bluetooth).</string>
+    <string name="id_qr_mode_allows_you_to">QR Mode allows you to communicate with Blockstream app using Jade&apos;s camera and QR codes (instead of USB or Bluetooth).</string>
     <string name="id_qr_pin_unlock">QR PIN Unlock</string>
     <string name="id_qr_scanner">QR Scanner</string>
     <string name="id_quick_setup_2fa_account_ideal">Quick setup 2FA account, ideal for active spenders (2FA expires if you don&apos;t move funds for 1 year).</string>
@@ -1477,7 +1478,6 @@
     <string name="id_socks5_hostname">Socks5 Hostname</string>
     <string name="id_socks5_port">Socks5 Port</string>
     <string name="id_socks5_proxy_and_port_must_be">SOCKS5 proxy and port must be set</string>
-    <string name="id_some_accounts_cannot_be_logged">Some accounts cannot be logged into due to network issues. Please update the Green app and try again later.</string>
     <string name="id_some_coins_are_no_longer_2fa">Some coins are no longer 2FA protected.</string>
     <string name="id_some_coins_in_your_wallet">Some coins in your wallet haven&apos;t moved for a long time, so 2FA expired to keep you in control. To reactivate 2FA:\n\n• Send normally and refresh the 2FA on change coins (optimizes fees)\n• Redeposit all your expired 2FA coins</string>
     <string name="id_something_went_wrong">Something went wrong</string>
@@ -1562,7 +1562,7 @@
     <string name="id_the_importance_of_twofactor">The Importance of Two-Factor Authentication</string>
     <string name="id_the_lightning_service_is">The Lightning service is currently unavailable. We apologize for the disruption, we are working to bring the service back online.</string>
     <string name="id_the_liquid_network_is_a_bitcoin">The Liquid Network is a Bitcoin layer-2 solution enabling the fast, confidential settlement and issuance of digital assets, such as stablecoins, security tokens, and other financial instruments, on top of the Bitcoin timechain.</string>
-    <string name="id_the_network_selected_on_the">The network selected on the Green app is different from the one selected on the hardware wallet. Select the same network on both devices.</string>
+    <string name="id_the_network_selected_on_the">The network selected on the Blockstream app is different from the one selected on the hardware wallet. Select the same network on both devices.</string>
     <string name="id_the_new_email_will_be_used_for">The new email will be used for Two-Factor Authentication when the reset is complete. The reset takes 12 months plus any remaining timelock.</string>
     <string name="id_the_new_firmware_requires_you">The new firmware requires you to unpair your Jade from the Bluetooth settings.</string>
     <string name="id_the_password_cant_be_empty">The password can&apos;t be empty</string>
@@ -1666,7 +1666,7 @@
     <string name="id_type_an_amount_between_s_and_s">Type an amount between %1$s and %2$s. A minimum setup fee of %3$s will be applied to the received amount.</string>
     <string name="id_type_pin">Type PIN</string>
     <string name="id_type_the_next_word">Type the next word</string>
-    <string name="id_unable_to_contact_the_green">Unable to contact the Green service. Please check your network connection and wait to be reconnected.</string>
+    <string name="id_unable_to_contact_the_green">Unable to contact the Blockstream app service. Please check your network connection and wait to be reconnected.</string>
     <string name="id_unarchive">Unarchive</string>
     <string name="id_unselect_all">Unselect all</string>
     <string name="id_unarchive_account">Unarchive account</string>
@@ -1850,7 +1850,7 @@
     <string name="id_lightning_payment_timed_out">The payment timed out. Please try again.</string>
     <string name="id_swap_expired_please_retry">The swap expired before completing. Please try sending again.</string>
     <string name="id_lightning_service_unavailable">Lightning service is temporarily unavailable. Please try again.</string>
-    <string name="id_you_have_successfully_sent_a">You have successfully sent a transaction. Please give us your feedback to improve Green.</string>
+    <string name="id_you_have_successfully_sent_a">You have successfully sent a transaction. Please give us your feedback to improve Blockstream app.</string>
     <string name="id_you_have_to_authenticate_to">You have to Authenticate to unlock your device</string>
     <string name="id_you_have_to_authenticate_using">You have to Authenticate using biometrics</string>
     <string name="id_you_have_tor_enabled_are_you">You have Tor enabled, are you sure you want to open this webpage?</string>
@@ -1874,7 +1874,7 @@
     <string name="id_youll_need_your_recovery_phrase">You&apos;ll need your recovery phrase to restore this wallet</string>
     <string name="id_youll_see_your_coins_here_when">You&apos;ll see your coins here when you receive funds</string>
     <string name="id_your_1d_total_balance_is_the">Your %1$d total balance is the sum of the balances across these accounts.</string>
-    <string name="id_your_2fa_expires_so_that_if_you">Your 2FA expires, so that if you lose access to your 2FA method, or the Blockstream Green service becomes unavailable, you can always recover your bitcoin using this open source tool</string>
+    <string name="id_your_2fa_expires_so_that_if_you">Your 2FA expires, so that if you lose access to your 2FA method, or the Blockstream app service becomes unavailable, you can always recover your bitcoin using this open source tool</string>
     <string name="id_your_amp_account_is_set_up_and">Your AMP account is set up and ready to be used. Copy your AMP ID and share it with your security token issuer to receive authorization to move funds.</string>
     <string name="id_your_bitcoin_and_liquid_assets">Your bitcoin and Liquid assets are stored on the blockchain, and can only be spent using the keys stored on Jade.</string>
     <string name="id_your_bluetooth_adapter_is">Your Bluetooth adapter is disabled</string>
