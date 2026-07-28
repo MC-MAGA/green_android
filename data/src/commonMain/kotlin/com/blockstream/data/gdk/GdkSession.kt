@@ -653,7 +653,7 @@ class GdkSession constructor(
     fun supportsLightning() = supportsLightning(isWatchOnly = isWatchOnlyValue, device = device)
 
     private fun supportsLightning(isWatchOnly: Boolean, device: GreenDevice?): Boolean {
-        return appConfig.lightningFeatureEnabled && !isWatchOnly && (device == null || device.isJade)
+        return ephemeralWallet == null && appConfig.lightningFeatureEnabled && !isWatchOnly && (device == null || device.deviceModel?.supportsLightningMnemonicDerivation == true)
     }
 
     fun networks(isTestnet: Boolean, isWatchOnly: Boolean, device: GreenDevice?): List<Network> {
