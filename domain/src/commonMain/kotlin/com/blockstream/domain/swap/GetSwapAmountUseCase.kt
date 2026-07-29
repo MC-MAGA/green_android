@@ -190,7 +190,7 @@ class GetSwapAmountUseCase(
             }
 
             val error = when {
-                !isSwapPairSupported(from, to) -> "id_this_swap_pair_is_not_supported_yet"
+                !isSwapPairSupported(from, to) -> "id_swap_pair_is_not_supported_yet"
                 satoshi > from.balance(session) -> "id_insufficient_funds"
                 isValid == QuoteValidity.MIN -> {
                     if (to.account.isLightning && quote != null) {
@@ -239,7 +239,7 @@ class GetSwapAmountUseCase(
             // errors concern neither side; funds concern the source; Boltz/Lightning limits bind the
             // invoice, which is the To side for Lightning destinations and the From side otherwise.
             val errorSide = when {
-                error == null || error == "id_this_swap_pair_is_not_supported_yet" -> SwapErrorSide.NONE
+                error == null || error == "id_swap_pair_is_not_supported_yet" -> SwapErrorSide.NONE
                 error == "id_insufficient_funds" -> SwapErrorSide.FROM
                 to.account.isLightning -> SwapErrorSide.TO
                 else -> SwapErrorSide.FROM

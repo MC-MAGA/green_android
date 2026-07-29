@@ -54,7 +54,7 @@ class CreateSwapUseCase(
         // Single source of truth with the UI validation: blocks unsupported pairs
         // (Liquid <-> Lightning, same network) even if invoked with stale state.
         if (!isSwapPairSupported(from, to)) {
-            throw Exception("id_this_swap_pair_is_not_supported_yet")
+            throw Exception("id_swap_pair_is_not_supported_yet")
         }
 
         val amountNotNull = requireNotNull(amount) { "Amount is required for swap creation" }

@@ -20,14 +20,11 @@ import androidx.compose.ui.unit.dp
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.arrow_square_out
 import blockstream_green.common.generated.resources.id_covers_swap_service
+import blockstream_green.common.generated.resources.id_covers_transaction_confirmation
 import blockstream_green.common.generated.resources.id_covers_your_first_lightning_payment
-import blockstream_green.common.generated.resources.id_fees_are_not_collected_by_short
 import blockstream_green.common.generated.resources.id_learn_more
 import blockstream_green.common.generated.resources.id_lightning_setup_fee
-import blockstream_green.common.generated.resources.id_miner_fee_to_send_btc_on_bitcoin
-import blockstream_green.common.generated.resources.id_miner_fee_to_send_lbtc_on_liquid
 import blockstream_green.common.generated.resources.id_network_fee
-import blockstream_green.common.generated.resources.id_paid_for_transaction_confirmation
 import blockstream_green.common.generated.resources.id_swap_fee
 import blockstream_green.common.generated.resources.id_total
 import blockstream_green.common.generated.resources.id_total_fees
@@ -56,7 +53,6 @@ fun SwapFeesBottomSheet(
     totalFees: String,
     totalFeesFiat: String?,
     lightningSetupFee: String? = null,
-    isNetworkFeeOnLiquid: Boolean? = null,
     onDismissRequest: () -> Unit,
 ) {
     val platformManager = LocalPlatformManager.current
@@ -72,12 +68,6 @@ fun SwapFeesBottomSheet(
             space = 16,
             modifier = Modifier.padding(bottom = 24.dp)
         ) {
-            Text(
-                text = stringResource(Res.string.id_fees_are_not_collected_by_short),
-                style = bodyMedium,
-                color = whiteMedium
-            )
-
             Column(modifier = Modifier.fillMaxWidth()) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -90,44 +80,13 @@ fun SwapFeesBottomSheet(
                             color = whiteHigh
                         )
                         Text(
-                            text = stringResource(
-                                when (isNetworkFeeOnLiquid) {
-                                    true -> Res.string.id_miner_fee_to_send_lbtc_on_liquid
-                                    false -> Res.string.id_miner_fee_to_send_btc_on_bitcoin
-                                    null -> Res.string.id_paid_for_transaction_confirmation
-                                }
-                            ),
+                            text = stringResource(Res.string.id_covers_transaction_confirmation),
                             style = bodySmall,
                             color = whiteMedium
                         )
                     }
                     Text(
                         text = networkFee,
-                        style = labelLarge,
-                        color = whiteHigh
-                    )
-                }
-            }
-
-            Column(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.Top
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = stringResource(Res.string.id_swap_fee),
-                            style = labelLarge,
-                            color = whiteHigh
-                        )
-                        Text(
-                            text = stringResource(Res.string.id_covers_swap_service),
-                            style = bodySmall,
-                            color = whiteMedium
-                        )
-                    }
-                    Text(
-                        text = swapFee,
                         style = labelLarge,
                         color = whiteHigh
                     )
@@ -158,6 +117,31 @@ fun SwapFeesBottomSheet(
                             color = whiteHigh
                         )
                     }
+                }
+            }
+
+            Column(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(Res.string.id_swap_fee),
+                            style = labelLarge,
+                            color = whiteHigh
+                        )
+                        Text(
+                            text = stringResource(Res.string.id_covers_swap_service),
+                            style = bodySmall,
+                            color = whiteMedium
+                        )
+                    }
+                    Text(
+                        text = swapFee,
+                        style = labelLarge,
+                        color = whiteHigh
+                    )
                 }
             }
 

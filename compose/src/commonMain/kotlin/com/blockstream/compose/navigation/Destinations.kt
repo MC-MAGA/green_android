@@ -314,8 +314,7 @@ sealed class NavigateDestinations : NavigateDestination() {
         val networkFee: String,
         val totalFees: String,
         val totalFeesFiat: String?,
-        val lightningSetupFee: String? = null,
-        val isNetworkFeeOnLiquid: Boolean? = null
+        val lightningSetupFee: String? = null
     ) : NavigateDestination()
 
     @Serializable
@@ -638,8 +637,5 @@ fun TransactionConfirmation.toSwapFeesDestination() = NavigateDestinations.SwapF
     networkFee = networkFee ?: "",
     totalFees = totalFees ?: "",
     totalFeesFiat = totalFeesFiat,
-    lightningSetupFee = lightningSetupFee,
-    // The miner fee is paid on the non-Lightning side: the lockup chain for submarine
-    // swaps, the claim chain for reverse swaps.
-    isNetworkFeeOnLiquid = listOfNotNull(from, to).firstOrNull { !it.account.isLightning }?.account?.network?.isLiquid
+    lightningSetupFee = lightningSetupFee
 )

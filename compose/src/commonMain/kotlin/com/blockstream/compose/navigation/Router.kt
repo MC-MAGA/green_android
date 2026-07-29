@@ -1240,7 +1240,6 @@ fun Router(
                     totalFees = args.totalFees,
                     totalFeesFiat = args.totalFeesFiat,
                     lightningSetupFee = args.lightningSetupFee,
-                    isNetworkFeeOnLiquid = args.isNetworkFeeOnLiquid,
                     onDismissRequest = navController.onDismissRequest()
                 )
             }

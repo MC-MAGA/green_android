@@ -4,6 +4,7 @@ package com.blockstream.compose.models.swap
 
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
+import blockstream_green.common.generated.resources.id_account_selector
 import blockstream_green.common.generated.resources.id_reset_stuck_swaps
 import blockstream_green.common.generated.resources.id_swap
 import blockstream_green.common.generated.resources.id_swap_from
@@ -52,7 +53,6 @@ import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.domain.swap.ResetWalletSwapsUseCase
 import com.blockstream.domain.swap.SwapUseCase
-import com.blockstream.domain.swap.isSwapPairSupported
 import com.blockstream.domain.swap.isSwappableAsset
 import com.blockstream.jade.Loggable
 import kotlinx.coroutines.Dispatchers
@@ -336,7 +336,7 @@ class SwapViewModel(
             NavigateDestinations.Accounts(
                 greenWallet = greenWallet,
                 accounts = AccountAssetBalanceList(accountsFor(row = row, denomination = denomination.value)),
-                title = pickerTitle(isFrom),
+                title = getString(Res.string.id_account_selector),
                 withAsset = false,
                 withArrow = false
             )
@@ -348,17 +348,10 @@ class SwapViewModel(
     override fun onAssetClick(isFrom: Boolean) {
         _pendingSetAccountFrom = isFrom
         doAsync({
-            // The sheet offers the supported counterparties of the opposite row (eg. opposite
-            // Bitcoin -> Lightning + Liquid). With a single counterparty the opposite's own asset
-            // is offered too - selecting it flips the rows (eg. opposite Lightning -> Lightning + Bitcoin).
-            val opposite = if (isFrom) uiState.value.to else uiState.value.from
-            val distinct = swappableAccounts().distinctBy { it.account.network.canonicalNetworkId }
-            val counterparts = distinct.filter { opposite == null || isSwapPairSupported(it, opposite) }
-            val entries = if (opposite != null && counterparts.size <= 1) {
-                listOfNotNull(distinct.firstOrNull { it.account.network.isSameNetwork(opposite.account.network) }) + counterparts
-            } else {
-                counterparts
-            }
+            // Show every swappable asset. Picking an unsupported pair (eg. Liquid -> Lightning) is
+            // allowed here and surfaces the "not supported yet" error rather than being hidden, and
+            // picking the opposite row's asset flips the rows via setAccount's collision handling.
+            val entries = swappableAccounts().distinctBy { it.account.network.canonicalNetworkId }
             NavigateDestinations.SwapAssets(
                 greenWallet = greenWallet,
                 assets = AssetBalanceList(entries.map { AssetBalance.create(it.asset) }),

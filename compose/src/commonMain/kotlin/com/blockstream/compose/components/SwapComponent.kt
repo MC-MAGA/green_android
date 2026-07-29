@@ -51,6 +51,7 @@ import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_available
 import blockstream_green.common.generated.resources.id_from
 import blockstream_green.common.generated.resources.id_to
+import blockstream_green.common.generated.resources.warning_diamond
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.ArrowsDownUp
@@ -65,6 +66,8 @@ import com.blockstream.compose.theme.bodyMedium
 import com.blockstream.compose.theme.bodySmall
 import com.blockstream.compose.theme.green
 import com.blockstream.compose.theme.md_theme_error
+import com.blockstream.compose.theme.orange
+import com.blockstream.compose.theme.orangeSurface
 import com.blockstream.compose.theme.red
 import com.blockstream.compose.theme.textLow
 import com.blockstream.compose.theme.whiteHigh
@@ -73,6 +76,7 @@ import com.blockstream.compose.theme.whiteMedium
 import com.blockstream.compose.utils.DecimalFormatter
 import com.blockstream.compose.utils.appTestTag
 import com.blockstream.compose.utils.ifTrue
+import com.blockstream.compose.utils.stringResourceFromId
 import com.blockstream.data.data.Denomination
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.AccountAsset
@@ -127,9 +131,29 @@ fun SwapComponent(
         error = upstreamError
     }
 
+    // An unsupported pair is a warning (orange), not a hard error - amount errors stay red.
+    val warning = error?.takeIf { !isPairSupported }
+
     GreenCard(
         padding = 0,
         helperText = error,
+        helperContainerColor = if (warning != null) orangeSurface else null,
+        helperContent = warning?.let { warningText ->
+            {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.warning_diamond),
+                        contentDescription = null,
+                        tint = orange,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(text = stringResourceFromId(warningText), style = bodyMedium)
+                }
+            }
+        },
         colors = CardDefaults.outlinedCardColors(containerColor = Color.Transparent),
         border = BorderStroke(1.dp, if (error != null) md_theme_error else Color.Transparent)
     ) {
