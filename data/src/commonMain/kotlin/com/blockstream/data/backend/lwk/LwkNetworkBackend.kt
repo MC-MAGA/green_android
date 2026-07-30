@@ -166,7 +166,10 @@ class LwkNetworkBackend constructor(
 
             AccountType.AMP2_ACCOUNT -> {
                 // AMP2 wallets must be registered with the AMP2 server before they can be used.
-                val amp2Descriptor = amp2Client.descriptorFromStr(signer.keyoriginXpub(Bip.newBip87()), Amp2BlindingKey)
+                val amp2Descriptor = amp2Client.descriptorFromStr(
+                    signer.keyoriginXpub(Bip.newBip87()),
+                    signer.slip77MasterBlindingKey()
+                )
                 wId = amp2Client.registerWallet(amp2Descriptor)
                 logger.d { "Registered AMP2 wallet $wId" }
                 amp2Descriptor.descriptor()
@@ -361,10 +364,6 @@ class LwkNetworkBackend constructor(
 
         fun createAmp2Client(isTestnet: Boolean) =
             Amp2(serverKey = if (isTestnet) Amp2TestnetServerKey else Amp2ServerKey, url = if (isTestnet) Amp2TestnetUrl else Amp2Url)
-
-        // TODO CHANGE BLINDING KEY
-        private const val Amp2BlindingKey =
-            "slip77(0684e43749a3a3eb0362dcef8c66994bd51d33f8ce6b055126a800a626fc0d67)"
 
         const val TIP_POLL_INTERVAL_SEC = 20L
     }
