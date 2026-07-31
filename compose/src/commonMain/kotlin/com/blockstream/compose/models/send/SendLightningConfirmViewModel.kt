@@ -18,6 +18,7 @@ import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.PendingTransaction
 import com.blockstream.data.gdk.params.CreateTransactionParams
+import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.transaction.TransactionConfirmation
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.send.mapLightningSendError
@@ -162,7 +163,9 @@ class SendLightningConfirmViewModel(
 
         if (event is CreateTransactionViewModelAbstract.LocalEvents.SignTransaction) {
             session.pendingTransaction?.also { pending ->
-                sendLightningNativeTransaction(pending)
+                val invoiceInstruction = tryCatch { session.lwkOrNull?.inspectPaymentInstruction(invoice) }
+                countly.sendAttempt(session = session, account = account, invoiceInstruction = invoiceInstruction)
+                sendLightningNativeTransaction(pending, invoiceInstruction)
             }
         } else if (event is LocalEvents.ClickTotalFees) {
             _transactionConfirmation.value?.let { look ->
@@ -171,7 +174,7 @@ class SendLightningConfirmViewModel(
         }
     }
 
-    private fun sendLightningNativeTransaction(pending: PendingTransaction) {
+    private fun sendLightningNativeTransaction(pending: PendingTransaction, invoiceInstruction: PaymentInstruction?) {
         doAsync({
             countly.startSendTransaction()
             countly.startFailedTransaction()
@@ -191,7 +194,8 @@ class SendLightningConfirmViewModel(
                 session = session,
                 account = account,
                 transactionSegmentation = pending.segmentation,
-                withMemo = note.value.isNotBlank()
+                withMemo = note.value.isNotBlank(),
+                invoiceInstruction = invoiceInstruction
             )
             onSendSuccess(pending.params)
         }, onError = {
@@ -200,7 +204,8 @@ class SendLightningConfirmViewModel(
                 session = session,
                 account = account,
                 transactionSegmentation = pending.segmentation,
-                error = it
+                error = it,
+                invoiceInstruction = invoiceInstruction
             )
         })
     }

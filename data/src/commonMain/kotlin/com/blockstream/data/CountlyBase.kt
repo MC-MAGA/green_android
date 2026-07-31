@@ -18,6 +18,7 @@ import com.blockstream.data.gdk.JsonConverter
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.Network
+import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.managers.SettingsManager
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.CoroutineScope
@@ -358,6 +359,12 @@ abstract class CountlyBase(
                 segmentation[PARAM_TO] = swapNetwork(to)
             }
 
+    private fun invoiceTypeSegmentation(instruction: PaymentInstruction): String = when (instruction) {
+        is PaymentInstruction.Bolt11 -> "bolt11"
+        is PaymentInstruction.Bolt12 -> "bolt12"
+        is PaymentInstruction.LnUrl -> "lnurl"
+    }
+
     private fun apmEvent(event: Events): String {
         return if (settingsManager.appSettings.tor) {
             "${event}_tor"
@@ -575,6 +582,21 @@ abstract class CountlyBase(
         )
     }
 
+    fun invoiceCreate(session: GdkSession, account: Account) {
+        eventRecord(
+            Events.INVOICE_CREATE.toString(),
+            accountSegmentation(session, account = account)
+        )
+    }
+
+    fun enableLightningStart(session: GdkSession) {
+        eventRecord(Events.ENABLE_START.toString(), sessionSegmentation(session))
+    }
+
+    fun enableLightningFailed(session: GdkSession) {
+        eventRecord(Events.ENABLE_FAILED.toString(), sessionSegmentation(session))
+    }
+
     fun hideAmount(session: GdkSession) {
         eventRecord(
             Events.HIDE_AMOUNT.toString(),
@@ -603,17 +625,28 @@ abstract class CountlyBase(
         eventStart(Events.SEND_TRANSACTION.toString())
     }
 
+    fun sendAttempt(session: GdkSession, account: Account, invoiceInstruction: PaymentInstruction? = null) {
+        eventRecord(
+            Events.SEND_ATTEMPT.toString(),
+            accountSegmentation(session, account).also {
+                invoiceInstruction?.also { instruction -> it[PARAM_INVOICE_TYPE] = invoiceTypeSegmentation(instruction) }
+            }
+        )
+    }
+
     fun endSendTransaction(
         session: GdkSession,
         account: Account,
         transactionSegmentation: TransactionSegmentation,
-        withMemo: Boolean
+        withMemo: Boolean,
+        invoiceInstruction: PaymentInstruction? = null
     ) {
         traceEnd(apmEvent(Events.SEND_TRANSACTION))
         eventEnd(
             Events.SEND_TRANSACTION.toString(),
             transactionSegmentation(session, account, transactionSegmentation).also {
                 it[PARAM_WITH_MEMO] = withMemo
+                invoiceInstruction?.also { instruction -> it[PARAM_INVOICE_TYPE] = invoiceTypeSegmentation(instruction) }
             }
         )
     }
@@ -698,7 +731,8 @@ abstract class CountlyBase(
         session: GdkSession,
         account: Account,
         transactionSegmentation: TransactionSegmentation,
-        error: Throwable
+        error: Throwable,
+        invoiceInstruction: PaymentInstruction? = null
     ) {
         traceEnd(apmEvent(Events.FAILED_TRANSACTION))
         eventEnd(
@@ -710,6 +744,7 @@ abstract class CountlyBase(
                         map[PARAM_NODE_ID] = it
                     }
                 (error as? ExceptionWithSupportData)?.supportData?.paymentHash?.also { map[PAYMENT_HASH] = it }
+                invoiceInstruction?.also { instruction -> map[PARAM_INVOICE_TYPE] = invoiceTypeSegmentation(instruction) }
             }
         )
     }
@@ -970,8 +1005,12 @@ abstract class CountlyBase(
         VERIFY_ADDRESS("verify_address"),
 
         SEND_TRANSACTION("send_transaction"),
+        SEND_ATTEMPT("send_attempt"),
         FAILED_TRANSACTION("failed_transaction"),
         FAILED_RECOVERY_PHRASE_CHECK("failed_recovery_phrase_check"),
+        INVOICE_CREATE("invoice_create"),
+        ENABLE_START("enable_start"),
+        ENABLE_FAILED("enable_failed"),
         SWAP_ENTRY("swap_entry"),
         SWAP_INITIATE("swap_initiate"),
         SWAP_SETUP("swap_setup"),
@@ -1006,6 +1045,7 @@ abstract class CountlyBase(
         const val PARAM_ACCOUNT_NETWORK = "account_network"
         const val PARAM_SECURITY = "security"
         const val PARAM_ACCOUNT_TYPE = "account_type"
+        const val PARAM_INVOICE_TYPE = "invoice_type"
         const val PARAM_2FA = "2fa"
         const val PARAM_TYPE = "type"
         const val PARAM_MEDIA = "media"

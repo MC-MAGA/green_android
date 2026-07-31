@@ -53,6 +53,8 @@ class LightningOnboardingViewModel(greenWallet: GreenWallet) :
 
         when (event) {
             LocalEvents.EnableLightning -> {
+                countly.enableLightningStart(session)
+
                 if (mode == OnboardingMode.JADE_WALLET) {
                     if (session.isHwWatchOnly && !greenWallet.isWatchOnlyQr) {
                         postSideEffect(

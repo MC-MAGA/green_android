@@ -668,6 +668,8 @@ class WalletSettingsViewModel(
         mnemonic: String? = null,
         xpub: String? = null
     ) {
+        var accountCreated = false
+
         doAsync({
             createAccountUseCase(
                 session = session,
@@ -686,9 +688,19 @@ class WalletSettingsViewModel(
             onProgress.value = false
             _accountTypeBeingCreated.value = null
         }, onSuccess = {
+            accountCreated = true
+
             if (accountType == AccountType.LIGHTNING) {
                 postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_lightning_enabled)))
             }
+        }, onError = {
+            if (accountType == AccountType.LIGHTNING && !accountCreated) {
+                countly.enableLightningFailed(session)
+            }
+            if (appInfo.isDebug) {
+                it.printStackTrace()
+            }
+            postSideEffect(SideEffects.ErrorDialog(error = it, supportData = errorReport(it)))
         })
     }
 

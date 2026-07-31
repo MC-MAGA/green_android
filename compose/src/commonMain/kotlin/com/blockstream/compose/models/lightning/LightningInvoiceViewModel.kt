@@ -9,6 +9,8 @@ import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.data.AddressType
+import com.blockstream.data.MediaType
 import com.blockstream.data.Urls
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.domain.receive.SaveAndShareQrCodeUseCase
@@ -70,10 +72,30 @@ class LightningInvoiceViewModel(
                         label = "Invoice"
                     )
                 )
+
+                // Native Lightning invoices only
+                if (!state.isSwap) {
+                    countly.receiveAddress(
+                        addressType = AddressType.URI,
+                        mediaType = MediaType.TEXT,
+                        account = session.lightningAccount,
+                        session = session
+                    )
+                }
             }
 
             is LocalEvents.ShareAddress -> {
                 postSideEffect(SideEffects.Share(state.invoiceUri))
+
+                if (!state.isSwap) {
+                    countly.receiveAddress(
+                        addressType = AddressType.URI,
+                        mediaType = MediaType.TEXT,
+                        isShare = true,
+                        account = session.lightningAccount,
+                        session = session
+                    )
+                }
             }
 
             is LocalEvents.ClickFundingFee -> {
@@ -87,6 +109,16 @@ class LightningInvoiceViewModel(
             is LocalEvents.ShareQR -> {
                 saveAndShareQrCodeUseCase(event.qrBytes)?.also { cachePath ->
                     postSideEffect(SideEffects.ShareFile(cachePath))
+                }
+
+                if (!state.isSwap) {
+                    countly.receiveAddress(
+                        addressType = AddressType.URI,
+                        mediaType = MediaType.IMAGE,
+                        isShare = true,
+                        account = session.lightningAccount,
+                        session = session
+                    )
                 }
             }
         }

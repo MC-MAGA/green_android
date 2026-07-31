@@ -48,6 +48,8 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
     ) {
         _accountTypeBeingCreated.value = AccountTypeLook(accountType)
 
+        var accountCreated = false
+
         doAsync({
             createAccountUseCase(
                 session = session,
@@ -62,6 +64,7 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
         }, postAction = {
             onProgress.value = it == null
         }, onSuccess = {
+            accountCreated = true
 
             val accountAsset = AccountAsset.fromAccountAsset(
                 account = it,
@@ -74,8 +77,14 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
             postSideEffect(SideEffects.AccountCreated(accountAsset))
 
             postSideEffect(SideEffects.NavigateToRoot(popTo = popTo))
-
-            countly.createAccount(session, it)
+        }, onError = {
+            if (accountType == AccountType.LIGHTNING && !accountCreated) {
+                countly.enableLightningFailed(session)
+            }
+            if (appInfo.isDebug) {
+                it.printStackTrace()
+            }
+            postSideEffect(SideEffects.ErrorDialog(error = it, supportData = errorReport(it)))
         })
     }
 

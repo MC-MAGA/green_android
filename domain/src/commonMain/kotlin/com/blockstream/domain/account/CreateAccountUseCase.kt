@@ -69,7 +69,7 @@ class CreateAccountUseCase(
             // Save Lightning Node Id
             lightningNodeIdUseCase.invoke(wallet = wallet, session = session)
 
-            return session.lightningAccount
+            session.lightningAccount
         } else {
 
             // Check if network needs initialization

@@ -787,6 +787,11 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
                 _invoiceDescription.value = response.invoice.description
             }
         }, onSuccess = {
+            // Native Lightning invoices only
+            if (!isReverseSubmarineSwap.value) {
+                countly.invoiceCreate(session = session, account = account)
+            }
+
             postSideEffect(
                 SideEffects.NavigateTo(
                     NavigateDestinations.LightningInvoice(
