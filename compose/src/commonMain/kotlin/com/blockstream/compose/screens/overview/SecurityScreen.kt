@@ -48,13 +48,6 @@ import com.adamglin.phosphoricons.regular.Password
 import com.adamglin.phosphoricons.regular.PlugsConnected
 import com.adamglin.phosphoricons.regular.SealCheck
 import com.adamglin.phosphoricons.regular.ShieldChevron
-import com.blockstream.data.Urls
-import com.blockstream.data.data.AlertType
-import com.blockstream.data.data.CredentialType
-import com.blockstream.data.data.GreenWallet
-import com.blockstream.data.data.MenuEntry
-import com.blockstream.data.data.MenuEntryList
-import com.blockstream.data.data.SetupArgs
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.components.GreenAlert
 import com.blockstream.compose.components.GreenButton
@@ -85,6 +78,13 @@ import com.blockstream.compose.theme.whiteMedium
 import com.blockstream.compose.utils.SetupScreen
 import com.blockstream.compose.utils.bottom
 import com.blockstream.compose.utils.plus
+import com.blockstream.data.Urls
+import com.blockstream.data.data.AlertType
+import com.blockstream.data.data.CredentialType
+import com.blockstream.data.data.GreenWallet
+import com.blockstream.data.data.MenuEntry
+import com.blockstream.data.data.MenuEntryList
+import com.blockstream.data.data.SetupArgs
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -256,7 +256,7 @@ fun SecurityScreen(viewModel: SecurityViewModelAbstract) {
                             contentDescription = null,
                             modifier = Modifier.size(32.dp)
                         )
-                        
+
                         Text(
                             text = stringResource(Res.string.id_watchonly),
                             style = titleMedium,
@@ -268,41 +268,43 @@ fun SecurityScreen(viewModel: SecurityViewModelAbstract) {
                 }
             } else {
 
-                if (showRecoveryConfirmation) {
-                    item {
-                        GreenAlert(
-                            alertType = AlertType.RecoveryIsUnconfirmed(withCloseButton = false),
-                            viewModel = viewModel,
-                            modifier = Modifier.padding(bottom = 16.dp)
-                        )
+                if (!viewModel.greenWallet.isBip39Ephemeral) {
+                    if (showRecoveryConfirmation) {
+                        item {
+                            GreenAlert(
+                                alertType = AlertType.RecoveryIsUnconfirmed(withCloseButton = false),
+                                viewModel = viewModel,
+                                modifier = Modifier.padding(bottom = 16.dp)
+                            )
+                        }
                     }
-                }
 
-                item(key = "unlock_method") {
-                    ListHeader(title = stringResource(Res.string.id_unlock_method))
-                }
+                    item(key = "unlock_method") {
+                        ListHeader(title = stringResource(Res.string.id_unlock_method))
+                    }
 
-                items(credentials) { credential ->
-                    SecurityItem(
-                        title = when (credential.first) {
-                            CredentialType.PIN_PINDATA -> stringResource(Res.string.id_pin)
-                            CredentialType.BIOMETRICS_MNEMONIC -> stringResource(Res.string.id_biometrics)
-                            else -> ""
-                        },
-                        icon = if (credential.first == CredentialType.PIN_PINDATA) PhosphorIcons.Regular.Password else PhosphorIcons.Regular.Fingerprint,
-                        state = credential.second != null,
-                    ) {
-                        if (credential.first == CredentialType.PIN_PINDATA) {
-                            if (credential.second == null) {
-                                viewModel.postEvent(SecurityViewModel.LocalEvents.EnablePin)
+                    items(credentials) { credential ->
+                        SecurityItem(
+                            title = when (credential.first) {
+                                CredentialType.PIN_PINDATA -> stringResource(Res.string.id_pin)
+                                CredentialType.BIOMETRICS_MNEMONIC -> stringResource(Res.string.id_biometrics)
+                                else -> ""
+                            },
+                            icon = if (credential.first == CredentialType.PIN_PINDATA) PhosphorIcons.Regular.Password else PhosphorIcons.Regular.Fingerprint,
+                            state = credential.second != null,
+                        ) {
+                            if (credential.first == CredentialType.PIN_PINDATA) {
+                                if (credential.second == null) {
+                                    viewModel.postEvent(SecurityViewModel.LocalEvents.EnablePin)
+                                } else {
+                                    viewModel.postEvent(SecurityViewModel.LocalEvents.DisablePin)
+                                }
                             } else {
-                                viewModel.postEvent(SecurityViewModel.LocalEvents.DisablePin)
-                            }
-                        } else {
-                            if (credential.second == null) {
-                                viewModel.postEvent(SecurityViewModel.LocalEvents.EnableBiometrics)
-                            } else {
-                                viewModel.postEvent(SecurityViewModel.LocalEvents.DisableBiometrics)
+                                if (credential.second == null) {
+                                    viewModel.postEvent(SecurityViewModel.LocalEvents.EnableBiometrics)
+                                } else {
+                                    viewModel.postEvent(SecurityViewModel.LocalEvents.DisableBiometrics)
+                                }
                             }
                         }
                     }
@@ -377,7 +379,15 @@ fun SecurityItem(title: String, icon: ImageVector, state: Boolean?, onClick: () 
 
 @Preview
 @Composable
-fun PreviewSecurityScreenCommon() {
+fun PreviewSecurityScreen() {
+    GreenPreview {
+        SecurityScreen(viewModel = SecurityViewModelPreview.preview(isHardware = false))
+    }
+}
+
+@Preview
+@Composable
+fun PreviewSecurityScreenHardware() {
     GreenPreview {
         SecurityScreen(viewModel = SecurityViewModelPreview.preview(isHardware = true))
     }
