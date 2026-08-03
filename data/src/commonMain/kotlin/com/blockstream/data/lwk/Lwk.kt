@@ -1,5 +1,6 @@
 package com.blockstream.data.lwk
 
+import com.blockstream.data.InvoiceType
 import com.blockstream.data.config.AppInfo
 import com.blockstream.data.data.SwapType
 import com.blockstream.data.database.Database
@@ -879,6 +880,12 @@ sealed interface PaymentInstruction {
         val description: String?,
         val metadata: String,
     ) : PaymentInstruction
+}
+
+fun PaymentInstruction.invoiceType(): InvoiceType = when (this) {
+    is PaymentInstruction.Bolt11 -> InvoiceType.BOLT11
+    is PaymentInstruction.Bolt12 -> InvoiceType.BOLT12
+    is PaymentInstruction.LnUrl -> InvoiceType.LNURL
 }
 
 /** Extracts the `text/plain` entry from an LNURL-pay metadata array. */

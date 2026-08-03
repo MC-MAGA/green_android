@@ -18,7 +18,6 @@ import com.blockstream.data.gdk.JsonConverter
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.Network
-import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.managers.SettingsManager
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.CoroutineScope
@@ -359,12 +358,6 @@ abstract class CountlyBase(
                 segmentation[PARAM_TO] = swapNetwork(to)
             }
 
-    private fun invoiceTypeSegmentation(instruction: PaymentInstruction): String = when (instruction) {
-        is PaymentInstruction.Bolt11 -> "bolt11"
-        is PaymentInstruction.Bolt12 -> "bolt12"
-        is PaymentInstruction.LnUrl -> "lnurl"
-    }
-
     private fun apmEvent(event: Events): String {
         return if (settingsManager.appSettings.tor) {
             "${event}_tor"
@@ -625,11 +618,11 @@ abstract class CountlyBase(
         eventStart(Events.SEND_TRANSACTION.toString())
     }
 
-    fun sendAttempt(session: GdkSession, account: Account, invoiceInstruction: PaymentInstruction? = null) {
+    fun sendAttempt(session: GdkSession, account: Account, invoiceType: InvoiceType? = null) {
         eventRecord(
             Events.SEND_ATTEMPT.toString(),
             accountSegmentation(session, account).also {
-                invoiceInstruction?.also { instruction -> it[PARAM_INVOICE_TYPE] = invoiceTypeSegmentation(instruction) }
+                invoiceType?.also { type -> it[PARAM_INVOICE_TYPE] = type.toString() }
             }
         )
     }
@@ -639,14 +632,14 @@ abstract class CountlyBase(
         account: Account,
         transactionSegmentation: TransactionSegmentation,
         withMemo: Boolean,
-        invoiceInstruction: PaymentInstruction? = null
+        invoiceType: InvoiceType? = null
     ) {
         traceEnd(apmEvent(Events.SEND_TRANSACTION))
         eventEnd(
             Events.SEND_TRANSACTION.toString(),
             transactionSegmentation(session, account, transactionSegmentation).also {
                 it[PARAM_WITH_MEMO] = withMemo
-                invoiceInstruction?.also { instruction -> it[PARAM_INVOICE_TYPE] = invoiceTypeSegmentation(instruction) }
+                invoiceType?.also { type -> it[PARAM_INVOICE_TYPE] = type.toString() }
             }
         )
     }
@@ -732,7 +725,7 @@ abstract class CountlyBase(
         account: Account,
         transactionSegmentation: TransactionSegmentation,
         error: Throwable,
-        invoiceInstruction: PaymentInstruction? = null
+        invoiceType: InvoiceType? = null
     ) {
         traceEnd(apmEvent(Events.FAILED_TRANSACTION))
         eventEnd(
@@ -744,7 +737,7 @@ abstract class CountlyBase(
                         map[PARAM_NODE_ID] = it
                     }
                 (error as? ExceptionWithSupportData)?.supportData?.paymentHash?.also { map[PAYMENT_HASH] = it }
-                invoiceInstruction?.also { instruction -> map[PARAM_INVOICE_TYPE] = invoiceTypeSegmentation(instruction) }
+                invoiceType?.also { type -> map[PARAM_INVOICE_TYPE] = type.toString() }
             }
         )
     }
@@ -1135,6 +1128,17 @@ enum class AddressType(val string: String) {
 enum class MediaType(val string: String) {
     TEXT("text"),
     IMAGE("image");
+
+    override fun toString(): String = string
+}
+
+// UNKNOWN is recorded explicitly rather than omitting the key, so "we couldn't classify the
+// invoice" stays distinguishable from "the event was dropped".
+enum class InvoiceType(val string: String) {
+    BOLT11("bolt11"),
+    BOLT12("bolt12"),
+    LNURL("lnurl"),
+    UNKNOWN("unknown");
 
     override fun toString(): String = string
 }

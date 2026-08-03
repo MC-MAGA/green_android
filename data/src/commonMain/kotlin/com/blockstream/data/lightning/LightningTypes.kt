@@ -11,6 +11,7 @@
 
 package com.blockstream.data.lightning
 
+import com.blockstream.data.InvoiceType
 import kotlinx.serialization.Serializable
 
 enum class LightningHealthStatus {
@@ -110,6 +111,17 @@ sealed class LightningInputType {
     data class LnUrlPay(val data: LnUrlPayData) : LightningInputType()
     data class LnUrlWithdraw(val data: LnUrlWithdrawData) : LightningInputType()
     data class LnUrlAuth(val data: LnUrlAuthData) : LightningInputType()
+}
+
+/**
+ * Analytics classification of a send destination. Null for the withdraw/auth variants: those aren't
+ * outgoing payments, so callers should fall back to another source rather than label them.
+ * The greenlight parser has no BOLT12 variant - use [com.blockstream.data.lwk.invoiceType] for that.
+ */
+fun LightningInputType.invoiceType(): InvoiceType? = when (this) {
+    is LightningInputType.Bolt11 -> InvoiceType.BOLT11
+    is LightningInputType.LnUrlPay -> InvoiceType.LNURL
+    is LightningInputType.LnUrlWithdraw, is LightningInputType.LnUrlAuth -> null
 }
 
 data class LightningInvoice constructor(

@@ -11,6 +11,7 @@ import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.toSwapFeesDestination
 import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.compose.utils.StringHolder
+import com.blockstream.data.InvoiceType
 import com.blockstream.data.data.Denomination
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.extensions.ifConnected
@@ -18,7 +19,8 @@ import com.blockstream.data.extensions.tryCatch
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.PendingTransaction
 import com.blockstream.data.gdk.params.CreateTransactionParams
-import com.blockstream.data.lwk.PaymentInstruction
+import com.blockstream.data.lightning.invoiceType
+import com.blockstream.data.lwk.invoiceType
 import com.blockstream.data.transaction.TransactionConfirmation
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.send.mapLightningSendError
@@ -163,9 +165,9 @@ class SendLightningConfirmViewModel(
 
         if (event is CreateTransactionViewModelAbstract.LocalEvents.SignTransaction) {
             session.pendingTransaction?.also { pending ->
-                val invoiceInstruction = tryCatch { session.lwkOrNull?.inspectPaymentInstruction(invoice) }
-                countly.sendAttempt(session = session, account = account, invoiceInstruction = invoiceInstruction)
-                sendLightningNativeTransaction(pending, invoiceInstruction)
+                val invoiceType = resolveInvoiceType()
+                countly.sendAttempt(session = session, account = account, invoiceType = invoiceType)
+                sendLightningNativeTransaction(pending, invoiceType)
             }
         } else if (event is LocalEvents.ClickTotalFees) {
             _transactionConfirmation.value?.let { look ->
@@ -174,7 +176,17 @@ class SendLightningConfirmViewModel(
         }
     }
 
-    private fun sendLightningNativeTransaction(pending: PendingTransaction, invoiceInstruction: PaymentInstruction?) {
+    /**
+     * Greenlight first: this is the greenlight send path, and lwk is absent on testnet, on wallets
+     * without liquid, and on jade until swaps are enabled. Lwk stays as the fallback because the
+     * greenlight parser has no BOLT12 variant.
+     */
+    private suspend fun resolveInvoiceType(): InvoiceType =
+        tryCatch { session.lightningSdkOrNull?.parseBoltOrLNUrlAndCache(invoice)?.invoiceType() }
+            ?: tryCatch { session.lwkOrNull?.inspectPaymentInstruction(invoice)?.invoiceType() }
+            ?: InvoiceType.UNKNOWN
+
+    private fun sendLightningNativeTransaction(pending: PendingTransaction, invoiceType: InvoiceType) {
         doAsync({
             countly.startSendTransaction()
             countly.startFailedTransaction()
@@ -195,7 +207,7 @@ class SendLightningConfirmViewModel(
                 account = account,
                 transactionSegmentation = pending.segmentation,
                 withMemo = note.value.isNotBlank(),
-                invoiceInstruction = invoiceInstruction
+                invoiceType = invoiceType
             )
             onSendSuccess(pending.params)
         }, onError = {
@@ -205,7 +217,7 @@ class SendLightningConfirmViewModel(
                 account = account,
                 transactionSegmentation = pending.segmentation,
                 error = it,
-                invoiceInstruction = invoiceInstruction
+                invoiceType = invoiceType
             )
         })
     }
