@@ -84,7 +84,6 @@ import gdk.GA_get_subaccount
 import gdk.GA_get_subaccounts
 import gdk.GA_get_system_message
 import gdk.GA_get_thread_error_details
-import gdk.GA_get_transaction_details
 import gdk.GA_get_transactions
 import gdk.GA_get_twofactor_config
 import gdk.GA_get_unspent_outputs
@@ -264,7 +263,6 @@ private val _gdkNotificationHandler = staticCFunction { context: COpaquePointer?
 }
 
 class IOSGdkBinding constructor(private val config: InitConfig, logger: Logger) : GdkBinding {
-    override val logs: StringBuilder = StringBuilder()
     private val _notifyContexts = mutableMapOf<CPointer<GA_session>, StableRef<NotifyContext>>()
     private var _notificationHandler: ((session: GASession, jsonObject: JsonElement) -> Unit)? = null
 
@@ -276,13 +274,6 @@ class IOSGdkBinding constructor(private val config: InitConfig, logger: Logger) 
 
     override val dataDir: String
         get() = config.datadir
-
-    override fun appendGdkLogs(json: String) {
-        logs.append("$json\n")
-        if (logs.length > LOGS_SIZE) {
-            logs.deleteRange(0, 1_000_000)
-        }
-    }
 
     override fun setNotificationHandler(notificationHandler: (session: GASession, jsonObject: Any) -> Unit) {
         _notificationHandler = notificationHandler

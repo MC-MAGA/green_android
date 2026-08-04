@@ -1,7 +1,6 @@
 package com.blockstream.data.gdk
 
 import co.touchlab.kermit.Logger
-import com.blockstream.data.gdk.GdkBinding.Companion.LOGS_SIZE
 import com.blockstream.data.gdk.JsonConverter.Companion.JsonDeserializer
 import com.blockstream.data.gdk.data.AuthHandlerStatus
 import com.blockstream.data.gdk.data.FeeEstimation
@@ -44,7 +43,6 @@ import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.decodeFromJsonElement
 
 class AndroidGdk(printGdkMessages: Boolean, config: InitConfig, logger: Logger) : GdkBinding {
-    override val logs: StringBuilder = StringBuilder()
     private val _dataDir: String = config.datadir
 
     init {
@@ -55,7 +53,6 @@ class AndroidGdk(printGdkMessages: Boolean, config: InitConfig, logger: Logger) 
                     printGdkMessages = printGdkMessages,
                     maskSensitiveFields = true,
                     appendGdkLogs = {
-                        appendGdkLogs(it)
                         logger.i { it }
                     }
                 )
@@ -66,13 +63,6 @@ class AndroidGdk(printGdkMessages: Boolean, config: InitConfig, logger: Logger) 
 
     override val dataDir: String
         get() = _dataDir
-
-    override fun appendGdkLogs(json: String) {
-        logs.append("$json\n")
-        if (logs.length > LOGS_SIZE) {
-            logs.deleteRange(0, 1_000_000)
-        }
-    }
 
     override fun setNotificationHandler(notificationHandler: (session: GASession, jsonObject: Any) -> Unit) {
         GDK.setNotificationHandler(notificationHandler)

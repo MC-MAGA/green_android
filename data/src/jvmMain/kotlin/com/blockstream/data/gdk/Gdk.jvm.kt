@@ -45,14 +45,9 @@ actual fun getGdkBinding(
     logger: Logger,
 ): GdkBinding {
     return object : GdkBinding {
-        override val logs: StringBuilder = StringBuilder()
 
         override val dataDir: String
             get() = config.datadir
-
-        override fun appendGdkLogs(json: String) {
-            TODO("Not yet implemented")
-        }
 
         override fun setNotificationHandler(notificationHandler: (session: GASession, jsonObject: Any) -> Unit) {
 

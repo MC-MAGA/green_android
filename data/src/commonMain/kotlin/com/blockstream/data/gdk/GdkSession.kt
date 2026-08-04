@@ -184,9 +184,6 @@ class GdkSession constructor(
     private val scope = createScope(Dispatchers.Default)
     private val parentJob = SupervisorJob()
 
-    val logs: String
-        get() = gdk.logs.toString()
-
     val isTestnet: Boolean // = false
         get() = defaultNetworkOrNull?.isTestnet == true
 

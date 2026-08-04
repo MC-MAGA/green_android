@@ -2,15 +2,20 @@ package com.blockstream.green.data.meld
 
 import com.blockstream.data.config.AppInfo
 import com.blockstream.data.dataModule
-import com.blockstream.utils.Loggable
+import com.blockstream.data.meld.data.CryptoQuoteRequest
 import com.blockstream.network.dataOrThrow
+import com.blockstream.utils.Loggable
 import kotlinx.coroutines.test.runTest
 import org.koin.core.context.startKoin
 import org.koin.core.context.stopKoin
 import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.inject
-import kotlin.test.*
+import kotlin.test.AfterTest
+import kotlin.test.BeforeTest
+import kotlin.test.Test
+import kotlin.test.assertNotEquals
+import kotlin.test.assertNotNull
 
 class MeldRepositoryTest : KoinTest {
 
@@ -39,7 +44,7 @@ class MeldRepositoryTest : KoinTest {
 
     @Test
     fun `Request CryptoQuoteRequest`() = runTest {
-        meldRepository.createCryptoQuote(_root_ide_package_.com.blockstream.data.meld.data.CryptoQuoteRequest()).also {
+        meldRepository.createCryptoQuote(CryptoQuoteRequest()).also {
             logger.d { "$it" }
             assertNotNull(it.dataOrThrow().quotes)
         }
@@ -47,7 +52,7 @@ class MeldRepositoryTest : KoinTest {
 
     @Test
     fun `Request CryptoWidgetRequest`() = runTest {
-        meldRepository.createCryptoQuote(_root_ide_package_.com.blockstream.data.meld.data.CryptoQuoteRequest())
+        meldRepository.createCryptoQuote(CryptoQuoteRequest())
             .dataOrThrow().quotes!!.first().let {
             it.toCryptoWidgetRequest("bc1qcr8ktl3nzwh8xm88225ysynt5zsdydae26thrg")
         }.also {
