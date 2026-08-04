@@ -1,6 +1,7 @@
 package com.blockstream.data.gdk
 
 import com.blockstream.data.gdk.JsonConverter.Companion.JsonDeserializer
+import com.blockstream.data.gdk.data.AuthData
 import com.blockstream.data.gdk.data.AuthHandlerStatus
 import com.blockstream.data.gdk.data.DeviceRequiredData
 import com.blockstream.data.gdk.data.Network
@@ -72,7 +73,7 @@ class AuthHandler constructor(
 
                 val authHandlerStatus: AuthHandlerStatus = gdk.getAuthHandlerStatus(gaAuthHandler)
 
-                authHandlerStatus.progress?.also { bcurResolver?.progress(it) }
+                (authHandlerStatus.authData as? AuthData.Data)?.estimatedProgress?.also { bcurResolver?.progress(it) }
 
                 when (authHandlerStatus.status) {
                     CALL -> {
