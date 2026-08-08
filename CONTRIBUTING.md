@@ -1,21 +1,30 @@
-## Guidelines for contributions to Green bitcoin wallet for Android
+# Contributing to Blockstream App
 
-If you want to contribute to the project, please refer to the following guidelines.
+Thank you for contributing to Blockstream App. Please follow these guidelines.
 
-#### Checklist before opening an issue
+## Reporting issues
 
-* Issue is reproducible;
+Before opening an issue, make sure that:
 
-* There aren't pending pull requests addressing the issue;
+* the issue is reproducible on the latest master branch or the latest stable
+  release;
+* the issue is not already tracked;
+* no pending pull request already addresses the issue.
 
-* Issue reproduced on latest master branch or latest stable release;
+## Reporting security vulnerabilities
 
-* Issue is not tracked already.
+Do not open public issues for security vulnerabilities. Report them privately
+as described in [SECURITY.md](SECURITY.md).
 
+## Pull requests
 
-#### Pull Requests
+* Build the project as described in [BUILD.md](BUILD.md).
+* Make sure your changes pass the CI before opening a pull request.
+* Pull requests that change the GUI must include screenshots in the
+  description.
 
-* Pull request that involve GUI changes must contain screenshots in the description
+## Translations
 
-* Before opening a pull request make sure the changes pass the CI
-
+Translations are managed on
+[Transifex](https://www.transifex.com/blockstream/blockstream-green/); please
+contribute translation fixes there rather than in pull requests.
