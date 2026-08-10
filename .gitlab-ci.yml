@@ -331,6 +331,23 @@ secret_detection:
 dependency-scanning:
   stage: security
 
+"dependency-scanning:gradle-resolution":
+  stage: test
+  needs: []
+  image:
+    name: blockstream/green_android@sha256:8e981cb6fa31a7846f3e1941471e7ce50d05c7dfde1c643513e865e9e083b88e
+    entrypoint: [""]
+  services:
+    - name: $DS_ANALYZER_IMAGE
+      alias: ds-analyzer
+      command:
+        - /analyzer
+        - dependency-resolution-service
+        - --project-types
+        - gradle
+        - --checkout-timeout
+        - "180"
+
 #####################################
 # Sign production build
 
