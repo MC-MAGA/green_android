@@ -14,6 +14,7 @@ val swapModule = module {
     singleOf(::HandleSwapEventsUseCase)
     singleOf(::ResetSwapUseCase)
     singleOf(::ResetWalletSwapsUseCase)
+    singleOf(::HasWalletSwapsUseCase)
     singleOf(::IsSwapsEnabledUseCase)
     singleOf(::CanSwapsBeDisabledUseCase)
     singleOf(::GetWalletFromSwapUseCase)
@@ -21,6 +22,8 @@ val swapModule = module {
     singleOf(::IsLiquidToLightningSwapUseCase)
     singleOf(::PrepareSwapTransactionUseCase)
     singleOf(::IsSwapAvailableUseCase)
+    single { SwapAvailability.Current }
+    singleOf(::IsSwapDirectionAvailableUseCase)
     singleOf(::GetQuoteUseCase)
     singleOf(::SwapUseCase)
     singleOf(::GetSwapAmountUseCase)

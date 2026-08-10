@@ -54,6 +54,7 @@ import com.blockstream.data.lightning.receiveAmountSatoshi
 import com.blockstream.data.lightning.satoshi
 import com.blockstream.data.receive.LightningReceiveAmountState
 import com.blockstream.data.receive.ReceiveAmountData
+import com.blockstream.data.swap.SwapAsset
 import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.formatAuto
 import com.blockstream.data.utils.toAmountLookOrNa
@@ -62,11 +63,15 @@ import com.blockstream.domain.receive.GetLightningReceiveAmountStateUseCase
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import com.blockstream.domain.receive.GetReceiveAmountUseCase
 import com.blockstream.domain.receive.SaveAndShareQrCodeUseCase
+import com.blockstream.domain.swap.IsSwapDirectionAvailableUseCase
+import com.blockstream.domain.swap.SwapDirection
 import com.blockstream.domain.swap.SwapUseCase
+import com.blockstream.domain.swap.toSwapAsset
 import com.blockstream.utils.Loggable
 import com.eygraber.uri.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -92,10 +97,11 @@ sealed class PendingAction {
 
 abstract class ReceiveViewModelAbstract(greenWallet: GreenWallet, accountAssetOrNull: AccountAsset?) :
     GreenViewModel(greenWalletOrNull = greenWallet, accountAssetOrNull = accountAssetOrNull) {
-
     override fun screenName(): String = "Receive"
     abstract val showRecoveryConfirmation: StateFlow<Boolean>
     abstract val showSwap: StateFlow<Boolean>
+
+    abstract val isReverseSubmarineSwapAvailable: StateFlow<Boolean>
     abstract val isReverseSubmarineSwap: MutableStateFlow<Boolean> // Lightning -> Chain
     abstract val amount: MutableStateFlow<String>
     abstract val showAmount: StateFlow<Boolean>
@@ -130,7 +136,6 @@ abstract class ReceiveViewModelAbstract(greenWallet: GreenWallet, accountAssetOr
 
 class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
     ReceiveViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAsset) {
-
     internal val verifyAddressUseCase: VerifyAddressUseCase by inject()
     internal val boltzUseCase: SwapUseCase by inject()
     internal val getReceiveAmountUseCase: GetReceiveAmountUseCase by inject {
@@ -225,6 +230,12 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
             false
         )
 
+    override val isReverseSubmarineSwapAvailable: StateFlow<Boolean> = MutableStateFlow(
+        boltzUseCase.isSwapDirectionAvailableUseCase.isEnabled(
+            SwapDirection(from = SwapAsset.Lightning, to = accountAsset.account.network.toSwapAsset())
+        )
+    )
+
     override val asset: StateFlow<EnrichedAsset> = MutableStateFlow(accountAsset.asset)
 
     override val feeCommUiState: StateFlow<LightningReceiveAmountState> = getLightningReceiveAmountStateUseCase(
@@ -259,6 +270,8 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
     }
 
     private val _generateAddressLock = Mutex()
+
+    private var createInvoiceJob: Job? = null
 
     init {
         combine(
@@ -340,7 +353,6 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
         }.launchIn(this)
 
         sessionOrNull?.ifConnected {
-
             combine(
                 showLightningOnChainAddress,
                 isReverseSubmarineSwap
@@ -505,6 +517,12 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
             }
 
             is LocalEvents.ToggleLightning -> {
+                if (createInvoiceJob?.isActive == true) {
+                    createInvoiceJob?.cancel()
+                    onProgress.value = false
+                }
+                createInvoiceJob = null
+
                 val isLightningSelected = !isReverseSubmarineSwap.value
                 isReverseSubmarineSwap.value = isLightningSelected
 
@@ -541,6 +559,17 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
             }
 
             is LocalEvents.CreateInvoice -> {
+                val direction = SwapDirection(from = SwapAsset.Lightning, to = account.network.toSwapAsset())
+                if (isReverseSubmarineSwap.value &&
+                    !boltzUseCase.isSwapDirectionAvailableUseCase.isEnabled(direction)
+                ) {
+                    postSideEffect(
+                        SideEffects.ErrorDialog(
+                            Exception(IsSwapDirectionAvailableUseCase.ERROR_RECEIVE_LIGHTNING_AS_LIQUID)
+                        )
+                    )
+                    return
+                }
                 createLightningInvoice()
             }
 
@@ -623,7 +652,6 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
 
     private suspend fun updateAddress(address: String) {
         withContext(context = Dispatchers.IO) {
-
             if ((isReverseSubmarineSwap.value || account.isLightning) && !showLightningOnChainAddress.value) {
                 val scheme = if (isReverseSubmarineSwap.value) "lightning" else account.network.bip21Prefix
                 Uri.Builder().also {
@@ -642,7 +670,6 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
                 }.toString()
 
                 val query = Uri.Builder().also {
-
                     if (!amount.value.isBlank()) {
                         it.appendQueryParameter(
                             "amount", UserInput.parseUserInputSafe(
@@ -671,7 +698,7 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
     }
 
     private fun createLightningInvoice() {
-        doAsync({
+        createInvoiceJob = doAsync({
             val targetDenomination = if (denomination.value.isFiat) Denomination.default(session) else denomination.value
 
             val amount = UserInput.parseUserInput(
@@ -682,7 +709,6 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
             ).getBalance()?.satoshi ?: 0
 
             if (isReverseSubmarineSwap.value) {
-
                 val invoice = boltzUseCase.createReverseSubmarineSwapUseCase(
                     wallet = greenWallet,
                     session = session,
@@ -837,14 +863,13 @@ class ReceiveViewModel(greenWallet: GreenWallet, accountAsset: AccountAsset) :
     }
 
     companion object : Loggable()
-
 }
 
 class ReceiveViewModelPreview() :
     ReceiveViewModelAbstract(greenWallet = previewWallet(), accountAssetOrNull = previewAccountAsset(isLightning = true)) {
-
     override val showRecoveryConfirmation: StateFlow<Boolean> = MutableStateFlow(false)
     override val showSwap: StateFlow<Boolean> = MutableStateFlow(true)
+    override val isReverseSubmarineSwapAvailable: StateFlow<Boolean> = MutableStateFlow(false)
     override val isReverseSubmarineSwap = MutableStateFlow(true)
     override val receiveAddress: StateFlow<String?> =
         MutableStateFlow("lightning:LNBC1bc1qaqtq80759n35gk6ftc57vh7du83nwvt5lgkznubc1qaqtq80759n35gkh7du83nwvt5lgkznubc1qaqtq80759n35gkh7du83nwvt5lgkznubc1qaqtq80759n35gk6ftc57vh7du83nwvt5lgkznubc1qaqtq80759n35gk6ftc57vh7du83nwvt5lgkznu")

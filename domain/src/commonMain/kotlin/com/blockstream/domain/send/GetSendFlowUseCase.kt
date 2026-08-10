@@ -17,6 +17,8 @@ import com.blockstream.data.swap.QuoteMode
 import com.blockstream.data.swap.SwapAsset
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.swap.InvoiceSwappability
+import com.blockstream.domain.swap.IsSwapDirectionAvailableUseCase
+import com.blockstream.domain.swap.SwapDirection
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.jade.Loggable
 
@@ -27,7 +29,6 @@ class GetSendFlowUseCase(
     private val prepareTransactionUseCase: PrepareTransactionUseCase,
     private val session: GdkSession
 ) {
-
     suspend operator fun invoke(
         greenWallet: GreenWallet,
         address: String,
@@ -62,6 +63,24 @@ class GetSendFlowUseCase(
         val instruction = if (isLightningAddress) {
             tryCatch { session.lwkOrNull?.inspectPaymentInstruction(address) }
         } else null
+
+        val lightningDestination = instruction.toLightningDestination()
+        val invoiceAmount = (instruction as? PaymentInstruction.Bolt11)?.amountSats
+            ?: (instruction as? PaymentInstruction.Bolt12)?.amountSats
+        val isLiquidToLightningAvailable =
+            boltzUseCase.isSwapDirectionAvailableUseCase.isEnabled(SwapDirection.LiquidToLightning)
+        val liquidCouldHavePaid =
+            isLightningAddress && swapsEnabled && liquidCanCover(session, invoiceAmount)
+        val liquidRailExists = isLightningAddress && swapsEnabled && liquidCanCover(session, null)
+
+        if (LightningSendAvailability.bolt12OverLightningSource(
+                destination = lightningDestination,
+                assetIsLightning = asset?.isLightning == true,
+                accountIsLightning = account?.account?.network?.isLightning == true,
+            )
+        ) {
+            throw Exception(LightningSendAvailability.ERROR_BOLT12_ONLY_VIA_LBTC)
+        }
 
         if (instruction is PaymentInstruction.Bolt11) {
             val expired = tryCatch { parseBolt11AndCheckExpired(instruction.invoice) } == true
@@ -100,16 +119,33 @@ class GetSendFlowUseCase(
             }
         }
 
+        if (LightningSendAvailability.onlyRouteWasLiquidSwap(
+                isLightningDestination = asset.isLightning,
+                destination = lightningDestination,
+                hasNativeLightning = hasLightning,
+                liquidCouldHavePaid = liquidCouldHavePaid,
+                isDirectionAvailable = isLiquidToLightningAvailable,
+            )
+        ) {
+            throw Exception(IsSwapDirectionAvailableUseCase.ERROR_PAY_LIGHTNING_WITH_LIQUID)
+        }
+
         if (account == null) {
             val accounts = getSendAccountsUseCase(session = session, wallet = greenWallet, asset = asset, address = address)
 
-            val invoiceAmount = (instruction as? PaymentInstruction.Bolt11)?.amountSats
-                ?: (instruction as? PaymentInstruction.Bolt12)?.amountSats
             if (invoiceAmount != null && accounts.isNotEmpty() && accounts.maxOf { it.balance(session) } < invoiceAmount) {
-                throw Exception("id_insufficient_funds_invoice_amount_s|${formatSatsForError(session, invoiceAmount)}")
+                throw Exception(
+                    LightningSendAvailability.noFundableAccountErrorId(
+                        destination = lightningDestination,
+                        isDirectionAvailable = isLiquidToLightningAvailable,
+                        hasEligibleAccount = true,
+                        liquidCouldHavePaid = liquidCouldHavePaid,
+                        liquidRailExists = liquidRailExists,
+                    ) ?: "id_insufficient_funds_invoice_amount_s|${formatSatsForError(session, invoiceAmount)}"
+                )
             }
 
-            if (invoiceAmount != null && isLightningAddress) {
+            if (invoiceAmount != null && isLightningAddress && isLiquidToLightningAvailable) {
                 val quote = tryCatch {
                     session.lwkOrNull?.quote(
                         satoshi = invoiceAmount,
@@ -125,24 +161,20 @@ class GetSendFlowUseCase(
 
             when {
                 accounts.isEmpty() -> {
-                    // Asset is Lightning but address is not swappable. Distinguish "amountless BOLT11"
-                    // (recognised but unsupported) from generic invalid input so the user sees the
-                    // actual reason instead of a catch-all "Invalid address". BOLT12 destinations
-                    // are LBTC-only today, so when there's no eligible account surface that reason
-                    // explicitly rather than the misleading "insufficient funds".
                     if (asset.isLightning) {
-                        val instruction = tryCatch { session.lwkOrNull?.inspectPaymentInstruction(address) }
-                        if (instruction is PaymentInstruction.Bolt12) {
-                            throw Exception("id_bolt12_payment_is_only_available_via_lbtc")
-                        }
-                        when (boltzUseCase.isInvoiceSwappableUseCase(address = address, session = session)) {
-                            is InvoiceSwappability.AmountlessBolt11 ->
-                                throw Exception("id_no_amount_less_invoices_supported")
-                            is InvoiceSwappability.Unknown ->
-                                throw Exception("id_invalid_address")
-                            is InvoiceSwappability.Swappable ->
-                                throw Exception("id_insufficient_funds")
-                        }
+                        throw Exception(
+                            LightningSendAvailability.noFundableAccountErrorId(
+                                destination = lightningDestination,
+                                isDirectionAvailable = isLiquidToLightningAvailable,
+                                hasEligibleAccount = false,
+                                liquidCouldHavePaid = liquidCouldHavePaid,
+                                liquidRailExists = liquidRailExists,
+                            ) ?: if (invoiceAmount != null && liquidRailExists) {
+                                "id_insufficient_funds_invoice_amount_s|${formatSatsForError(session, invoiceAmount)}"
+                            } else {
+                                LightningSendAvailability.ERROR_INSUFFICIENT_FUNDS
+                            }
+                        )
                     } else {
                         throw Exception("id_insufficient_funds")
                     }
@@ -166,6 +198,15 @@ class GetSendFlowUseCase(
                 session = session
             )
 
+        if (LightningSendAvailability.explicitLiquidSourceBlocked(
+                isLightningDestination = isLightningAddress,
+                accountIsLiquid = account.account.network.isLiquid,
+                isDirectionAvailable = isLiquidToLightningAvailable,
+            )
+        ) {
+            throw Exception(IsSwapDirectionAvailableUseCase.ERROR_PAY_LIGHTNING_WITH_LIQUID)
+        }
+
         if (isSwap) {
             val isAmountless = instruction is PaymentInstruction.LnUrl ||
                     (instruction is PaymentInstruction.Bolt12 && instruction.amountMode == Bolt12AmountMode.AMOUNTLESS)
@@ -174,8 +215,6 @@ class GetSendFlowUseCase(
                 return SendFlow.SelectLightningAmount(address = address, account = account)
             }
 
-            val invoiceAmount = (instruction as? PaymentInstruction.Bolt11)?.amountSats
-                ?: (instruction as? PaymentInstruction.Bolt12)?.amountSats
             if (invoiceAmount != null && account.balance(session) < invoiceAmount) {
                 throw Exception("id_insufficient_funds_invoice_amount_s|${formatSatsForError(session, invoiceAmount)}")
             }
@@ -270,6 +309,11 @@ class GetSendFlowUseCase(
                 trimmed.startsWith("lno1") ||
                 ('@' in trimmed && !trimmed.contains(':'))
     }
+
+    private fun liquidCanCover(session: GdkSession, satoshi: Long?): Boolean =
+        session.accounts.value.any { account ->
+            account.isLiquid && account.balance(session).let { it > 0 && (satoshi == null || it >= satoshi) }
+        }
 
     private suspend fun formatSatsForError(session: GdkSession, satoshi: Long): String {
         val sats = satoshi.toAmountLook(

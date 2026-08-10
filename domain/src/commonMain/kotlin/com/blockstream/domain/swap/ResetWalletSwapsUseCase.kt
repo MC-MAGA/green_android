@@ -1,22 +1,35 @@
 package com.blockstream.domain.swap
 
 import com.blockstream.data.database.Database
+import com.blockstream.data.gdk.GdkSession
+
+sealed interface ResetSwapsResult {
+    data object NoSwaps : ResetSwapsResult
+
+    data object Reprocessing : ResetSwapsResult
+
+    data object Queued : ResetSwapsResult
+}
+
+internal fun resetSwapsResultOf(hadSwaps: Boolean, isLwkConnected: Boolean): ResetSwapsResult = when {
+    !hadSwaps -> ResetSwapsResult.NoSwaps
+    isLwkConnected -> ResetSwapsResult.Reprocessing
+    else -> ResetSwapsResult.Queued
+}
 
 /**
- * Marks all stored swaps of a wallet as pending so LWK picks them up again for
- * background processing.
- *
- * Used to recover stuck swaps: flagging the swaps as pending causes them to be
- * retried the next time LWK connects and processes Boltz events.
  */
 class ResetWalletSwapsUseCase(
     private val database: Database
 ) {
+    suspend operator fun invoke(session: GdkSession, xPubHashId: String): ResetSwapsResult {
+        val hadSwaps = database.hasSwaps(xPubHashId = xPubHashId)
 
-    /**
-     * Flags all swaps of the wallet identified by [xPubHashId] as pending.
-     */
-    suspend operator fun invoke(xPubHashId: String) {
         database.setWalletSwapsPending(xPubHashId = xPubHashId)
+
+        return resetSwapsResultOf(
+            hadSwaps = hadSwaps,
+            isLwkConnected = session.lwkOrNull?.isConnected == true
+        )
     }
 }

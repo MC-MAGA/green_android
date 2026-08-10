@@ -5,20 +5,17 @@ package com.blockstream.compose.models.swap
 import androidx.lifecycle.viewModelScope
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_account_selector
-import blockstream_green.common.generated.resources.id_reset_stuck_swaps
 import blockstream_green.common.generated.resources.id_swap
 import blockstream_green.common.generated.resources.id_swap_from
 import blockstream_green.common.generated.resources.id_swap_to
-import blockstream_green.common.generated.resources.id_swaps_marked_for_retry
-import com.adamglin.PhosphorIcons
-import com.adamglin.phosphoricons.Regular
-import com.adamglin.phosphoricons.regular.ArrowCounterClockwise
+import blockstream_green.common.generated.resources.id_no_stuck_swaps_to_reset
+import blockstream_green.common.generated.resources.id_swaps_queued_for_retry
+import blockstream_green.common.generated.resources.id_swaps_will_be_reprocessed_when_the_app
 import com.blockstream.compose.events.Events
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.extensions.previewAccountAsset
 import com.blockstream.compose.extensions.previewWallet
 import com.blockstream.compose.models.send.CreateTransactionViewModelAbstract
-import com.blockstream.compose.navigation.NavAction
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffects
@@ -51,6 +48,8 @@ import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.feeRateWithUnit
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
+import com.blockstream.domain.swap.HasWalletSwapsUseCase
+import com.blockstream.domain.swap.ResetSwapsResult
 import com.blockstream.domain.swap.ResetWalletSwapsUseCase
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.domain.swap.isSwappableAsset
@@ -58,6 +57,7 @@ import com.blockstream.jade.Loggable
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -85,7 +85,9 @@ data class SwapUiState(
     val amountToExchange: String = "",
     val error: String? = null,
     val errorSide: SwapErrorSide = SwapErrorSide.NONE,
-    val isValidQuote: Boolean = false
+    val isValidQuote: Boolean = false,
+    val isSwapCreationAvailable: Boolean = true,
+    val hasSwaps: Boolean = false
 )
 
 abstract class SwapViewModelAbstract(
@@ -112,6 +114,8 @@ abstract class SwapViewModelAbstract(
     abstract fun onAssetClick(isFrom: Boolean)
     abstract fun setAsset(assetBalance: AssetBalance)
     abstract fun resetSwaps()
+
+    abstract fun isDirectionAvailable(from: AccountAsset, to: AccountAsset): Boolean
 }
 
 class SwapViewModel(
@@ -124,30 +128,44 @@ class SwapViewModel(
     private val swapUseCase: SwapUseCase by inject()
     private val getReceiveAddressUseCase: GetReceiveAddressUseCase by inject()
     private val resetWalletSwapsUseCase: ResetWalletSwapsUseCase by inject()
+    private val hasWalletSwapsUseCase: HasWalletSwapsUseCase by inject()
 
-    override val uiState: MutableStateFlow<SwapUiState> = MutableStateFlow(SwapUiState())
+    private val isSwapCreationAvailable: Boolean =
+        swapUseCase.isSwapDirectionAvailableUseCase.hasAnyEnabledDirection()
+
+    override val uiState: MutableStateFlow<SwapUiState> =
+        MutableStateFlow(SwapUiState(isSwapCreationAvailable = isSwapCreationAvailable))
 
     private var quote: Quote? = null
 
     private var _pendingSetAccountFrom = true
 
+    private var resetJob: Job? = null
+
     init {
         viewModelScope.launch {
             _navData.value = NavData(
                 title = getString(Res.string.id_swap),
-                subtitle = greenWallet.name,
-                actions = listOfNotNull(
-                    NavAction(
-                        title = getString(Res.string.id_reset_stuck_swaps),
-                        imageVector = PhosphorIcons.Regular.ArrowCounterClockwise,
-                        isMenuEntry = true
-                    ) {
-                        resetSwaps()
-                    }
-                )
+                subtitle = greenWallet.name
             )
         }
 
+        viewModelScope.launch {
+            val hasSwaps = runCatching { hasWalletSwapsUseCase(greenWallet.xPubHashId) }
+                .onFailure { logger.e(it) { "hasWalletSwaps failed" } }
+                .getOrDefault(true)
+
+            uiState.update { it.copy(hasSwaps = hasSwaps) }
+        }
+
+        if (isSwapCreationAvailable) {
+            observeSwapForm()
+        }
+
+        bootstrap()
+    }
+
+    private fun observeSwapForm() {
         viewModelScope.ifConnected(session) {
             // Update From Accounts
             uiState.update { uiState ->
@@ -212,7 +230,6 @@ class SwapViewModel(
             _network.value = from.account.network
         }.launchIn(this)
 
-
         uiState.map { it.isValidQuote }.distinctUntilChanged().onEach {
             _isValid.value = it
         }.launchIn(this)
@@ -273,8 +290,6 @@ class SwapViewModel(
             // Reset fee priority, this is important as can be changed by the user and persisted in liquid
             _feePriority.value = FeePriority.Low()
         }.launchIn(this)
-
-        bootstrap()
     }
 
     override fun onQuoteModeChanged(isSendQuoteMode: Boolean) {
@@ -454,7 +469,6 @@ class SwapViewModel(
         }, onSuccess = {
             postSideEffect(it)
         })
-
     }
 
     override suspend fun denominatedValue(): DenominatedValue? {
@@ -474,7 +488,6 @@ class SwapViewModel(
                 )
             }
         }
-
     }
 
     override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
@@ -539,22 +552,49 @@ class SwapViewModel(
     private suspend fun pickerTitle(isFrom: Boolean): String =
         getString(if (isFrom) Res.string.id_swap_from else Res.string.id_swap_to)
 
+    override fun isDirectionAvailable(from: AccountAsset, to: AccountAsset): Boolean =
+        swapUseCase.isSwapDirectionAvailableUseCase(from, to).isAvailable
+
     override fun resetSwaps() {
-        doAsync({
-            resetWalletSwapsUseCase(greenWallet.xPubHashId)
-        }, onSuccess = {
-            postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_swaps_marked_for_retry)))
+        if (resetJob?.isActive == true) return
+
+        resetJob = doAsync({
+            resetWalletSwapsUseCase(session = session, xPubHashId = greenWallet.xPubHashId)
+        }, mutex = getMutex("resetSwaps"), onSuccess = { result ->
+            when (result) {
+                is ResetSwapsResult.NoSwaps -> {
+                    uiState.update { it.copy(hasSwaps = false) }
+                    postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_no_stuck_swaps_to_reset)))
+                }
+
+                is ResetSwapsResult.Queued ->
+                    postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_swaps_will_be_reprocessed_when_the_app)))
+
+                is ResetSwapsResult.Reprocessing -> {
+                    postSideEffect(SideEffects.Snackbar(StringHolder.create(Res.string.id_swaps_queued_for_retry)))
+                    postSideEffect(SideEffects.NavigateBack())
+                }
+            }
         })
     }
 
     companion object : Loggable()
 }
 
-class SwapViewModelPreview(greenWallet: GreenWallet) :
-    SwapViewModelAbstract(greenWallet = greenWallet) {
-
+class SwapViewModelPreview(
+    greenWallet: GreenWallet,
+    isSwapCreationAvailable: Boolean = true,
+    hasSwaps: Boolean = false
+) : SwapViewModelAbstract(greenWallet = greenWallet) {
     override val uiState: MutableStateFlow<SwapUiState> =
-        MutableStateFlow(SwapUiState(from = previewAccountAsset(), to = previewAccountAsset()))
+        MutableStateFlow(
+            SwapUiState(
+                from = previewAccountAsset(),
+                to = previewAccountAsset(),
+                isSwapCreationAvailable = isSwapCreationAvailable,
+                hasSwaps = hasSwaps
+            )
+        )
 
     override fun createSwap() {}
     override fun onAmountChanged(amount: String, isFromInput: Boolean) {}
@@ -571,6 +611,8 @@ class SwapViewModelPreview(greenWallet: GreenWallet) :
 
     override fun swapPairs() {}
 
+    override fun isDirectionAvailable(from: AccountAsset, to: AccountAsset): Boolean = true
+
     init {
         banner.value = Banner.preview3
         _showFeeSelector.value = true
@@ -578,5 +620,8 @@ class SwapViewModelPreview(greenWallet: GreenWallet) :
 
     companion object {
         fun preview() = SwapViewModelPreview(previewWallet())
+
+        fun previewUnavailable(hasSwaps: Boolean = true) =
+            SwapViewModelPreview(previewWallet(), isSwapCreationAvailable = false, hasSwaps = hasSwaps)
     }
 }

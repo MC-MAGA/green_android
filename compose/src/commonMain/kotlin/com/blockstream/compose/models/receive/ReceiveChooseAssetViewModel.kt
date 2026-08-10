@@ -13,8 +13,10 @@ import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.AccountAssetList
+import com.blockstream.data.swap.SwapAsset
 import com.blockstream.domain.receive.GetReceiveAssetsUseCase
 import com.blockstream.domain.receive.ReceiveUseCase
+import com.blockstream.domain.swap.SwapDirection
 import com.blockstream.domain.swap.SwapUseCase
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -38,7 +40,6 @@ class ReceiveChooseAssetViewModel(
     greenWallet: GreenWallet,
     accountAssetOrNull: AccountAsset? = null
 ) : ReceiveChooseAssetViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAssetOrNull) {
-
     internal val receiveUseCase: ReceiveUseCase by inject()
 
     internal val getReceiveAssetsUseCase: GetReceiveAssetsUseCase by inject {
@@ -63,7 +64,10 @@ class ReceiveChooseAssetViewModel(
 
         doAsync({
             _assets.value = getReceiveAssetsUseCase()
-            _isSwapsEnabled.value = boltzUseCase.isSwapsEnabledUseCase(wallet = greenWallet)
+            _isSwapsEnabled.value = boltzUseCase.isSwapsEnabledUseCase(wallet = greenWallet) &&
+                    boltzUseCase.isSwapDirectionAvailableUseCase.isEnabled(
+                        SwapDirection(from = SwapAsset.Lightning, to = SwapAsset.Liquid)
+                    )
         })
     }
 
@@ -110,7 +114,6 @@ class ReceiveChooseAssetViewModelPreview(greenWallet: GreenWallet) :
     override val isSwapsEnabled = MutableStateFlow(true)
 
     override fun selectAsset(asset: EnrichedAsset) {
-
     }
 
     companion object {

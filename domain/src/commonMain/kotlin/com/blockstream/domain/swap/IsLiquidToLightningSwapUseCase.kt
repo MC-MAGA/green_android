@@ -16,9 +16,9 @@ import com.blockstream.data.gdk.data.AccountAsset
  */
 class IsLiquidToLightningSwapUseCase(
     private val isSwapsEnabledUseCase: IsSwapsEnabledUseCase,
-    private val isInvoiceSwappableUseCase: IsInvoiceSwappableUseCase
+    private val isInvoiceSwappableUseCase: IsInvoiceSwappableUseCase,
+    private val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase
 ) {
-
     /**
      * Returns true if the provided parameters constitute a valid Liquid-to-Lightning swap.
      *
@@ -36,7 +36,10 @@ class IsLiquidToLightningSwapUseCase(
         accountAsset: AccountAsset,
         session: GdkSession,
     ): Boolean {
-        return asset.isLightning && accountAsset.account.isLiquid && isSwapsEnabledUseCase(wallet = wallet) &&
+        return asset.isLightning &&
+                accountAsset.account.isLiquid &&
+                isSwapDirectionAvailableUseCase.isEnabled(SwapDirection.LiquidToLightning) &&
+                isSwapsEnabledUseCase(wallet = wallet) &&
                 isInvoiceSwappableUseCase(address = address, session = session) is InvoiceSwappability.Swappable
     }
 }

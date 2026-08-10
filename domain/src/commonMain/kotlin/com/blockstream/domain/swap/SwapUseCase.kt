@@ -26,6 +26,7 @@ class SwapUseCase constructor(
     val prepareSwapTransactionUseCase: PrepareSwapTransactionUseCase,
     val handleSwapEventsUseCase: HandleSwapEventsUseCase,
     val isSwapAvailableUseCase: IsSwapAvailableUseCase,
+    val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase,
     val isSwapsEnabledUseCase: IsSwapsEnabledUseCase,
     val getWalletFromSwapUseCase: GetWalletFromSwapUseCase,
     val isInvoiceSwappableUseCase: IsInvoiceSwappableUseCase,

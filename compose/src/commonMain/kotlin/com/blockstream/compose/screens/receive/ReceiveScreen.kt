@@ -48,14 +48,17 @@ import blockstream_green.common.generated.resources.id_address
 import blockstream_green.common.generated.resources.id_asset
 import blockstream_green.common.generated.resources.id_create_invoice
 import blockstream_green.common.generated.resources.id_create_new_account
+import blockstream_green.common.generated.resources.id_learn_more
 import blockstream_green.common.generated.resources.id_learn_why
 import blockstream_green.common.generated.resources.id_ledger_supports_a_limited_set
 import blockstream_green.common.generated.resources.id_lightning_amount_too_high_fiat_s
 import blockstream_green.common.generated.resources.id_lightning_amount_too_low_fiat_s
+import blockstream_green.common.generated.resources.id_lightning_unavailable
 import blockstream_green.common.generated.resources.id_payer_sends
 import blockstream_green.common.generated.resources.id_please_verify_that_the_address
 import blockstream_green.common.generated.resources.id_qr_code
 import blockstream_green.common.generated.resources.id_receive_amount
+import blockstream_green.common.generated.resources.id_receiving_lightning_payments_as_liquid_bitcoin
 import blockstream_green.common.generated.resources.id_recommended_amount_fee_s
 import blockstream_green.common.generated.resources.id_request_amount
 import blockstream_green.common.generated.resources.id_requires_funding_fee
@@ -68,6 +71,7 @@ import blockstream_green.common.generated.resources.warning
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.Info
+import com.adamglin.phosphoricons.regular.Lightning
 import com.adamglin.phosphoricons.regular.SealCheck
 import com.adamglin.phosphoricons.regular.ShareNetwork
 import com.blockstream.compose.GreenPreview
@@ -107,6 +111,7 @@ import com.blockstream.compose.theme.orangeSurface
 import com.blockstream.compose.theme.whiteMedium
 import com.blockstream.compose.utils.SetupScreen
 import com.blockstream.compose.utils.appTestTag
+import com.blockstream.data.Urls
 import com.blockstream.data.data.AlertType
 import com.blockstream.data.data.DenominatedValue
 import com.blockstream.data.data.GreenWallet
@@ -157,6 +162,7 @@ fun ReceiveScreen(
     val buttonEnabled by viewModel.buttonEnabled.collectAsStateWithLifecycle()
     val isReverseSubmarineSwap by viewModel.isReverseSubmarineSwap.collectAsStateWithLifecycle()
     val showSwap by viewModel.showSwap.collectAsStateWithLifecycle()
+    val isReverseSubmarineSwapAvailable by viewModel.isReverseSubmarineSwapAvailable.collectAsStateWithLifecycle()
     val feeState by viewModel.feeCommUiState.collectAsStateWithLifecycle()
 
     val scope = rememberCoroutineScope()
@@ -191,10 +197,19 @@ fun ReceiveScreen(
     val showRecoveryConfirmation by viewModel.showRecoveryConfirmation.collectAsStateWithLifecycle()
     val isLightningOrSwap = (accountAsset?.account?.isLightning == true && !showLightningOnChainAddress) || isReverseSubmarineSwap
 
+    val isReceiveSwapUnavailable = isReverseSubmarineSwap && !isReverseSubmarineSwapAvailable
 
-    LaunchedEffect(showRequestAmount, isReverseSubmarineSwap, receiveAddress) {
-        if ((showRequestAmount || (isReverseSubmarineSwap && receiveAddress == null)) && amount.isBlank()) {
-            focusRequester.requestFocus()
+    val showAmountField = ((accountAsset?.account?.isLightning == true && !showLightningOnChainAddress)
+            || showRequestAmount
+            || (isReverseSubmarineSwap && receiveAddress == null))
+            && !isReceiveSwapUnavailable
+
+    LaunchedEffect(showAmountField, showRequestAmount, isReverseSubmarineSwap, receiveAddress) {
+        if (showAmountField
+            && (showRequestAmount || (isReverseSubmarineSwap && receiveAddress == null))
+            && amount.isBlank()
+        ) {
+            runCatching { focusRequester.requestFocus() }
         }
     }
 
@@ -210,7 +225,6 @@ fun ReceiveScreen(
                 }
             }
         }) {
-
         Box(modifier = Modifier.weight(1f)) {
             GreenColumn(
                 padding = 0,
@@ -219,7 +233,6 @@ fun ReceiveScreen(
                     .padding(horizontal = 16.dp)
                     .padding(bottom = 32.dp)
             ) {
-
                 if (showRecoveryConfirmation) {
                     GreenAlert(
                         alertType = AlertType.RecoveryIsUnconfirmed(withCloseButton = true),
@@ -228,7 +241,6 @@ fun ReceiveScreen(
                 }
 
                 Column {
-
                     AnimatedVisibility(visible = showLedgerAssetWarning) {
                         GreenCard(
                             padding = 8, colors = CardDefaults.elevatedCardColors(
@@ -279,7 +291,7 @@ fun ReceiveScreen(
                         session = viewModel.sessionOrNull,
                         title = stringResource(Res.string.id_asset),
                         subtitle = accountTypeSubtitle,
-                        trailingContent = if (showSwap) {
+                        trailingContent = if (showSwap && isReverseSubmarineSwapAvailable) {
                             { LightningReadyBadge() }
                         } else null,
                         modifier = Modifier
@@ -295,7 +307,6 @@ fun ReceiveScreen(
                 }
 
                 AnimatedVisibility(showSwap) {
-
                     Column {
                         Text(
                             text = stringResource(Res.string.id_payer_sends),
@@ -310,7 +321,9 @@ fun ReceiveScreen(
                                 SegmentedButton(
                                     shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
                                     onClick = {
-                                        viewModel.postEvent(ReceiveViewModel.LocalEvents.ToggleLightning)
+                                        if ((index == 1) != isReverseSubmarineSwap) {
+                                            viewModel.postEvent(ReceiveViewModel.LocalEvents.ToggleLightning)
+                                        }
                                     },
                                     selected = (index == 1) == isReverseSubmarineSwap
                                 ) {
@@ -321,8 +334,19 @@ fun ReceiveScreen(
                     }
                 }
 
-                AnimatedVisibility(visible = (accountAsset?.account?.isLightning == true && !showLightningOnChainAddress) || showRequestAmount || (isReverseSubmarineSwap && receiveAddress == null)) {
+                AnimatedVisibility(visible = isReceiveSwapUnavailable) {
+                    GreenAlert(
+                        title = stringResource(Res.string.id_lightning_unavailable),
+                        message = stringResource(Res.string.id_receiving_lightning_payments_as_liquid_bitcoin),
+                        isBlue = true,
+                        icon = PhosphorIcons.Regular.Lightning,
+                        primaryButton = stringResource(Res.string.id_learn_more),
+                        onPrimaryClick = { viewModel.postEvent(Events.OpenBrowser(Urls.HELP_SWAPS_UNAVAILABLE)) },
+                        modifier = Modifier.appTestTag("receive_swaps_unavailable")
+                    )
+                }
 
+                AnimatedVisibility(visible = showAmountField) {
                     GreenColumn(padding = 0, space = 8) {
                         val state = feeState
 
@@ -431,9 +455,7 @@ fun ReceiveScreen(
                     }
                 }
                 if (!isLightningOrSwap && (receiveAddress.isNotBlank() || accountAsset?.account?.isLightning == false)) {
-
                     Column {
-
                         Text(
                             stringResource(Res.string.id_account_address),
                             style = labelMedium,
@@ -441,9 +463,7 @@ fun ReceiveScreen(
                         )
 
                         Card {
-
                             Box(modifier = Modifier.padding(bottom = 8.dp)) {
-
                                 if (accountAsset?.account?.isLightning == false) {
                                     IconButton(
                                         modifier = Modifier
@@ -476,7 +496,6 @@ fun ReceiveScreen(
                                     GreenColumn(
                                         horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-
                                         GreenAddress(
                                             address = receiveAddress ?: "",
                                             textAlign = TextAlign.Center,
@@ -559,8 +578,7 @@ fun ReceiveScreen(
                     }
                 }
 
-                AnimatedVisibility(visible = (isReverseSubmarineSwap || accountAsset?.account?.isLightning == true) && !showLightningOnChainAddress && receiveAddress.isNullOrBlank()) {
-
+                AnimatedVisibility(visible = (isReverseSubmarineSwap || accountAsset?.account?.isLightning == true) && !showLightningOnChainAddress && receiveAddress.isNullOrBlank() && !isReceiveSwapUnavailable) {
                     Column(modifier = Modifier.fillMaxWidth()) {
                         if (isReverseSubmarineSwap) {
                             Text(

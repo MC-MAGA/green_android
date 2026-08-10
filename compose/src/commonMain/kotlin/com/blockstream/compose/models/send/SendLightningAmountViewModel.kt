@@ -29,6 +29,9 @@ import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.swap.Quote
 import com.blockstream.data.swap.QuoteMode
 import com.blockstream.data.swap.SwapAsset
+import com.blockstream.domain.swap.IsSwapDirectionAvailableUseCase
+import com.blockstream.domain.swap.SwapDirection
+import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.data.swap.SwapDetails
 import com.blockstream.data.gdk.params.CreateTransactionParams
 import com.blockstream.data.utils.UserInput
@@ -47,6 +50,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
+import org.koin.core.component.inject
 
 abstract class SendLightningAmountViewModelAbstract(greenWallet: GreenWallet, accountAsset: AccountAsset) :
     CreateTransactionViewModelAbstract(greenWallet = greenWallet, accountAssetOrNull = accountAsset) {
@@ -67,8 +71,9 @@ class SendLightningAmountViewModel(
     addressType: AddressInputType,
     accountAsset: AccountAsset,
 ) : SendLightningAmountViewModelAbstract(greenWallet = greenWallet, accountAsset = accountAsset) {
-
     override val amount: MutableStateFlow<String> = MutableStateFlow("")
+
+    private val swapsUseCase: SwapUseCase by inject()
 
     private val _instruction: MutableStateFlow<PaymentInstruction?> = MutableStateFlow(null)
     private val _quote: MutableStateFlow<Quote?> = MutableStateFlow(null)
@@ -135,13 +140,19 @@ class SendLightningAmountViewModel(
             }
             .distinctUntilChanged()
             .mapLatest { sats ->
-                tryCatch {
-                    session.lwkOrNull?.quote(
-                        satoshi = sats,
-                        quoteMode = QuoteMode.SEND,
-                        send = SwapAsset.Liquid,
-                        receive = SwapAsset.Lightning,
-                    )
+                if (accountAsset.account.network.isLightning ||
+                    !swapsUseCase.isSwapDirectionAvailableUseCase.isEnabled(SwapDirection.LiquidToLightning)
+                ) {
+                    null
+                } else {
+                    tryCatch {
+                        session.lwkOrNull?.quote(
+                            satoshi = sats,
+                            quoteMode = QuoteMode.SEND,
+                            send = SwapAsset.Liquid,
+                            receive = SwapAsset.Lightning,
+                        )
+                    }
                 }
             }
             .onEach { _quote.value = it }
@@ -277,6 +288,12 @@ class SendLightningAmountViewModel(
     }
 
     private suspend fun softValidate(): SoftValidation {
+        val sourceAccount = accountAsset.value
+        if (sourceAccount?.account?.network?.isLightning == false &&
+            !swapsUseCase.isSwapDirectionAvailableUseCase.isEnabled(SwapDirection.LiquidToLightning)
+        ) {
+            return SoftValidation.Invalid(IsSwapDirectionAvailableUseCase.ERROR_PAY_LIGHTNING_WITH_LIQUID)
+        }
         if (amount.value.isBlank()) return SoftValidation.Idle
         val account = accountAsset.value ?: return SoftValidation.Idle
         val sats = UserInput.parseUserInputSafe(
@@ -404,7 +421,6 @@ class SendLightningAmountViewModelPreview(greenWallet: GreenWallet) :
         greenWallet = greenWallet,
         accountAsset = previewAccountAsset(isLightning = true),
     ) {
-
     override val address: String = "lnbc..."
     override val amount: MutableStateFlow<String> = MutableStateFlow("")
     override val amountExchange: StateFlow<String> = MutableStateFlow("≈ 0,00 USD")

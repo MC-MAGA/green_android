@@ -26,6 +26,11 @@ SELECT * FROM boltzSwaps WHERE xpub_hash_id = ? AND is_pending = 1 AND is_magic 
 hasPendingSwaps:
 SELECT COUNT(*) > 0 FROM boltzSwaps WHERE xpub_hash_id = ? AND is_pending = 1 AND is_magic = 0;
 
+-- Deliberately the same WHERE clause as setWalletSwapsPending, so "the Reset Stuck Swaps CTA is
+-- visible" coincides with "pressing it flags at least one row".
+hasSwaps:
+SELECT COUNT(*) > 0 FROM boltzSwaps WHERE xpub_hash_id = ? AND is_magic = 0;
+
 getSwap:
 SELECT * FROM boltzSwaps WHERE id = ?;
 

@@ -18,9 +18,9 @@ class CreateSwapUseCase(
     private val createChainSwapUseCase: CreateChainSwapUseCase,
     private val createReverseSubmarineSwapUseCase: CreateReverseSubmarineSwapUseCase,
     private val createNormalSubmarineSwapUseCase: CreateNormalSubmarineSwapUseCase,
-    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase,
+    private val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase
 ) {
-
     /**
      * Executes the swap creation by determining the swap type based on account properties.
      *
@@ -50,19 +50,19 @@ class CreateSwapUseCase(
         quote: Quote?,
         amount: Long?
     ): SwapDetails {
-
         // Single source of truth with the UI validation: blocks unsupported pairs
         // (Liquid <-> Lightning, same network) even if invoked with stale state.
         if (!isSwapPairSupported(from, to)) {
             throw Exception("id_swap_pair_is_not_supported_yet")
         }
 
+        isSwapDirectionAvailableUseCase.requireAvailable(from = from, to = to)
+
         val amountNotNull = requireNotNull(amount) { "Amount is required for swap creation" }
 
         return when {
             // Chain
             listOf(from.account.isLightning, to.account.isLightning).all { !it } -> {
-
                 createChainSwapUseCase(
                     wallet = wallet,
                     session = session,
@@ -77,7 +77,6 @@ class CreateSwapUseCase(
             // On-chain (Bitcoin/Liquid) -> Lightning, normal submarine. Bitcoin source also carries
             // the Lightning channel-open setup fee.
             to.account.isLightning -> {
-
                 // Mirror the chain-swap model: the entered amount is what the user spends, and the
                 // invoice is the quoted receive amount (entered minus swap fees) - the same figure
                 // the swap screen quotes and the review screen confirms.
@@ -96,7 +95,6 @@ class CreateSwapUseCase(
             // destination account when present; the Liquid path claims via the Lightning account's
             // (Liquid) receive address.
             from.account.isLightning -> {
-
                 createReverseSubmarineSwapUseCase(
                     wallet = wallet,
                     session = session,

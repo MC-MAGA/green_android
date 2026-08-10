@@ -15,6 +15,7 @@ import com.blockstream.data.lwk.PaymentInstruction
 import com.blockstream.data.swap.SwapDetails
 import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.toAmountLook
+import com.blockstream.domain.swap.SwapDirection
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.jade.Loggable
 import kotlinx.serialization.json.JsonElement
@@ -46,7 +47,6 @@ import kotlinx.serialization.json.buildJsonObject
  * - This use case does not broadcast; it only prepares parameters for transaction creation.
  */
 class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
-
     /**
      * Prepare a `CreateTransactionParams` instance for the given destination and amount.
      *
@@ -75,7 +75,6 @@ class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
         paymentInstruction: PaymentInstruction? = null,
         selectedUtxos: Map<String, List<JsonElement>>? = null,
     ): CreateTransactionParams {
-
         return (if (accountAsset.account.network.isLightning) {
             val satoshi = UserInput.parseUserInputSafe(
                 session = session,
@@ -108,6 +107,8 @@ class PrepareTransactionUseCase(private val swapUseCase: SwapUseCase) {
             } ?: false
 
             if (isLiquidToLightningSwap) {
+                swapUseCase.isSwapDirectionAvailableUseCase.requireAvailable(SwapDirection.LiquidToLightning)
+
                 val effectiveInstruction = paymentInstruction
                     ?: tryCatch { session.lwkOrNull?.inspectPaymentInstruction(address) }
 

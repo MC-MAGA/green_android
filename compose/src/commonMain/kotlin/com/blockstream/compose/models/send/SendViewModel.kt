@@ -43,6 +43,8 @@ import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.feeRateWithUnit
 import com.blockstream.data.utils.ifNotNull
 import com.blockstream.data.utils.toAmountLook
+import com.blockstream.domain.swap.IsSwapDirectionAvailableUseCase
+import com.blockstream.domain.swap.SwapDirection
 import com.blockstream.domain.swap.SwapUseCase
 import com.blockstream.utils.Loggable
 import kotlinx.coroutines.Dispatchers
@@ -261,7 +263,6 @@ class SendViewModel(
         }.launchIn(this)
 
         session.ifConnected {
-
             var isSwapsEnabled = false
 
             viewModelScope.launch {
@@ -290,6 +291,16 @@ class SendViewModel(
                 _showFeeSelector.value = sendUseCase.showFeeSelectorUseCase(session = session, network = accountNetwork)
 
                 val isLiquidToLightningSwap = isLiquidToLightningSwap(accountAsset)
+
+                val outageBlocked = addressNetwork.value?.isLightning == true &&
+                        accountAsset.account.network.isLiquid &&
+                        !swapsUseCase.isSwapDirectionAvailableUseCase.isEnabled(SwapDirection.LiquidToLightning)
+                if (outageBlocked) {
+                    _error.value = IsSwapDirectionAvailableUseCase.ERROR_PAY_LIGHTNING_WITH_LIQUID
+                } else if (_error.value == IsSwapDirectionAvailableUseCase.ERROR_PAY_LIGHTNING_WITH_LIQUID) {
+                    _error.value = null
+                }
+
                 val instruction = _paymentInstruction.value
                 val isAmountlessInstruction = instruction is PaymentInstruction.LnUrl ||
                         (instruction is PaymentInstruction.Bolt12 && instruction.amountMode == Bolt12AmountMode.AMOUNTLESS)
@@ -337,7 +348,6 @@ class SendViewModel(
         super.handleEvent(event)
 
         when (event) {
-
             is LocalEvents.ToggleIsSendAll -> {
                 isSendAll.value = isSendAll.value.let { isSendAll ->
                     if (isSendAll) {
@@ -481,7 +491,6 @@ class SendViewModel(
                             amount.value = it ?: ""
                         }
                     }
-
                 }
 
                 tx.fee?.takeIf { it != 0L || tx.error.isNullOrBlank() }.also {
@@ -568,7 +577,6 @@ class SendViewModel(
                 )
             }
         }
-
     }
 
     override suspend fun setDenominatedValue(denominatedValue: DenominatedValue) {
@@ -576,10 +584,10 @@ class SendViewModel(
         amount.value = denominatedValue.asInput ?: ""
     }
 
-    /** True when the recipient resolves to Lightning and the source account is on Liquid — i.e.
-     *  the send will be brokered as a Boltz submarine swap. */
     private fun isLiquidToLightningSwap(accountAsset: AccountAsset): Boolean =
-        addressNetwork.value?.isLightning == true && accountAsset.account.network.isLiquid
+        addressNetwork.value?.isLightning == true &&
+                accountAsset.account.network.isLiquid &&
+                swapsUseCase.isSwapDirectionAvailableUseCase.isEnabled(SwapDirection.LiquidToLightning)
 
     private fun openCoinSelection() {
         accountAsset.value?.also {

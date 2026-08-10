@@ -61,7 +61,6 @@ fun createLocalDatabase(driverFactory: DriverFactory): LocalDB {
 
 //TODO: Refactor this into two separate database classes, local and remote.
 class Database(driverFactory: DriverFactory, val settingsManager: SettingsManager) {
-
     private var walletDB: WalletDB
     private var localDB: LocalDB
 
@@ -338,6 +337,10 @@ class Database(driverFactory: DriverFactory, val settingsManager: SettingsManage
 
     suspend fun hasPendingSwaps(xPubHashId: String): Boolean = io {
         walletDB.boltzSwapsQueries.hasPendingSwaps(xpub_hash_id = xPubHashId).executeAsOne()
+    }
+
+    suspend fun hasSwaps(xPubHashId: String): Boolean = io {
+        walletDB.boltzSwapsQueries.hasSwaps(xpub_hash_id = xPubHashId).executeAsOne()
     }
 
     fun getPendingSwapsFlow(xPubHashId: String) = walletDB.boltzSwapsQueries.getPendingSwaps(xpub_hash_id = xPubHashId).asFlow().map {

@@ -5,6 +5,7 @@ import com.blockstream.data.data.SwapType
 import com.blockstream.data.database.Database
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
+import com.blockstream.data.swap.SwapAsset
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import lwk.InvoiceResponse
 
@@ -17,7 +18,8 @@ import lwk.InvoiceResponse
  */
 class CreateReverseSubmarineSwapUseCase(
     private val database: Database,
-    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase,
+    private val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase
 ) {
     /**
      * Generates a reverse swap invoice via LWK and persists the metadata to the database.
@@ -38,6 +40,12 @@ class CreateReverseSubmarineSwapUseCase(
         amount: Long,
         description: String? = null
     ): InvoiceResponse {
+        isSwapDirectionAvailableUseCase.requireAvailable(
+            SwapDirection(
+                from = SwapAsset.Lightning,
+                to = if (account.isBitcoin) SwapAsset.Bitcoin else SwapAsset.Liquid
+            )
+        )
 
         val xPubHashId = session.xPubHashId ?: throw Exception("xPubHashId should not be null")
 

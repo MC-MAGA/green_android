@@ -10,6 +10,7 @@ import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.lightning.satoshi
 import com.blockstream.data.lwk.PaymentInstruction
+import com.blockstream.data.swap.SwapAsset
 import com.blockstream.data.swap.SwapDetails
 import com.blockstream.domain.receive.GetReceiveAddressUseCase
 import lwk.Bolt11Invoice
@@ -27,7 +28,8 @@ import kotlin.uuid.Uuid
  */
 class CreateNormalSubmarineSwapUseCase(
     val database: Database,
-    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase,
+    private val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase
 ) {
     /**
      * Creates or restores the swap and persists its state in the database.
@@ -55,7 +57,6 @@ class CreateNormalSubmarineSwapUseCase(
         invoice: String,
         amountSats: Long? = null,
     ): SwapDetails {
-
         val xPubHashId = session.xPubHashId ?: throw Exception("xPubHashId should not be null")
         val normalizedInput = invoice.replace("lightning:", "")
         val refundAddress = getReceiveAddressUseCase(session = session, account = account).address
@@ -229,9 +230,15 @@ class CreateNormalSubmarineSwapUseCase(
         input: String,
         refundAddress: String,
         amountSats: Long? = null,
-    ): PreparePayResponse = if (account.isBitcoin) {
-        session.lwk.btcToLn(input = input, refundAddress = refundAddress, amountSats = amountSats)
-    } else {
-        session.lwk.createNormalSubmarineSwap(input = input, refundAddress = refundAddress, amountSats = amountSats)
+    ): PreparePayResponse {
+        isSwapDirectionAvailableUseCase.requireAvailable(
+            SwapDirection(from = account.network.toSwapAsset(), to = SwapAsset.Lightning)
+        )
+
+        return if (account.isBitcoin) {
+            session.lwk.btcToLn(input = input, refundAddress = refundAddress, amountSats = amountSats)
+        } else {
+            session.lwk.createNormalSubmarineSwap(input = input, refundAddress = refundAddress, amountSats = amountSats)
+        }
     }
 }

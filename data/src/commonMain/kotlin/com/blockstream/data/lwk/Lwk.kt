@@ -24,12 +24,14 @@ import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.IO
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.async
 import kotlinx.coroutines.channels.BufferOverflow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.isActive
@@ -66,14 +68,13 @@ import org.koin.core.component.inject
 class Lwk(
     val walletId: String
 ) : Logging, KoinComponent {
-
     private lateinit var xPubHashId: String
 
     private val appInfo: AppInfo by inject()
     private val database: Database by inject()
     private lateinit var boltzSession: BoltzSession
 
-    private val scope = CoroutineScope(context = Dispatchers.IO)
+    private val scope = CoroutineScope(context = SupervisorJob() + Dispatchers.IO)
 
     private val monitor = mutableSetOf<String>()
 
@@ -113,7 +114,6 @@ class Lwk(
         bitcoinAddress: String? = null,
         liquidAddress: String? = null
     ) {
-
         check(xPubHashId.isNotBlank()) {
             "Wallet should not have a blank xPubHashId"
         }
@@ -148,10 +148,9 @@ class Lwk(
 
                     retry(fullJitterBackoff(min = 1_000, max = 30_000)) {
                         logger.d { "Trying connection with Boltz" }
-                        boltzSession = BoltzSession.fromBuilder(boltzSessionBuilder).also {
-                            logger.d { "Connected with Boltz" }
-                            onSessionConnect(xPubHashId = xPubHashId)
-                        }
+                        boltzSession = BoltzSession.fromBuilder(boltzSessionBuilder)
+                        logger.d { "Connected with Boltz" }
+                        onSessionConnect(xPubHashId = xPubHashId)
 
                         // Restore swaps after connection (only user's lockups)
                         tryCatch {
@@ -255,14 +254,16 @@ class Lwk(
         logger.d { "onSessionConnect $xPubHashId" }
         _isConnected.value = true
 
-        database.getPendingSwapsFlow(xPubHashId).onEach { swaps ->
-            tryCatch {
+        database.getPendingSwapsFlow(xPubHashId)
+            .catch { logger.e(it) { "Pending swaps flow failed" } }
+            .onEach { swaps ->
                 logger.d { "Pending Swaps ${swaps.map { it.id }}" }
                 swaps.forEach {
-                    handleSwap(swapId = it.id, data = it.data_)
+                    tryCatch {
+                        handleSwap(swapId = it.id, data = it.data_)
+                    }
                 }
-            }
-        }.launchIn(scope)
+            }.launchIn(scope)
     }
 
     private suspend fun handleSwap(swapId: String, data: String) {
@@ -709,7 +710,6 @@ class Lwk(
 
                     when (state) {
                         PaymentState.CONTINUE -> {
-
                         }
 
                         PaymentState.SUCCESS, PaymentState.FAILED -> {
@@ -898,5 +898,3 @@ private fun extractLnUrlDescription(metadata: String): String? = try {
 } catch (_: Exception) {
     null
 }
-
-

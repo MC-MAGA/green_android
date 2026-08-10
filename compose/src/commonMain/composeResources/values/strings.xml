@@ -2072,4 +2072,14 @@
     <string name="id_reset_stuck_swaps">Reset Stuck Swaps</string>
     <string name="id_swaps_marked_for_retry">Swaps marked for retry. Any stuck swap will be reprocessed. Contact support for more info</string>
     <string name="id_swap_marked_for_retry">Swap marked for retry. Contact support for more info</string>
+    <string name="id_swaps_unavailable">Swaps Unavailable</string>
+    <string name="id_new_swaps_are_temporarily_disabled">New swaps are temporarily disabled due to a service interruption. Your funds are safe. We are working to restore functionality.</string>
+    <string name="id_have_a_stuck_swap">Have a stuck swap?</string>
+    <string name="id_swaps_queued_for_retry">Swaps queued for retry</string>
+    <string name="id_swaps_will_be_reprocessed_when_the_app">Swaps will be reprocessed when the app reconnects.</string>
+    <string name="id_lightning_unavailable">Lightning Unavailable</string>
+    <string name="id_receiving_lightning_payments_as_liquid_bitcoin">Receiving Lightning payments as Liquid Bitcoin is temporarily disabled.</string>
+    <string name="id_paying_lightning_invoices_with_liquid">Paying Lightning invoices with Liquid Bitcoin is temporarily disabled.</string>
+    <string name="id_swaps_are_temporarily_unavailable">Swaps are temporarily unavailable.</string>
+    <string name="id_no_stuck_swaps_to_reset">No stuck swaps to reset</string>
 </resources>

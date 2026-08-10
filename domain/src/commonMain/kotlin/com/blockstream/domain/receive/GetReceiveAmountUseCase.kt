@@ -15,6 +15,8 @@ import com.blockstream.data.utils.UserInput
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.data.utils.toAmountLookOrNa
 import com.blockstream.domain.swap.GetQuoteUseCase
+import com.blockstream.domain.swap.IsSwapDirectionAvailableUseCase
+import com.blockstream.domain.swap.SwapDirection
 import com.blockstream.domain.swap.toSwapAsset
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,15 +48,14 @@ import kotlinx.coroutines.flow.map
 class GetReceiveAmountUseCase(
     private val session: GdkSession,
     private val accountAsset: AccountAsset,
-    private val getQuoteUseCase: GetQuoteUseCase
+    private val getQuoteUseCase: GetQuoteUseCase,
+    private val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase
 ) {
-
     operator fun invoke(
         amount: StateFlow<String>,
         denomination: StateFlow<Denomination>,
         isReverseSubmarineSwap: StateFlow<Boolean>
     ): Flow<ReceiveAmountData> {
-
         val balance = combine(amount, denomination) { amount, denomination ->
             amount.takeIf { it.isNotBlank() }?.let {
                 UserInput.parseUserInputSafe(
@@ -63,7 +64,11 @@ class GetReceiveAmountUseCase(
             }
         }
 
-        val quote = if (accountAsset.account.isLightning) {
+        val isReceiveSwapEnabled = isSwapDirectionAvailableUseCase.isEnabled(
+            SwapDirection(from = SwapAsset.Lightning, to = accountAsset.account.network.toSwapAsset())
+        )
+
+        val quote = if (accountAsset.account.isLightning || !isReceiveSwapEnabled) {
             flowOf(null)
         } else {
             getQuoteUseCase(
@@ -184,7 +189,6 @@ class GetReceiveAmountUseCase(
                         }
 
                         (balance?.satoshi ?: 0) > totalInboundLiquiditySatoshi -> {
-
                             val inboundLiquidity = totalInboundLiquiditySatoshi.toAmountLookOrNa(
                                 session = session,
                                 assetId = session.lightningAccount.network.policyAsset,
@@ -221,7 +225,6 @@ class GetReceiveAmountUseCase(
                     response.copy(isValid = true)
                 }
             } else if (accountAsset.account.isLiquid && isReverseSubmarineSwap) {
-
                 val isValid = balance != null && balance.satoshi > 0 && (balance.satoshi >= (quote?.minimal
                     ?: 0)) && (balance.satoshi <= (quote?.maximal ?: Long.MAX_VALUE))
 

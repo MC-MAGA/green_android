@@ -19,7 +19,8 @@ import com.blockstream.jade.Loggable
  */
 class CreateChainSwapUseCase(
     private val database: Database,
-    private val getReceiveAddressUseCase: GetReceiveAddressUseCase
+    private val getReceiveAddressUseCase: GetReceiveAddressUseCase,
+    private val isSwapDirectionAvailableUseCase: IsSwapDirectionAvailableUseCase
 ) {
     /**
      * Executes the chain swap creation.
@@ -45,6 +46,7 @@ class CreateChainSwapUseCase(
         amount: Long,
         address: String
     ): SwapDetails {
+        isSwapDirectionAvailableUseCase.requireAvailable(from = fromAccount.network, to = toAccount.network)
 
         val xPubHashId = session.xPubHashId ?: throw Exception("xPubHashId should not be null")
 
