@@ -88,7 +88,7 @@ fun commonModules(appConfig: AppConfig): List<Module> {
                 }
             )
 
-            LightningManager(greenlightKeys, get(), get(), get(), get(), get())
+            LightningManager(greenlightKeys, get(), get(), get(), get(), get(), get())
         }
         singleOf(::WalletSettingsManager)
         singleOf(::SessionManager)

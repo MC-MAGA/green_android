@@ -226,6 +226,7 @@ class WalletOverviewViewModel(
             AlertType.FailedNetworkLogin.takeIf { failedNetworkLogins.isNotEmpty() },
             lspHeath?.takeIf { it != LightningHealthStatus.OPERATIONAL }
                 ?.let { AlertType.LspStatus(maintenance = it == LightningHealthStatus.MAINTENANCE) },
+            AlertType.LightningUnavailable.takeIf { session.lightningFailedToInitialize },
         )
     }.filter { session.isConnected }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000L), listOf())

@@ -652,8 +652,11 @@ class GdkSession constructor(
     // Use it only for connected sessions
     fun supportsLightning() = supportsLightning(isWatchOnly = isWatchOnlyValue, device = device)
 
+    val lightningFailedToInitialize
+        get() = lightningManager.failedToInitialize
+
     private fun supportsLightning(isWatchOnly: Boolean, device: GreenDevice?): Boolean {
-        return ephemeralWallet == null && appConfig.lightningFeatureEnabled && !isWatchOnly && (device == null || device.deviceModel?.supportsLightningMnemonicDerivation == true)
+        return ephemeralWallet == null && appConfig.lightningFeatureEnabled && !isWatchOnly && (device == null || device.deviceModel?.supportsLightningMnemonicDerivation == true) && lightningManager.isAvailable
     }
 
     fun networks(isTestnet: Boolean, isWatchOnly: Boolean, device: GreenDevice?): List<Network> {
