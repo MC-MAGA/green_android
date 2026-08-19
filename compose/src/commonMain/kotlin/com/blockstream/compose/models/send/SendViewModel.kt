@@ -630,10 +630,8 @@ class SendViewModel(
         )
 
         return amountErrorIds.startsWith(error) ||
-            error?.contains("amount", ignoreCase = true) == true ||
-            error?.contains("insufficient funds", ignoreCase = true) == true ||
-            error?.contains("dust", ignoreCase = true) == true ||
-            error?.contains("fee change", ignoreCase = true) == true
+            error == "Insufficient funds for fees" ||
+            error == "Fee change below the dust threshold"
     }
 
     companion object : Loggable() {

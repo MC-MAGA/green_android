@@ -9,6 +9,8 @@ import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.border
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -51,7 +53,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.FunnelX
-import com.adamglin.phosphoricons.regular.SortDescending
+import com.adamglin.phosphoricons.regular.X
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_amount_high_to_low
 import blockstream_green.common.generated.resources.id_amount_low_to_high
@@ -61,14 +63,17 @@ import blockstream_green.common.generated.resources.id_confirm
 import blockstream_green.common.generated.resources.id_confirmed
 import blockstream_green.common.generated.resources.id_d_coin_selected
 import blockstream_green.common.generated.resources.id_d_coins_selected
+import blockstream_green.common.generated.resources.id_error
 import blockstream_green.common.generated.resources.id_newest
 import blockstream_green.common.generated.resources.id_no_coins_available
 import blockstream_green.common.generated.resources.id_no_coins_match_your_filters
 import blockstream_green.common.generated.resources.id_no_utxos_found
 import blockstream_green.common.generated.resources.id_oldest
 import blockstream_green.common.generated.resources.id_reset_filters
+import blockstream_green.common.generated.resources.id_retry
 import blockstream_green.common.generated.resources.id_select_all
 import blockstream_green.common.generated.resources.id_try_adjusting_or_resetting_your_filters
+import blockstream_green.common.generated.resources.id_unable_to_load_coins
 import blockstream_green.common.generated.resources.id_unconfirmed
 import blockstream_green.common.generated.resources.id_unselect_all
 import blockstream_green.common.generated.resources.id_using_all_available_coins
@@ -102,6 +107,10 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 
+private enum class CoinsContentState {
+    LIST, FILTERED_EMPTY, NO_COINS, ERROR
+}
+
 @Composable
 fun CoinSelectionScreen(
     viewModel: CoinSelectionViewModelAbstract
@@ -122,6 +131,8 @@ fun CoinSelectionScreen(
         val summary by viewModel.summary.collectAsStateWithLifecycle()
         val allVisibleCoinsSelected by viewModel.allVisibleCoinsSelected.collectAsStateWithLifecycle()
         val selectedSort by viewModel.selectedSort.collectAsStateWithLifecycle()
+        val hasError by viewModel.hasError.collectAsStateWithLifecycle()
+        val selectedFilters by viewModel.selectedFilters.collectAsStateWithLifecycle()
 
         NavigateDestinations.CoinFilters.getResult<CoinFilterResult> {
             viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.ApplyFilters(it))
@@ -129,6 +140,13 @@ fun CoinSelectionScreen(
 
         NavigateDestinations.CoinSortSheet.getResult<CoinSort> {
             viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.SelectSort(it))
+        }
+
+        val contentState = when {
+            hasError -> CoinsContentState.ERROR
+            coinsCount == 0 -> CoinsContentState.NO_COINS
+            coins.isEmpty() -> CoinsContentState.FILTERED_EMPTY
+            else -> CoinsContentState.LIST
         }
 
         PullToRefreshBox(
@@ -146,126 +164,166 @@ fun CoinSelectionScreen(
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
-                if (coinsCount == 0) {
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .weight(1f),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = stringResource(Res.string.id_no_utxos_found),
-                            style = bodyMedium,
-                            color = whiteMedium,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                } else {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stringResource(Res.string.id_coins),
+                        style = bodyLarge,
+                        color = whiteMedium
+                    )
+
                     Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
+                            .clip(MaterialTheme.shapes.small)
+                            .clickable {
+                                viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.OpenSort)
+                            }
+                            .heightIn(min = 32.dp)
+                            .padding(horizontal = 8.dp)
                     ) {
                         Text(
-                            text = stringResource(Res.string.id_coins),
+                            text = stringResource(selectedSort.title()),
                             style = bodyLarge,
-                            color = whiteMedium
+                            color = green
                         )
-
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(6.dp),
-                            modifier = Modifier
-                                .clip(MaterialTheme.shapes.small)
-                                .clickable {
-                                    viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.OpenSort)
-                                }
-                                .heightIn(min = 32.dp)
-                                .padding(horizontal = 8.dp)
-                        ) {
-                            Text(
-                                text = stringResource(selectedSort.title()),
-                                style = bodyLarge,
-                                color = green
-                            )
-                            Icon(
-                                imageVector = PhosphorIcons.Regular.SortAscending,
-                                contentDescription = null,
-                                tint = green,
-                                modifier = Modifier.size(20.dp)
-                            )
-                        }
+                        Icon(
+                            imageVector = PhosphorIcons.Regular.SortAscending,
+                            contentDescription = null,
+                            tint = green,
+                            modifier = Modifier.size(20.dp)
+                        )
                     }
+                }
 
-                    AnimatedContent(
-                        targetState = coins.isEmpty(),
-                        modifier = Modifier.weight(1f),
-                        transitionSpec = {
-                            fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(150))
-                        },
-                        label = "CoinsListState"
-                    ) { showEmptyState ->
-                        if (showEmptyState) {
-                            val selectedFilters by viewModel.selectedFilters.collectAsStateWithLifecycle()
+                AnimatedContent(
+                    targetState = contentState,
+                    modifier = Modifier.weight(1f),
+                    transitionSpec = {
+                        fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(150))
+                    },
+                    label = "CoinsListState"
+                ) { state ->
+                    when (state) {
+                        CoinsContentState.ERROR -> {
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .fillMaxHeight(),
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState()),
                                 horizontalAlignment = Alignment.CenterHorizontally,
                                 verticalArrangement = Arrangement.Center
                             ) {
-                                if (selectedFilters.isNotEmpty()) {
-                                    Icon(
-                                        imageVector = PhosphorIcons.Regular.FunnelX,
-                                        contentDescription = null,
-                                        tint = whiteMedium,
-                                        modifier = Modifier.size(40.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.id_no_coins_match_your_filters),
-                                        style = bodyLarge,
-                                        color = whiteHigh,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(top = 16.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.id_try_adjusting_or_resetting_your_filters),
-                                        style = bodyLarge,
-                                        color = whiteMedium,
-                                        textAlign = TextAlign.Center,
-                                        modifier = Modifier.padding(top = 16.dp)
-                                    )
-                                    Text(
-                                        text = stringResource(Res.string.id_reset_filters),
-                                        style = bodyLarge,
-                                        color = green,
-                                        modifier = Modifier
-                                            .padding(top = 12.dp)
-                                            .clip(MaterialTheme.shapes.small)
-                                            .clickable {
-                                                viewModel.postEvent(
-                                                    CoinSelectionViewModelAbstract.LocalEvents.ApplyFilters(
-                                                        CoinFilterResult(
-                                                            filters = emptySet(),
-                                                            sort = selectedSort
-                                                        )
+                                Icon(
+                                    imageVector = PhosphorIcons.Regular.X,
+                                    contentDescription = null,
+                                    tint = whiteMedium,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.id_error),
+                                    style = bodyLarge,
+                                    color = whiteHigh,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.id_unable_to_load_coins),
+                                    style = bodyLarge,
+                                    color = whiteMedium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.id_retry),
+                                    style = bodyLarge,
+                                    color = green,
+                                    modifier = Modifier
+                                        .padding(top = 12.dp)
+                                        .clip(MaterialTheme.shapes.small)
+                                        .clickable {
+                                            viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.Refresh)
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                )
+                            }
+                        }
+
+                        CoinsContentState.NO_COINS -> {
+                            Box(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState()),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = stringResource(Res.string.id_no_utxos_found),
+                                    style = bodyMedium,
+                                    color = whiteMedium,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+
+                        CoinsContentState.FILTERED_EMPTY -> {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .fillMaxHeight()
+                                    .verticalScroll(rememberScrollState()),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = PhosphorIcons.Regular.FunnelX,
+                                    contentDescription = null,
+                                    tint = whiteMedium,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.id_no_coins_match_your_filters),
+                                    style = bodyLarge,
+                                    color = whiteHigh,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.id_try_adjusting_or_resetting_your_filters),
+                                    style = bodyLarge,
+                                    color = whiteMedium,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier.padding(top = 16.dp)
+                                )
+                                Text(
+                                    text = stringResource(Res.string.id_reset_filters),
+                                    style = bodyLarge,
+                                    color = green,
+                                    modifier = Modifier
+                                        .padding(top = 12.dp)
+                                        .clip(MaterialTheme.shapes.small)
+                                        .clickable {
+                                            viewModel.postEvent(
+                                                CoinSelectionViewModelAbstract.LocalEvents.ApplyFilters(
+                                                    CoinFilterResult(
+                                                        filters = emptySet(),
+                                                        sort = selectedSort
                                                     )
                                                 )
-                                            }
-                                            .padding(horizontal = 8.dp, vertical = 6.dp)
-                                    )
-                                } else {
-                                    Text(
-                                        text = stringResource(Res.string.id_no_utxos_found),
-                                        style = bodyMedium,
-                                        color = whiteMedium,
-                                        textAlign = TextAlign.Center
-                                    )
-                                }
+                                            )
+                                        }
+                                        .padding(horizontal = 8.dp, vertical = 6.dp)
+                                )
                             }
-                        } else {
+                        }
+
+                        CoinsContentState.LIST -> {
                             LazyColumn(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -296,8 +354,9 @@ fun CoinSelectionScreen(
                             }
                         }
                     }
+                }
 
-                    HorizontalDivider()
+                HorizontalDivider()
 
                     Row(
                         modifier = Modifier
@@ -377,7 +436,6 @@ fun CoinSelectionScreen(
                     ) {
                         viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.ConfirmSelection)
                     }
-                }
             }
         }
     }

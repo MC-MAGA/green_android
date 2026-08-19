@@ -118,6 +118,7 @@ abstract class CoinSelectionViewModelAbstract(
     abstract val selectedFilters: StateFlow<Set<CoinFilter>>
     abstract val availableFilters: StateFlow<List<CoinFilter>>
     abstract val selectedSort: StateFlow<CoinSort>
+    abstract val hasError: StateFlow<Boolean>
 }
 
 class CoinSelectionViewModel(
@@ -151,6 +152,9 @@ class CoinSelectionViewModel(
 
     private val _selectedSort: MutableStateFlow<CoinSort> = MutableStateFlow(CoinSort.AMOUNT_HIGH_TO_LOW)
     override val selectedSort: StateFlow<CoinSort> = _selectedSort.asStateFlow()
+
+    private val _hasError: MutableStateFlow<Boolean> = MutableStateFlow(false)
+    override val hasError: StateFlow<Boolean> = _hasError.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -207,6 +211,7 @@ class CoinSelectionViewModel(
     }
 
     private fun refreshCoins() {
+        _hasError.value = false
         val selectedIds = if (allCoins.isEmpty()) {
             selectedUtxoIds.toSet()
         } else {
@@ -263,6 +268,15 @@ class CoinSelectionViewModel(
             viewModelScope.launch {
                 updateSummary(allCoins)
                 updateFilterAction()
+            }
+        }, onError = {
+            _hasError.value = true
+            spendableUtxos = emptyList()
+            allCoins = emptyList()
+            _coinsCount.value = 0
+            applyFilterAndSort()
+            viewModelScope.launch {
+                updateSummary(allCoins)
             }
         })
     }
@@ -525,6 +539,7 @@ class CoinSelectionViewModelPreview(
         listOf(CoinFilter.EXPIRED, CoinFilter.DUST, CoinFilter.LEGACY_RECOVERY)
     )
     override val selectedSort: StateFlow<CoinSort> = MutableStateFlow(CoinSort.AMOUNT_HIGH_TO_LOW)
+    override val hasError: StateFlow<Boolean> = MutableStateFlow(false)
 
     companion object {
         fun preview() = CoinSelectionViewModelPreview(
