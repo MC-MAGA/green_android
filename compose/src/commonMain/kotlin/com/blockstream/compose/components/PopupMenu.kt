@@ -142,7 +142,8 @@ fun ActionMenu(
                             Icon(
                                 imageVector = imageVector,
                                 contentDescription = null,
-                                modifier = Modifier.size(18.dp)
+                                tint = it.iconTint ?: MaterialTheme.colorScheme.onSurface,
+                                modifier = Modifier.size(it.iconSize)
                             )
                         }
                         title?.also {

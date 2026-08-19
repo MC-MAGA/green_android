@@ -48,9 +48,11 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.FunnelX
+import com.adamglin.phosphoricons.regular.SortDescending
 import blockstream_green.common.generated.resources.Res
-import blockstream_green.common.generated.resources.sort_arrow
-import blockstream_green.common.generated.resources.funnel_x
 import blockstream_green.common.generated.resources.id_amount_high_to_low
 import blockstream_green.common.generated.resources.id_amount_low_to_high
 import blockstream_green.common.generated.resources.id_choose_which_coins_to_use
@@ -71,6 +73,7 @@ import blockstream_green.common.generated.resources.id_unconfirmed
 import blockstream_green.common.generated.resources.id_unselect_all
 import blockstream_green.common.generated.resources.id_using_all_available_coins
 import blockstream_green.common.generated.resources.info
+import com.adamglin.phosphoricons.regular.SortAscending
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.components.GreenButton
 import com.blockstream.compose.components.GreenButtonSize
@@ -188,10 +191,10 @@ fun CoinSelectionScreen(
                                 color = green
                             )
                             Icon(
-                                painter = painterResource(Res.drawable.sort_arrow),
+                                imageVector = PhosphorIcons.Regular.SortAscending,
                                 contentDescription = null,
                                 tint = green,
-                                modifier = Modifier.size(16.dp)
+                                modifier = Modifier.size(20.dp)
                             )
                         }
                     }
@@ -215,7 +218,7 @@ fun CoinSelectionScreen(
                             ) {
                                 if (selectedFilters.isNotEmpty()) {
                                     Icon(
-                                        painter = painterResource(Res.drawable.funnel_x),
+                                        imageVector = PhosphorIcons.Regular.FunnelX,
                                         contentDescription = null,
                                         tint = whiteMedium,
                                         modifier = Modifier.size(40.dp)

@@ -6,8 +6,10 @@ import androidx.compose.ui.unit.dp
 import kotlinx.serialization.Serializable
 import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.funnel_outline_active
-import blockstream_green.common.generated.resources.funnel_outline
 import blockstream_green.common.generated.resources.id_coin_selection
+import com.adamglin.PhosphorIcons
+import com.adamglin.phosphoricons.Regular
+import com.adamglin.phosphoricons.regular.Funnel
 import com.blockstream.compose.events.Event
 import com.blockstream.compose.extensions.previewAccountAsset
 import com.blockstream.compose.extensions.previewWallet
@@ -270,17 +272,7 @@ class CoinSelectionViewModel(
             actions = if (_availableFilters.value.isEmpty()) {
                 emptyList()
             } else {
-                listOf(
-                    NavAction(
-                        icon = filterIcon(),
-                        iconTint = Color.Unspecified,
-                        iconSize = 22.dp,
-                        isMenuEntry = false,
-                        onClick = {
-                            postEvent(LocalEvents.OpenFilters)
-                        }
-                    )
-                )
+                listOf(buildFilterAction())
             }
         )
     }
@@ -369,13 +361,25 @@ class CoinSelectionViewModel(
     }
 
     private fun updateFilterBadge() {
-        _navData.value = _navData.value.copy(
-            actions = _navData.value.actions.map { it.copy(icon = filterIcon()) }
-        )
+        if (_navData.value.actions.isEmpty()) return
+        _navData.value = _navData.value.copy(actions = listOf(buildFilterAction()))
     }
 
-    private fun filterIcon() =
-        if (_selectedFilters.value.isNotEmpty()) Res.drawable.funnel_outline_active else Res.drawable.funnel_outline
+    private fun buildFilterAction(): NavAction {
+        // Phosphor doesn't ship a funnel+dot icon, so the active state is the one
+        // remaining custom asset; the inactive state uses the stock Phosphor icon.
+        val isActive = _selectedFilters.value.isNotEmpty()
+        return NavAction(
+            icon = Res.drawable.funnel_outline_active.takeIf { isActive },
+            imageVector = if (isActive) null else PhosphorIcons.Regular.Funnel,
+            iconTint = if (isActive) Color.Unspecified else null,
+            iconSize = 22.dp,
+            isMenuEntry = false,
+            onClick = {
+                postEvent(LocalEvents.OpenFilters)
+            }
+        )
+    }
 
     private fun openFilters() {
         if (availableFilters.value.isEmpty()) return

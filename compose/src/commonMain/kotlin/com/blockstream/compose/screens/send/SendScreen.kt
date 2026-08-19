@@ -253,7 +253,7 @@ fun SendScreen(
                                         Row(
                                             modifier = Modifier
                                                 .clip(MaterialTheme.shapes.small)
-                                                .clickable {
+                                                .clickable(enabled = !isAmountLocked) {
                                                     viewModel.postEvent(SendViewModel.LocalEvents.ToggleIsSendAll)
                                                 }
                                                 .heightIn(min = 40.dp)
@@ -269,7 +269,7 @@ fun SendScreen(
                                             Text(
                                                 text = availableBalance ?: "",
                                                 style = bodyMedium,
-                                                color = green
+                                                color = if (isAmountLocked) whiteMedium else green
                                             )
                                             AnimatedVisibility(
                                                 visible = isSendAll,
