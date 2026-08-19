@@ -321,17 +321,7 @@ class SendViewModel(
                 .launchIn(this)
 
             error.onEach {
-                _errorAmount.value = it.takeIf {
-                    listOf(
-                        "id_invalid_amount",
-                        "id_insufficient_funds",
-                        "id_amount_must_be_at_least_s",
-                        "id_amount_must_be_at_most_s",
-                        "id_amount_below_the_dust_threshold",
-                        "id_amount_above_maximum_allowed",
-                        "id_amount_below_minimum_allowed"
-                    ).startsWith(it)
-                }?.let { getStringFromId(it) }
+                _errorAmount.value = it.takeIf(::isAmountError)?.let { getStringFromId(it) }
                 _errorGeneric.value = it.takeIf { _errorAmount.value.isNullOrBlank() }?.let {
                     getStringFromId(it)
                 }
@@ -491,7 +481,7 @@ class SendViewModel(
                                 withMinimumDigits = false,
                                 denomination = denomination.value,
                             )
-                        }).also {
+                        } ?: selectedUtxoAmountInput(assetId)).also {
                             amount.value = it ?: ""
                         }
                     }
@@ -608,8 +598,42 @@ class SendViewModel(
         }
     }
 
-    private fun setSelectedUtxos(result: CoinSelectionResult) {
-        coinSelection.value = result.takeIf { it.gdkPayloadUtxos.isNotEmpty() }
+    private suspend fun setSelectedUtxos(result: CoinSelectionResult) {
+        coinSelection.value = result.takeIf { it.selectedUtxoIds.isNotEmpty() }
+
+        if (isSendAll.value) {
+            selectedUtxoAmountInput(accountAsset.value?.assetId ?: return)?.also {
+                amount.value = it
+            }
+        }
+    }
+
+    private suspend fun selectedUtxoAmountInput(assetId: String): String? =
+        coinSelection.value?.selectedAmountSatoshi?.toAmountLook(
+            session = session,
+            assetId = assetId,
+            denomination = denomination.value,
+            withUnit = false,
+            withGrouping = false,
+            withMinimumDigits = false
+        )
+
+    private fun isAmountError(error: String?): Boolean {
+        val amountErrorIds = listOf(
+            "id_invalid_amount",
+            "id_insufficient_funds",
+            "id_amount_must_be_at_least_s",
+            "id_amount_must_be_at_most_s",
+            "id_amount_below_the_dust_threshold",
+            "id_amount_above_maximum_allowed",
+            "id_amount_below_minimum_allowed"
+        )
+
+        return amountErrorIds.startsWith(error) ||
+            error?.contains("amount", ignoreCase = true) == true ||
+            error?.contains("insufficient funds", ignoreCase = true) == true ||
+            error?.contains("dust", ignoreCase = true) == true ||
+            error?.contains("fee change", ignoreCase = true) == true
     }
 
     companion object : Loggable() {
