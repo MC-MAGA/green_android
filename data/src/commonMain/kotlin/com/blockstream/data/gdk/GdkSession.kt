@@ -883,38 +883,38 @@ class GdkSession constructor(
             prepareHttpRequest()
         }
 
+        val urlValidator = requireNotNull(sessionManager.httpRequestUrlValidator) { "httpRequestUrlValidator must be registered before device HTTP requests" }
+
         val urls = details.jsonObject["urls"]?.jsonArray?.map {
             it.jsonPrimitive.content
         } ?: listOf()
 
-        sessionManager.httpRequestUrlValidator?.also { urlValidator ->
-            val isUrlSafe = urls.filter { it.isNotBlank() }.all { url ->
-                BlockstreamWhitelistedUrls.any { blockstreamUrl ->
-                    url.startsWith(blockstreamUrl)
-                }
+        val isUrlSafe = urls.filter { it.isNotBlank() }.all { url ->
+            BlockstreamWhitelistedUrls.any { blockstreamUrl ->
+                url.startsWith(blockstreamUrl)
             }
+        }
 
-            val servers = urls.map {
-                it.server()
+        val servers = urls.map {
+            it.server()
+        }
+
+        if (!settingsManager.appSettings.tor && urls.filter { it.isNotBlank() }.all { it.contains(".onion") }) {
+            if (urlValidator.torWarning()) {
+                // reconnect to enable tor
+                prepareHttpRequest()
             }
+        }
 
-            if (!settingsManager.appSettings.tor && urls.filter { it.isNotBlank() }.all { it.contains(".onion") }) {
-                if (urlValidator.torWarning()) {
-                    // reconnect to enable tor
-                    prepareHttpRequest()
-                }
-            }
-
-            if (!isUrlSafe && !(settingsManager.isAllowCustomPinServer(urls) || _tempAllowedServers.containsAll(servers))) {
-                if (urlValidator.unsafeUrlWarning(urls)) {
-                    _tempAllowedServers.addAll(servers)
-                } else {
-                    return buildJsonObject {
-                        putJsonObject("body") {
-                            putJsonObject("error") {
-                                put("code", -237)
-                                put("message", "id_action_canceled")
-                            }
+        if (!isUrlSafe && !(settingsManager.isAllowCustomPinServer(urls) || _tempAllowedServers.containsAll(servers))) {
+            if (urlValidator.unsafeUrlWarning(urls)) {
+                _tempAllowedServers.addAll(servers)
+            } else {
+                return buildJsonObject {
+                    putJsonObject("body") {
+                        putJsonObject("error") {
+                            put("code", -237)
+                            put("message", "id_action_canceled")
                         }
                     }
                 }
