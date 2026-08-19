@@ -64,7 +64,6 @@ fun CoinFilterBottomSheet(
     onDismissRequest: () -> Unit
 ) {
     var pendingFilters by remember { mutableStateOf(selectedFilters) }
-    var pendingSort by remember { mutableStateOf(selectedSort) }
 
     GreenBottomSheet(
         title = stringResource(Res.string.id_filter),
@@ -102,7 +101,7 @@ fun CoinFilterBottomSheet(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     NavigateDestinations.CoinFilters.setResult(
-                        CoinFilterResult(filters = pendingFilters, sort = pendingSort)
+                        CoinFilterResult(filters = pendingFilters, sort = selectedSort)
                     )
                     onDismissRequest()
                 }
@@ -113,8 +112,10 @@ fun CoinFilterBottomSheet(
                     size = GreenButtonSize.BIG,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    pendingFilters = emptySet()
-                    pendingSort = CoinSort.AMOUNT_HIGH_TO_LOW
+                    NavigateDestinations.CoinFilters.setResult(
+                        CoinFilterResult(filters = emptySet(), sort = selectedSort)
+                    )
+                    onDismissRequest()
                 }
             }
         }

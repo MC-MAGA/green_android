@@ -118,6 +118,7 @@ fun CoinSelectionScreen(
         val coinsCount by viewModel.coinsCount.collectAsStateWithLifecycle()
         val summary by viewModel.summary.collectAsStateWithLifecycle()
         val allVisibleCoinsSelected by viewModel.allVisibleCoinsSelected.collectAsStateWithLifecycle()
+        val selectedSort by viewModel.selectedSort.collectAsStateWithLifecycle()
 
         NavigateDestinations.CoinFilters.getResult<CoinFilterResult> {
             viewModel.postEvent(CoinSelectionViewModelAbstract.LocalEvents.ApplyFilters(it))
@@ -170,7 +171,6 @@ fun CoinSelectionScreen(
                             color = whiteMedium
                         )
 
-                        val selectedSort by viewModel.selectedSort.collectAsStateWithLifecycle()
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -203,8 +203,8 @@ fun CoinSelectionScreen(
                             fadeIn(animationSpec = tween(220)) togetherWith fadeOut(animationSpec = tween(150))
                         },
                         label = "CoinsListState"
-                    ) { isEmpty ->
-                        if (isEmpty) {
+                    ) { showEmptyState ->
+                        if (showEmptyState) {
                             val selectedFilters by viewModel.selectedFilters.collectAsStateWithLifecycle()
                             Column(
                                 modifier = Modifier
@@ -246,7 +246,7 @@ fun CoinSelectionScreen(
                                                     CoinSelectionViewModelAbstract.LocalEvents.ApplyFilters(
                                                         CoinFilterResult(
                                                             filters = emptySet(),
-                                                            sort = CoinSort.AMOUNT_HIGH_TO_LOW
+                                                            sort = selectedSort
                                                         )
                                                     )
                                                 )

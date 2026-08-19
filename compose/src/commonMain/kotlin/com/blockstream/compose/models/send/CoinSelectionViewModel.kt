@@ -461,7 +461,7 @@ class CoinSelectionViewModel(
                 withUnit = true,
                 withGrouping = true
             )?.let { "≈ $it" },
-            canConfirm = selected.isNotEmpty() || selectedUtxoIds.isNotEmpty()
+            canConfirm = true
         )
     }
 }
