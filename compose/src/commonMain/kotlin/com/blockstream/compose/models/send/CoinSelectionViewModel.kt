@@ -265,19 +265,15 @@ class CoinSelectionViewModel(
             _coinsCount.value = allCoins.size
             updateAvailableFilters()
             applyFilterAndSort()
-            viewModelScope.launch {
-                updateSummary(allCoins)
-                updateFilterAction()
-            }
+            updateSummary(allCoins)
+            updateFilterAction()
         }, onError = {
             _hasError.value = true
             spendableUtxos = emptyList()
             allCoins = emptyList()
             _coinsCount.value = 0
             applyFilterAndSort()
-            viewModelScope.launch {
-                updateSummary(allCoins)
-            }
+            updateSummary(allCoins)
         })
     }
 
