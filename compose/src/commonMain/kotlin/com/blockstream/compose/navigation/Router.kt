@@ -93,6 +93,7 @@ import com.blockstream.compose.models.settings.WalletSettingsViewModel
 import com.blockstream.compose.models.settings.WatchOnlyCredentialsSettingsViewModel
 import com.blockstream.compose.models.sheets.AnalyticsViewModel
 import com.blockstream.compose.models.sheets.AssetDetailsViewModel
+import com.blockstream.compose.models.sheets.CoinInfoViewModel
 import com.blockstream.compose.models.sheets.JadeFirmwareUpdateViewModel
 import com.blockstream.compose.models.sheets.LightningNodeViewModel
 import com.blockstream.compose.models.sheets.MeldCountriesViewModel
@@ -188,6 +189,8 @@ import com.blockstream.compose.sheets.BuyQuotesBottomSheet
 import com.blockstream.compose.sheets.Call2ActionBottomSheet
 import com.blockstream.compose.sheets.CameraBottomSheet
 import com.blockstream.compose.sheets.CoinFilterBottomSheet
+import com.blockstream.compose.sheets.CoinInfoBottomSheet
+import com.blockstream.compose.sheets.CoinSortBottomSheet
 import com.blockstream.compose.sheets.CountriesBottomSheet
 import com.blockstream.compose.sheets.DenominationBottomSheet
 import com.blockstream.compose.sheets.DeviceInteractionBottomSheet
@@ -934,8 +937,36 @@ fun Router(
             appBottomSheet<NavigateDestinations.CoinFilters> {
                 val args = it.toRoute<NavigateDestinations.CoinFilters>()
                 CoinFilterBottomSheet(
-                    selectedFilter = args.selectedFilter,
+                    selectedFilters = args.selectedFilters.toSet(),
                     availableFilters = args.availableFilters,
+                    selectedSort = args.selectedSort,
+                    onDismissRequest = navController.onDismissRequest()
+                )
+            }
+            appBottomSheet<NavigateDestinations.CoinSortSheet> {
+                val args = it.toRoute<NavigateDestinations.CoinSortSheet>()
+                CoinSortBottomSheet(
+                    selectedSort = args.selectedSort,
+                    onDismissRequest = navController.onDismissRequest()
+                )
+            }
+            appBottomSheet<NavigateDestinations.CoinInfo> {
+                val args = it.toRoute<NavigateDestinations.CoinInfo>()
+                CoinInfoBottomSheet(
+                    viewModel = viewModel {
+                        CoinInfoViewModel(
+                            greenWallet = args.greenWallet,
+                            selectedAccountAsset = args.accountAsset,
+                            amount = args.amount,
+                            amountFiat = args.amountFiat,
+                            isConfirmed = args.isConfirmed,
+                            txHash = args.txHash,
+                            outputIndex = args.outputIndex,
+                            scriptType = args.scriptType,
+                            blockHeight = args.blockHeight,
+                            isBlinded = args.isBlinded
+                        )
+                    },
                     onDismissRequest = navController.onDismissRequest()
                 )
             }

@@ -4,6 +4,7 @@ import com.blockstream.compose.events.Event
 import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.models.jade.JadeQrOperation
 import com.blockstream.compose.models.send.CoinFilter
+import com.blockstream.compose.models.send.CoinSort
 import com.blockstream.compose.models.settings.WalletSettingsSection
 import com.blockstream.compose.models.sheets.NoteType
 import com.blockstream.data.AddressInputType
@@ -422,8 +423,28 @@ sealed class NavigateDestinations : NavigateDestination() {
 
     @Serializable
     data class CoinFilters(
-        val selectedFilter: CoinFilter,
-        val availableFilters: List<CoinFilter>
+        val selectedFilters: List<CoinFilter>,
+        val availableFilters: List<CoinFilter>,
+        val selectedSort: CoinSort
+    ) : NavigateDestination()
+
+    @Serializable
+    data class CoinSortSheet(
+        val selectedSort: CoinSort
+    ) : NavigateDestination()
+
+    @Serializable
+    data class CoinInfo(
+        val greenWallet: GreenWallet,
+        val accountAsset: AccountAsset,
+        val amount: String,
+        val amountFiat: String? = null,
+        val isConfirmed: Boolean,
+        val txHash: String,
+        val outputIndex: Long,
+        val scriptType: String,
+        val blockHeight: Long? = null,
+        val isBlinded: Boolean = false
     ) : NavigateDestination()
 
     @Serializable
