@@ -1,14 +1,16 @@
 package com.blockstream.compose.sheets
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
@@ -19,8 +21,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
@@ -34,15 +36,16 @@ import blockstream_green.common.generated.resources.id_view_in_explorer
 import com.blockstream.compose.components.GreenBottomSheet
 import com.blockstream.compose.GreenPreview
 import com.blockstream.compose.extensions.colorTextEdges
+import com.blockstream.compose.managers.LocalPlatformManager
 import com.blockstream.compose.models.sheets.CoinInfoViewModelPreview
 import com.blockstream.compose.models.sheets.CoinInfoViewModelAbstract
 import com.blockstream.compose.theme.MonospaceFont
 import com.blockstream.compose.theme.bodyMedium
+import com.blockstream.compose.theme.bodySmall
 import com.blockstream.compose.theme.bodyLarge
 import com.blockstream.compose.theme.green
 import com.blockstream.compose.theme.whiteHigh
 import com.blockstream.compose.theme.whiteMedium
-import com.blockstream.compose.utils.CopyContainer
 import com.blockstream.compose.utils.StringHolder
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -62,13 +65,18 @@ fun CoinInfoBottomSheet(
         val data by viewModel.data.collectAsStateWithLifecycle()
         val onProgress by viewModel.onProgress.collectAsStateWithLifecycle()
 
+        val density = LocalDensity.current
+        val windowInfo = LocalWindowInfo.current
+        val maxContentHeight = with(density) { (windowInfo.containerSize.height * 0.45f).toDp() }
+
         AnimatedContent(
             targetState = data,
             label = "CoinInfoData"
         ) { items ->
             Column(
                 modifier = Modifier
-                    .padding(top = 16.dp)
+                    .padding(top = 16.dp, bottom = 8.dp)
+                    .heightIn(max = maxContentHeight)
                     .verticalScroll(rememberScrollState())
             ) {
                 items.forEach { pair ->
@@ -132,44 +140,61 @@ private fun CoinInfoDataListItem(
     ) {
         Text(
             text = title.string(),
-            style = bodyLarge,
+            style = bodyMedium,
             color = whiteMedium,
             modifier = Modifier.weight(1f)
         )
         when (title.stringResource) {
             Res.string.id_received_on -> {
+                val address = data.string()
+                val platformManager = LocalPlatformManager.current
+                val interactionSource = remember { MutableInteractionSource() }
                 Box(
-                    modifier = Modifier
-                        .weight(1.15f)
-                        .clip(RoundedCornerShape(6.dp))
+                    modifier = Modifier.weight(1.15f),
+                    contentAlignment = Alignment.TopEnd
                 ) {
-                    CompactAddress(address = data.string())
+                    Text(
+                        text = colorTextEdges(
+                            text = address.chunked(4).joinToString(" "),
+                            numberOfSections = 2
+                        ),
+                        style = bodySmall,
+                        fontFamily = MonospaceFont(),
+                        textAlign = TextAlign.End,
+                        modifier = Modifier.clickable(
+                            interactionSource = interactionSource,
+                            indication = null
+                        ) {
+                            platformManager.copyToClipboard(content = address)
+                        }
+                    )
                 }
             }
 
             Res.string.id_transaction_id -> {
                 val transactionId = data.string()
-                CopyContainer(
+                val platformManager = LocalPlatformManager.current
+                val interactionSource = remember { MutableInteractionSource() }
+                Text(
+                    text = transactionId.shortMiddle(),
+                    style = bodySmall,
+                    color = whiteHigh,
+                    textAlign = TextAlign.End,
                     modifier = Modifier
                         .weight(1.15f)
-                        .clip(RoundedCornerShape(6.dp)),
-                    value = transactionId,
-                    withSelection = false
-                ) {
-                    Text(
-                        text = transactionId.shortMiddle(),
-                        style = bodyMedium,
-                        color = whiteHigh,
-                        textAlign = TextAlign.End,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
+                        .clickable(
+                            interactionSource = interactionSource,
+                            indication = null
+                        ) {
+                            platformManager.copyToClipboard(content = transactionId)
+                        }
+                )
             }
 
             else -> {
                 Text(
                     text = data.string(),
-                    style = bodyMedium,
+                    style = bodySmall,
                     color = whiteHigh,
                     textAlign = TextAlign.End,
                     modifier = Modifier.weight(1.15f)
@@ -179,33 +204,8 @@ private fun CoinInfoDataListItem(
     }
 }
 
-@Composable
-private fun CompactAddress(address: String) {
-    val formattedAddress = remember(address) {
-        address.shortAddress()
-    }
-
-    CopyContainer(value = address, withSelection = false) {
-        Text(
-            text = colorTextEdges(text = formattedAddress, numberOfSections = 2),
-            fontFamily = MonospaceFont(),
-            textAlign = TextAlign.End,
-            maxLines = 2,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.fillMaxWidth()
-        )
-    }
-}
-
-private fun String.shortAddress(): String =
-    if (length > 32) {
-        "${take(12).chunked(4).joinToString(" ")} ... ${takeLast(12).chunked(4).joinToString(" ")}"
-    } else {
-        chunked(4).joinToString(" ")
-    }
-
 private fun String.shortMiddle(): String =
-    if (length > 18) "${take(6)}...${takeLast(12)}" else this
+    if (length > 18) "${take(9)}...${takeLast(9)}" else this
 
 @Preview
 @Composable

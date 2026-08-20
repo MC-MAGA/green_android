@@ -4,6 +4,7 @@ import blockstream_green.common.generated.resources.Res
 import blockstream_green.common.generated.resources.id_amount
 import blockstream_green.common.generated.resources.id_block_height
 import blockstream_green.common.generated.resources.id_confirmed
+import blockstream_green.common.generated.resources.id_note
 import blockstream_green.common.generated.resources.id_output_index
 import blockstream_green.common.generated.resources.id_received
 import blockstream_green.common.generated.resources.id_received_on
@@ -109,6 +110,9 @@ class CoinInfoViewModel(
         blockHeight?.takeIf { it > 0L }?.also {
             add(StringHolder.create(Res.string.id_block_height) to StringHolder.create(it))
         }
+        transaction?.memo?.takeIf { it.isNotBlank() }?.also {
+            add(StringHolder.create(Res.string.id_note) to StringHolder.create(it))
+        }
     }
 
     private fun amountDisplay(): String = amountFiat?.let { "$amount\n$it" } ?: amount
@@ -137,6 +141,7 @@ class CoinInfoViewModelPreview : CoinInfoViewModelAbstract(
             StringHolder.create(Res.string.id_output_index) to StringHolder.create("0"),
             StringHolder.create(Res.string.id_script_type) to StringHolder.create("P2WPKH"),
             StringHolder.create(Res.string.id_block_height) to StringHolder.create("860000"),
+            StringHolder.create(Res.string.id_note) to StringHolder.create("Lorem ipsum dolor sit amet, consectetur adipiscing elit."),
         )
     )
 }
