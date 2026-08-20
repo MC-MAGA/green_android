@@ -641,7 +641,7 @@ class GdkSession constructor(
             gapLimit = if (network.isSinglesig && applicationSettings.customGapLimitEnabled) applicationSettings.electrumServerGapLimit?.coerceAtLeast(1) else null,
             electrumTls = if (electrumUrl.isNotBlank()) applicationSettings.personalElectrumServerTls else true,
             electrumUrl = electrumUrl,
-            electrumOnionUrl = electrumUrl.takeIf { useTor },
+            electrumOnionUrl = ConnectionParams.electrumOnionUrl(electrumUrl = electrumUrl, useTor = useTor),
             // blobServerUrl = "wss://green-blobserver.staging.blockstream.com/ws".takeIf { appInfo.isDevelopment && network.isSinglesig && network.isTestnet },
             // blobServerOnionUrl = null,
         ).also {
