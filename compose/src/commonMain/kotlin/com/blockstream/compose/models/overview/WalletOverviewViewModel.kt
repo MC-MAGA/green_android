@@ -57,7 +57,7 @@ import org.koin.core.component.inject
 
 abstract class WalletOverviewViewModelAbstract(
     greenWallet: GreenWallet
-) : WalletBalanceViewModel(greenWallet = greenWallet) {
+) : TransactionActionsViewModel(greenWallet = greenWallet) {
 
     override fun screenName(): String = "HomeTab"
     abstract val alerts: StateFlow<List<AlertType>>
@@ -88,14 +88,6 @@ abstract class WalletOverviewViewModelAbstract(
                 )
             )
         }
-    }
-
-    fun navigateToBuy() {
-        postEvent(
-            NavigateDestinations.Buy(
-                greenWallet = greenWallet,
-            )
-        )
     }
 
     fun dismissWalletOnboarding() {
@@ -388,6 +380,8 @@ class WalletOverviewViewModelPreview(val isEmpty: Boolean = false, val isHardwar
     )
 
     override val archivedAccounts: StateFlow<Int> = MutableStateFlow(1)
+
+    override val isSwapAvailable: StateFlow<Boolean> = MutableStateFlow(true)
 
     override val bitcoinChartData: StateFlow<DataState<BitcoinChartData>?> = MutableStateFlow(
         null
