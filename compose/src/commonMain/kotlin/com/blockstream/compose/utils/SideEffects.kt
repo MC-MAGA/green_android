@@ -381,6 +381,10 @@ fun HandleSideEffect(
                                 entry.destination.hasRoute<NavigateDestinations.Transact>()
                             }?.toRoute<NavigateDestinations.Transact>()?.also { route ->
                                 navigator.popBackStack(route, inclusive = false)
+                            } ?: run {
+                                while (navigator.currentBackStack.value.size > 2) {
+                                    navigator.navigateUp()
+                                }
                             }
                         }
 
