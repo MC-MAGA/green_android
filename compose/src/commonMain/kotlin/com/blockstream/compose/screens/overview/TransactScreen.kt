@@ -83,7 +83,7 @@ fun TransactScreen(viewModel: TransactViewModelAbstract) {
         ) {
 
             val isMainnet = viewModel.greenWallet.isMainnet
-            val isSwapAvailable = viewModel.isSwapAvailable
+            val isSwapAvailable by viewModel.isSwapAvailable.collectAsStateWithLifecycle()
             val transactions by viewModel.transactions.collectAsStateWithLifecycle()
             val isMultisigWatchOnly by viewModel.isMultisigWatchOnly.collectAsStateWithLifecycle()
             val innerPadding = LocalInnerPadding.current
