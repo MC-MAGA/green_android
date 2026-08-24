@@ -129,26 +129,17 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
                 }
 
                 // Check if multisig networks are available in this session
-                if (
-                    (isBitcoin && session.bitcoinMultisig != null && session.allAccounts.value.any { it.isMultisig && it.isBitcoin }) ||
-                    (isLiquid && session.liquidMultisig != null && session.allAccounts.value.any { it.isMultisig && it.isLiquid && !it.isAmp && !it.isAmpLegacy })
-                ) {
+                if (isBitcoin && session.bitcoinMultisig != null) {
+                    list += AccountTypeLook(AccountType.TWO_OF_THREE)
+                }
 
+                if ((isBitcoin && session.bitcoinMultisig != null) || (isLiquid && session.liquidMultisig != null)) {
                     list += AccountTypeLook(AccountType.STANDARD)
-
-                    if (isBitcoin) {
-                        list += AccountTypeLook(AccountType.TWO_OF_THREE)
-                    }
-
-                    // Move AMP account creation top level
-                    //else {
-                    //    AccountTypeLook(AccountType.AMP_ACCOUNT)
-                    // }
                 }
             }
 
                 defaultAccountTypes.value = list.filter {
-                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmp)
+                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || it.accountType == AccountType.STANDARD || it.accountType == AccountType.TWO_OF_THREE || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmp)
                 }
 
                 allAccountTypes.value = list
