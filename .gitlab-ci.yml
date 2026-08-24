@@ -372,7 +372,7 @@ sign_google_play:
 # Upload to GCS bucket
 .gcp_prep:
   stage: upload
-  image: blockstream/gcloud-docker:27.3-504.0.1
+  image: harbor.blockstream.io/google/blockstream/public/gcloud-docker:27.3-504.0.1
   cache: []
   tags:
     - k8s # Simple, non-resource intensive jobs
@@ -470,7 +470,7 @@ gcp_push_gdk_commit:
 .e2e:upload:
   extends: .gcp_auth_inline
   stage: e2e
-  image: blockstream/gcloud-docker:27.3-504.0.1
+  image: harbor.blockstream.io/google/blockstream/public/gcloud-docker:27.3-504.0.1
   tags:
     - k8s
   variables:
