@@ -11,6 +11,7 @@ import com.blockstream.data.database.Database
 import com.blockstream.data.managers.PromoManager
 import com.blockstream.data.managers.SessionManager
 import com.blockstream.data.managers.SettingsManager
+import com.blockstream.domain.bitcoinpricehistory.BitcoinPriceHistoryCache
 import com.blockstream.domain.bitcoinpricehistory.ObserveBitcoinPriceHistory
 import com.blockstream.domain.promo.GetPromoUseCase
 import com.blockstream.network.NetworkResponse
@@ -69,7 +70,8 @@ open class TestViewModel<VM : GreenViewModel> : KoinTest {
                         ObserveBitcoinPriceHistory(
                             mockk<BitcoinPriceHistoryRepository> {
                                 coEvery { getPriceHistory(any()) } returns NetworkResponse.Error(0, "test")
-                            }
+                            },
+                            BitcoinPriceHistoryCache()
                         )
                     }
 
