@@ -139,7 +139,7 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
             }
 
                 defaultAccountTypes.value = list.filter {
-                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || it.accountType == AccountType.STANDARD || it.accountType == AccountType.TWO_OF_THREE || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmp)
+                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || it.accountType == AccountType.STANDARD || it.accountType == AccountType.TWO_OF_THREE || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmpLegacy)
                 }
 
                 allAccountTypes.value = list
