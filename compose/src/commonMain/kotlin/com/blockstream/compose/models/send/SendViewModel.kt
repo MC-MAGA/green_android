@@ -131,7 +131,6 @@ class SendViewModel(
             val account = it.account
             !account.isLightning &&
                     !account.isAmp &&
-                    !account.isAmpLegacy &&
                     it.assetId == account.network.policyAsset
         } == true
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(), false)
