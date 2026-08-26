@@ -69,7 +69,9 @@ class CreateAccountUseCase(
             // Save Lightning Node Id
             lightningNodeIdUseCase.invoke(wallet = wallet, session = session)
 
-            session.lightningAccount
+            session.lightningAccount.also {
+                countly.createAccount(session, it)
+            }
         } else {
 
             // Check if network needs initialization
@@ -132,11 +134,11 @@ class CreateAccountUseCase(
                         session.gdkHwWallet,
                         hwInteraction
                     )
-                )
+                ).also {
+                    countly.createAccount(session, it)
+                }
             }
-        }).also {
-            countly.createAccount(session, it)
-        }
+        })
     }
 
     private fun canCreateAmp2Account(session: GdkSession, network: Network): Boolean =
