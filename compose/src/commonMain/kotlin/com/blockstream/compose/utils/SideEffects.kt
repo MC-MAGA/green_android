@@ -382,6 +382,8 @@ fun HandleSideEffect(
                             }?.toRoute<NavigateDestinations.Transact>()?.also { route ->
                                 navigator.popBackStack(route, inclusive = false)
                             } ?: run {
+                                // No Transact entry, so the flow started elsewhere (eg Home). Pop to the
+                                // root instead of leaving the user stranded. Size 2 is the graph plus root.
                                 while (navigator.currentBackStack.value.size > 2) {
                                     navigator.navigateUp()
                                 }
