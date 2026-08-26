@@ -121,11 +121,9 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
                 }
             } else {
                 // Check if singlesig networks are available in this session
-                if ((isBitcoin && session.bitcoinSinglesig != null) || (!isBitcoin && session.liquidSinglesig != null)) {
-                    list += listOf(
-                        AccountType.BIP84_SEGWIT,
-                        AccountType.BIP49_SEGWIT_WRAPPED
-                    ).map { AccountTypeLook(it) }
+                val hasSinglesig = (isBitcoin && session.bitcoinSinglesig != null) || (!isBitcoin && session.liquidSinglesig != null)
+                if (hasSinglesig) {
+                    list += AccountTypeLook(AccountType.BIP84_SEGWIT)
                 }
 
                 // Check if multisig networks are available in this session
@@ -136,10 +134,14 @@ class ChooseAccountTypeViewModel(greenWallet: GreenWallet, initAsset: AssetBalan
                 if ((isBitcoin && session.bitcoinMultisig != null) || (isLiquid && session.liquidMultisig != null)) {
                     list += AccountTypeLook(AccountType.STANDARD)
                 }
+
+                if (hasSinglesig) {
+                    list += AccountTypeLook(AccountType.BIP49_SEGWIT_WRAPPED)
+                }
             }
 
                 defaultAccountTypes.value = list.filter {
-                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.BIP49_SEGWIT_WRAPPED || it.accountType == AccountType.LIGHTNING || it.accountType == AccountType.STANDARD || it.accountType == AccountType.TWO_OF_THREE || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmpLegacy)
+                    it.accountType == AccountType.BIP84_SEGWIT || it.accountType == AccountType.LIGHTNING || it.accountType == AccountType.STANDARD || it.accountType == AccountType.TWO_OF_THREE || it.accountType == AccountType.AMP2_ACCOUNT || (it.accountType == AccountType.AMP_LEGACY_ACCOUNT && asset.asset.isAmpLegacy)
                 }
 
                 allAccountTypes.value = list
