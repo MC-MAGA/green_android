@@ -173,19 +173,6 @@ fun WalletOverviewScreen(
 
                 if (!isWalletOnboarding) {
 
-                    item(key = "ButtonsRow") {
-                        TransactionActionButtons(
-                            modifier = Modifier.padding(top = 16.dp),
-                            showBuyButton = isMainnet,
-                            showSwapButton = isSwapAvailable,
-                            isSendEnabled = !isMultisigWatchOnly,
-                            onBuy = viewModel::onBuy,
-                            onSend = viewModel::onSend,
-                            onReceive = viewModel::onReceive,
-                            onSwap = viewModel::onSwap
-                        )
-                    }
-
                     if (alerts.isNotEmpty()) {
                         item(key = "AlertsHeader") {
                             GreenSpacer(16)
@@ -196,6 +183,19 @@ fun WalletOverviewScreen(
                         GreenAlert(
                             modifier = Modifier
                                 .padding(bottom = 6.dp), alertType = it, viewModel = viewModel
+                        )
+                    }
+
+                    item(key = "ButtonsRow") {
+                        TransactionActionButtons(
+                            modifier = Modifier.padding(top = 16.dp),
+                            showBuyButton = isMainnet,
+                            showSwapButton = isSwapAvailable,
+                            isSendEnabled = !isMultisigWatchOnly,
+                            onBuy = viewModel::onBuy,
+                            onSend = viewModel::onSend,
+                            onReceive = viewModel::onReceive,
+                            onSwap = viewModel::onSwap
                         )
                     }
 
