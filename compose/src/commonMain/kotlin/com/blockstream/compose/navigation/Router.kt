@@ -61,7 +61,6 @@ import com.blockstream.compose.models.onboarding.watchonly.WatchOnlySinglesigVie
 import com.blockstream.compose.models.overview.SecurityViewModel
 import com.blockstream.compose.models.overview.TransactViewModel
 import com.blockstream.compose.models.overview.WalletOverviewViewModel
-import com.blockstream.compose.models.promo.PromoViewModel
 import com.blockstream.compose.models.receive.ReceiveChooseAccountViewModel
 import com.blockstream.compose.models.receive.ReceiveChooseAssetViewModel
 import com.blockstream.compose.models.receive.ReceiveViewModel
@@ -145,7 +144,6 @@ import com.blockstream.compose.screens.onboarding.watchonly.WatchOnlySinglesigSc
 import com.blockstream.compose.screens.overview.SecurityScreen
 import com.blockstream.compose.screens.overview.TransactScreen
 import com.blockstream.compose.screens.overview.WalletOverviewScreen
-import com.blockstream.compose.screens.promo.PromoScreen
 import com.blockstream.compose.screens.receive.ReceiveChooseAccountScreen
 import com.blockstream.compose.screens.receive.ReceiveChooseAssetScreen
 import com.blockstream.compose.screens.receive.ReceiveScreen
@@ -739,16 +737,6 @@ fun Router(
                         screenName = "JadePinUnlock"
                     )
                 })
-            }
-            appComposable<NavigateDestinations.Promo> {
-                val args = it.toRoute<NavigateDestinations.Promo>()
-                PromoScreen(
-                    viewModel = viewModel {
-                        PromoViewModel(
-                            args.promo,
-                            args.greenWalletOrNull
-                        )
-                    })
             }
             appComposable<NavigateDestinations.Support> {
                 val args = it.toRoute<NavigateDestinations.Support>()

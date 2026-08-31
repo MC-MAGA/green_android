@@ -21,6 +21,7 @@ import com.blockstream.compose.navigation.NavigateDestination
 import com.blockstream.compose.navigation.NavigateDestinations
 import com.blockstream.compose.sideeffects.SideEffect
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.compose.sideeffects.OpenBrowserType
 import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.AddressInputType
 import com.blockstream.data.CountlyBase
@@ -92,6 +93,7 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -221,8 +223,9 @@ open class GreenViewModel constructor(
     val banner: MutableStateFlow<Banner?> = MutableStateFlow(null)
     val closedBanners = mutableListOf<Banner>()
 
-    val promo: MutableStateFlow<Promo?> = MutableStateFlow(null)
-    private var promoImpression: Boolean = false
+    private val _promos = MutableStateFlow<List<Promo>>(emptyList())
+    val promos: StateFlow<List<Promo>> = _promos.asStateFlow()
+    private val promoImpressionIds = mutableSetOf<String>()
 
     private var _deviceRequest: CompletableDeferred<String>? = null
     private var _bootstrapped: Boolean = false
@@ -376,7 +379,7 @@ open class GreenViewModel constructor(
 
     protected open fun initPromo() {
         promoManager.promos.onEach {
-            promo.value = getPromoUseCase(screenName = screenName(), previousPromo = promo.value)
+            _promos.value = getPromoUseCase(it)
         }.launchIn(this)
     }
 
@@ -445,34 +448,15 @@ open class GreenViewModel constructor(
             }
 
             is Events.PromoImpression -> {
-                promo.value?.also {
-                    if (!promoImpression) {
-                        promoImpression = true
-                        countly.promoView(sessionOrNull, screenName(), it)
-                    }
-                }
-            }
-
-            is Events.PromoOpen -> {
-                promo.value?.also {
-                    countly.promoOpen(sessionOrNull, screenName(), it)
-                    postSideEffect(
-                        SideEffects.NavigateTo(
-                            NavigateDestinations.Promo(
-                                promo = it,
-                                greenWalletOrNull = greenWalletOrNull
-                            )
-                        )
-                    )
+                if (promoImpressionIds.add(event.promo.id)) {
+                    countly.promoView(sessionOrNull, screenName(), event.promo)
                 }
             }
 
             is Events.PromoDismiss -> {
-                promo.value?.also {
-                    settingsManager.dismissPromo(it.id)
-                    countly.promoDismiss(sessionOrNull, screenName(), it)
-                }
-                promo.value = null
+                promoManager.dismissPromo(event.promo.id)
+                _promos.update { promos -> promos.filterNot { it.id == event.promo.id } }
+                countly.promoDismiss(sessionOrNull, screenName(), event.promo)
             }
 
             is Events.BannerDismiss -> {
@@ -483,26 +467,17 @@ open class GreenViewModel constructor(
             }
 
             is Events.PromoAction -> {
-                promo.value?.also { promo ->
-                    promo.link?.also { link ->
-                        countly.promoAction(
-                            session = sessionOrNull,
-                            screenName = screenName(),
-                            promo = promo
-                        )
-                        if (link == "green://onofframps" && greenWalletOrNull != null) {
-                            postSideEffect(
-                                SideEffects.NavigateTo(
-                                    NavigateDestinations.OnOffRamps(
-                                        greenWallet = greenWallet
-                                    )
-                                )
-                            )
-                        } else {
-                            postSideEffect(SideEffects.OpenBrowser(url = link))
-                        }
-                    }
-                }
+                countly.promoAction(
+                    session = sessionOrNull,
+                    screenName = screenName(),
+                    promo = event.promo
+                )
+                postSideEffect(
+                    SideEffects.OpenBrowser(
+                        url = event.promo.cta.url,
+                        type = OpenBrowserType.OPEN_SYSTEM
+                    )
+                )
             }
 
             is Events.BannerAction -> {

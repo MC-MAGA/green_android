@@ -5,6 +5,7 @@ import com.blockstream.data.data.DenominatedValue
 import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.data.LogoutReason
 import com.blockstream.data.data.PopTo
+import com.blockstream.data.data.Promo
 import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.Network
@@ -40,10 +41,9 @@ object Events {
     data class SwapInitiate(val from: Network, val to: Network) : Event
     data class SwapReceive(val from: Network, val to: Network) : Event
     data class SwapToggle(val from: Network, val to: Network) : Event
-    object PromoImpression : Event
-    object PromoDismiss : Event
-    object PromoOpen : Event
-    object PromoAction : Event
+    data class PromoImpression(val promo: Promo) : Event
+    data class PromoDismiss(val promo: Promo) : Event
+    data class PromoAction(val promo: Promo) : Event
     object BannerDismiss : Event
     object BannerAction : Event
     object SelectDenomination : Event

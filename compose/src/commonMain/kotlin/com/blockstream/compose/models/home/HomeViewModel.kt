@@ -24,7 +24,6 @@ import com.blockstream.data.banner.Banner
 import com.blockstream.data.btcpricehistory.model.BitcoinChartData
 import com.blockstream.data.data.DataState
 import com.blockstream.data.data.GreenWallet
-import com.blockstream.data.data.Promo
 import com.blockstream.data.extensions.logException
 import com.blockstream.data.extensions.tryCatch
 import com.blockstream.domain.bitcoinpricehistory.ObserveBitcoinPriceHistory
@@ -235,7 +234,6 @@ class HomeViewModelPreview(
 
     init {
         banner.value = Banner.preview3
-        promo.value = Promo.preview6
     }
 
     companion object {

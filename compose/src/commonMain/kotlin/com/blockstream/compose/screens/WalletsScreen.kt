@@ -35,7 +35,6 @@ import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.CaretRight
 import com.blockstream.compose.components.GreenCard
 import com.blockstream.compose.components.GreenColumn
-import com.blockstream.compose.components.Promo
 import com.blockstream.compose.looks.wallet.WalletListLook
 import com.blockstream.compose.models.home.HomeViewModel
 import com.blockstream.compose.models.home.HomeViewModelAbstract
@@ -142,10 +141,6 @@ fun WalletsScreen(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(6.dp),
             ) {
-                item {
-                    Promo(viewModel = viewModel, modifier = Modifier.padding(top = 16.dp))
-                }
-
                 allWallets?.takeIf { it.isNotEmpty() }?.also {
                     walletSection(
                         title = Res.string.id_my_wallets,

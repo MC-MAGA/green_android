@@ -145,7 +145,6 @@ kotlin {
                 api(libs.filekit.dialogs)
                 api(libs.okio) // Filesystem
                 api(libs.kable.core)
-                api(libs.kotlincrypto.hash.md)
                 api(libs.kotlincrypto.hash.sha2)
                 api(libs.multiplatform.settings)
                 api(libs.multiplatform.settings.no.arg)

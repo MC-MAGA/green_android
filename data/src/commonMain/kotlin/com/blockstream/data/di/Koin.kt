@@ -52,7 +52,7 @@ fun commonModules(appConfig: AppConfig): List<Module> {
             Database(get(), get())
         }
         single {
-            PromoManager(get(), get(), get())
+            PromoManager(get(), get())
         }
         single {
             SettingsManager(
@@ -97,5 +97,4 @@ fun commonModules(appConfig: AppConfig): List<Module> {
         factoryOf(::NetworkAssetManager)
     })
 }
-
 

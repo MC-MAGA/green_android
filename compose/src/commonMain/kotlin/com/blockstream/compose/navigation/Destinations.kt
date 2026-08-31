@@ -604,9 +604,6 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class Note constructor(val greenWallet: GreenWallet, val note: String, val noteType: NoteType) : NavigateDestination()
 
     @Serializable
-    data class Promo(val promo: com.blockstream.data.data.Promo, val greenWalletOrNull: GreenWallet? = null) : NavigateDestination()
-
-    @Serializable
     data class DeviceInteraction(
         val greenWalletOrNull: GreenWallet? = null,
         val deviceId: String? = null,

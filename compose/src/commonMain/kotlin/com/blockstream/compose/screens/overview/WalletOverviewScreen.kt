@@ -156,6 +156,7 @@ fun WalletOverviewScreen(
             val isMainnet = viewModel.greenWallet.isMainnet
             val isSwapAvailable by viewModel.isSwapAvailable.collectAsStateWithLifecycle()
             val isMultisigWatchOnly by viewModel.isMultisigWatchOnly.collectAsStateWithLifecycle()
+            val promos by viewModel.promos.collectAsStateWithLifecycle()
             val innerPadding = LocalInnerPadding.current
 
             val listState = rememberLazyListState()
@@ -197,6 +198,15 @@ fun WalletOverviewScreen(
                             onReceive = viewModel::onReceive,
                             onSwap = viewModel::onSwap
                         )
+                    }
+
+                    if (promos.isNotEmpty()) {
+                        item(key = "Promo") {
+                            Promo(
+                                viewModel = viewModel,
+                                modifier = Modifier.padding(top = 8.dp, bottom = 8.dp)
+                            )
+                        }
                     }
 
                     item(key = "AssetsHeader") {
@@ -250,12 +260,6 @@ fun WalletOverviewScreen(
                         )
                     }
 
-                    item(key = "Promo") {
-                        Promo(
-                            viewModel = viewModel,
-                            modifier = Modifier.padding(top = 8.dp)
-                        )
-                    }
                 }
             }
 

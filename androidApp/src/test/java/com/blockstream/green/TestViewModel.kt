@@ -64,7 +64,7 @@ open class TestViewModel<VM : GreenViewModel> : KoinTest {
                 module {
                     single { AppInfo("green_test", "1.0.0-test", true, true) }
 
-                    single { GetPromoUseCase(get(), get(), get()) }
+                    single { GetPromoUseCase(get()) }
 
                     single {
                         ObserveBitcoinPriceHistory(
