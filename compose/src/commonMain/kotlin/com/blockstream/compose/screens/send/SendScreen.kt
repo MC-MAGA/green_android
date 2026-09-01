@@ -60,6 +60,8 @@ import com.blockstream.data.data.FeePriority
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.gdk.data.AccountAssetBalance
 import com.blockstream.data.utils.DecimalFormat
+import com.blockstream.data.utils.FEE_RATE_DECIMALS
+import com.blockstream.data.utils.userNumberFormat
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
 import com.adamglin.phosphoricons.regular.CaretRight
@@ -128,12 +130,15 @@ fun SendScreen(
             title = stringResource(Res.string.id_set_custom_fee_rate),
             label = stringResource(Res.string.id_fee_rate),
             placeholder = "0${decimalSymbol}00",
-            initialText = viewModel.customFeeRate.value?.toString() ?: "",
+            initialText = viewModel.customFeeRate.value?.let {
+                userNumberFormat(decimals = FEE_RATE_DECIMALS, withDecimalSeparator = false).format(it)
+            } ?: "",
             keyboardOptions = KeyboardOptions.Default.copy(
                 keyboardType = KeyboardType.Decimal,
                 imeAction = ImeAction.Done
             ),
-            supportingText = "Fee rate per vbyte"
+            supportingText = "Fee rate per vbyte",
+            maxFractionDigits = FEE_RATE_DECIMALS
         ) { value ->
             customFeeDialog = null
 

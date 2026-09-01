@@ -350,7 +350,7 @@ class BuyViewModel(greenWallet: GreenWallet, initialAccountAsset: AccountAsset? 
                 if (amount.isBlank()) {
                     null
                 } else {
-                    val normalizedAmount = UserInput.parseUserInputSafe(
+                    val normalizedAmount = UserInput.parseUserInput(
                         session = session,
                         input = amount,
                         denomination = denomination.value

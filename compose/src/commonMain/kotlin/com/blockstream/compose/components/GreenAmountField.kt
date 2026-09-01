@@ -68,6 +68,7 @@ import com.blockstream.data.data.Denomination
 import com.blockstream.data.extensions.isNotBlank
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.utils.DecimalFormat
+import com.blockstream.data.utils.FIAT_DECIMALS
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
@@ -108,10 +109,11 @@ fun GreenAmountField(
         )
     )
 
-    val formatter = remember {
+    val formatter = remember(denomination) {
         DecimalFormatter(
             decimalSeparator = DecimalFormat.DecimalSeparator.first(),
-            groupingSeparator = DecimalFormat.GroupingSeparator.first()
+            groupingSeparator = DecimalFormat.GroupingSeparator.first(),
+            maxFractionDigits = if (denomination.isFiat) FIAT_DECIMALS else Int.MAX_VALUE
         )
     }
 
