@@ -36,6 +36,7 @@ import com.blockstream.data.gdk.data.Network
 import com.blockstream.data.gdk.data.ProcessedTransactionDetails
 import com.blockstream.data.gdk.params.BroadcastTransactionParams
 import com.blockstream.data.gdk.params.CreateTransactionParams
+import com.blockstream.data.utils.DecimalFormat
 import com.blockstream.data.utils.ifNotNull
 import com.blockstream.data.utils.toAmountLook
 import com.blockstream.domain.send.GetSendFlowUseCase
@@ -236,7 +237,7 @@ abstract class CreateTransactionViewModelAbstract(
         if (amount == null) {
             _customFeeRate.value = minFee
         } else {
-            (amount.toDoubleOrNull() ?: 0.0).also {
+            (amount.replace(DecimalFormat.DecimalSeparator, ".").toDoubleOrNull() ?: 0.0).also {
                 if (it < minFee) {
                     postSideEffect(SideEffects.ErrorSnackbar(Exception("id_fee_rate_must_be_at_least_s|$minFee")))
                 } else {
