@@ -1,19 +1,18 @@
 package com.blockstream.compose.events
 
-import com.blockstream.data.crypto.PlatformCipher
-import com.blockstream.data.data.DenominatedValue
-import com.blockstream.data.data.GreenWallet
-import com.blockstream.data.data.LogoutReason
-import com.blockstream.data.data.PopTo
-import com.blockstream.data.data.Promo
-import com.blockstream.data.gdk.data.Account
-import com.blockstream.data.gdk.data.AccountAsset
-import com.blockstream.data.gdk.data.Network
 import com.blockstream.compose.navigation.NavigateDestination
 import com.blockstream.compose.sideeffects.OpenBrowserType
 import com.blockstream.compose.sideeffects.SideEffect
 import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.data.Urls
+import com.blockstream.data.crypto.PlatformCipher
+import com.blockstream.data.data.DenominatedValue
+import com.blockstream.data.data.GreenWallet
+import com.blockstream.data.data.LogoutReason
+import com.blockstream.data.data.Promo
+import com.blockstream.data.gdk.data.Account
+import com.blockstream.data.gdk.data.AccountAsset
+import com.blockstream.data.gdk.data.Network
 
 object Events {
     open class EventSideEffect(override val sideEffect: SideEffect) : EventWithSideEffect
@@ -36,7 +35,6 @@ object Events {
     object DismissWalletBackupAlert : Event
     object ReconnectFailedNetworks : Event
     data class Transaction(val transaction: com.blockstream.data.gdk.data.Transaction) : Event
-    data class ChooseAccountType(val isFirstAccount: Boolean = false, val popTo: PopTo? = null) : Event
     data class HandleUserInput(val data: String, val isQr: Boolean = false) : Event
     object Continue : Event
     object SwapSetup : Event

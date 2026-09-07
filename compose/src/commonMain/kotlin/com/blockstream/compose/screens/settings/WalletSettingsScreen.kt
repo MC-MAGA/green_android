@@ -130,6 +130,7 @@ import com.blockstream.compose.utils.bottom
 import com.blockstream.compose.utils.ifTrue
 import com.blockstream.compose.utils.plus
 import com.blockstream.data.SupportType
+import com.blockstream.data.data.GreenWallet
 import com.blockstream.data.data.LogoutReason
 import com.blockstream.data.data.SupportData
 import com.blockstream.data.data.TwoFactorMethod
@@ -264,6 +265,10 @@ fun WalletSettingsScreen(
                 viewModel.postEvent(LocalEvents.CreateLightningAccount(result.mnemonic))
             }
         }
+    }
+
+    NavigateDestinations.Login.getResult<GreenWallet> {
+        viewModel.executePendingAction()
     }
 
     val items by viewModel.items.collectAsStateWithLifecycle()

@@ -2109,4 +2109,5 @@
     <string name="id_paying_lightning_invoices_with_liquid">Paying Lightning invoices with Liquid Bitcoin is temporarily disabled.</string>
     <string name="id_swaps_are_temporarily_unavailable">Swaps are temporarily unavailable.</string>
     <string name="id_no_stuck_swaps_to_reset">No stuck swaps to reset</string>
+    <string name="id_multisig_accounts_require_your_jade">Multisig accounts require your Jade.\n\nFrom then on, this wallet can only be accessed with your Jade connected — watch-only access with biometrics will be disabled.</string>
 </resources>

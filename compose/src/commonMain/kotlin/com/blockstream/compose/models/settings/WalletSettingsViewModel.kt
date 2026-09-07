@@ -40,13 +40,13 @@ import com.blockstream.compose.models.GreenViewModel
 import com.blockstream.compose.models.jade.JadeQrOperation
 import com.blockstream.compose.navigation.NavData
 import com.blockstream.compose.navigation.NavigateDestinations
+import com.blockstream.compose.navigation.NavigateDestinations.ChooseAccountType
 import com.blockstream.compose.sideeffects.SideEffect
 import com.blockstream.compose.sideeffects.SideEffects
 import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.BTC_UNIT
 import com.blockstream.data.Urls
 import com.blockstream.data.crypto.PlatformCipher
-import com.blockstream.data.data.AppConfig
 import com.blockstream.data.data.CredentialType
 import com.blockstream.data.data.EnrichedAsset
 import com.blockstream.data.data.GreenWallet
@@ -99,6 +99,11 @@ enum class WalletSettingsSection {
     General, TwoFactor, RecoveryTransactions, ChangePin;
 }
 
+@Serializable
+enum class PendingAction {
+    CreateNewAccount, AMPAccount
+}
+
 abstract class WalletSettingsViewModelAbstract(
     greenWallet: GreenWallet,
     val section: WalletSettingsSection,
@@ -112,6 +117,26 @@ abstract class WalletSettingsViewModelAbstract(
         else -> "WalletSettingsTab"
     }
     abstract val items: StateFlow<List<WalletSetting>>
+
+    protected var pendingAction: PendingAction? = null
+
+    fun executePendingAction() {
+        if (!session.isWatchOnlyValue) {
+            when (pendingAction) {
+                PendingAction.CreateNewAccount -> {
+                    // The only supported pending action is create a new account
+                    postSideEffect(SideEffects.NavigateTo(ChooseAccountType(greenWallet = greenWallet)))
+                }
+
+                PendingAction.AMPAccount -> {
+                    postSideEffect(SideEffects.NavigateTo(NavigateDestinations.AmpAccount(greenWallet = greenWallet)))
+                }
+
+                null -> Unit
+            }
+
+        }
+    }
 }
 
 class WalletSettingsViewModel(
@@ -120,7 +145,6 @@ class WalletSettingsViewModel(
     private val network: Network? = null,
     isRecoveryConfirmation: Boolean = false
 ) : WalletSettingsViewModelAbstract(greenWallet = greenWallet, section = section, isRecoveryConfirmation = isRecoveryConfirmation) {
-    private val appConfig: AppConfig by inject()
     private val createAccountUseCase: CreateAccountUseCase by inject()
     private val setBiometricsUseCase: SetBiometricsUseCase by inject()
     private val setPinUseCase: SetPinUseCase by inject()
@@ -409,6 +433,11 @@ class WalletSettingsViewModel(
                         WalletSetting.ArchivedAccounts,
                         WalletSetting.CreateNewAccount
                     )
+                } else if (session.isHwWatchOnly && !greenWallet.isWatchOnlyQr) {
+                    accountSettings += listOfNotNull(
+                        WalletSetting.AmpId.takeIf { canShowAmpAccountEntryPoint() },
+                        WalletSetting.CreateNewAccount
+                    )
                 }
 
                 if (accountSettings.isNotEmpty()) {
@@ -437,7 +466,12 @@ class WalletSettingsViewModel(
 
         when (event) {
             LocalEvents.OpenAmpAccount -> {
-                postSideEffect(SideEffects.NavigateTo(NavigateDestinations.AmpAccount(greenWallet = greenWallet)))
+                if (session.isHwWatchOnly && !greenWallet.isWatchOnlyQr) {
+                    pendingAction = PendingAction.AMPAccount
+                    connectDeviceToCreateNewAccount()
+                } else {
+                    postSideEffect(SideEffects.NavigateTo(NavigateDestinations.AmpAccount(greenWallet = greenWallet)))
+                }
             }
 
             is LocalEvents.WatchOnly -> {
@@ -484,9 +518,16 @@ class WalletSettingsViewModel(
             }
 
             is LocalEvents.CreateNewAccount -> {
-                postSideEffect(SideEffects.NavigateTo(
-                    NavigateDestinations.ChooseAccountType(greenWallet = greenWallet)
-                ))
+                if (session.isHwWatchOnly && !greenWallet.isWatchOnlyQr) {
+                    pendingAction = PendingAction.CreateNewAccount
+                    connectDeviceToCreateNewAccount()
+                } else {
+                    postSideEffect(
+                        SideEffects.NavigateTo(
+                            ChooseAccountType(greenWallet = greenWallet)
+                        )
+                    )
+                }
             }
 
             is LocalEvents.SetupEmailRecovery -> {
@@ -795,6 +836,7 @@ class WalletSettingsViewModel(
     }
 
     private fun canShowAmpAccountEntryPoint(): Boolean {
+        if (session.isHwWatchOnly && !greenWallet.isWatchOnlyQr) return true
         if (session.isWatchOnlyValue) return false
 
         val hasAmpAccount = session.accounts.value.any { it.type.isAmpOrLecacy() }
@@ -958,6 +1000,15 @@ class WalletSettingsViewModel(
                 ) ?: ""
             }
         }
+    }
+
+    fun connectDeviceToCreateNewAccount() {
+        postEvent(
+            NavigateDestinations.DeviceScan(
+                greenWallet = greenWallet,
+                isWatchOnlyUpgrade = true
+            )
+        )
     }
 }
 

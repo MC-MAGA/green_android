@@ -1924,7 +1924,7 @@ class GdkSession constructor(
     override suspend fun getAssets(params: GetAssetsParams) =
         (activeLiquid ?: liquid)?.let { (networkBackend(it) as AssetsProvider).getAssets(params) }
 
-    fun setupDefaultAccounts(): Job {
+    fun setupDefaultAccounts(archiveDefaultAccounts: Boolean = true): Job {
         return scope.launch {
             // Create Singlesig Segwit accounts
             val accountType = AccountType.BIP84_SEGWIT
@@ -1946,16 +1946,18 @@ class GdkSession constructor(
             // Be sure to update all accounts so that we properly calculate balances
             updateAccountsAndBalances().join()
 
-            // Archive default gdk legacy accounts with no history
-            accounts.value.filter {
-                (it.type == AccountType.BIP44_LEGACY || it.type == AccountType.BIP49_SEGWIT_WRAPPED) && !it.hasHistory(
-                    this@GdkSession
-                )
-            }.forEach { account ->
-                logger.d { "Archive ${account.name}" }
-                updateAccount(
-                    account = account, isHidden = true, resetAccountName = account.type.title()
-                )
+            if (archiveDefaultAccounts) {
+                // Archive default gdk legacy accounts with no history
+                accounts.value.filter {
+                    (it.type == AccountType.BIP44_LEGACY || it.type == AccountType.BIP49_SEGWIT_WRAPPED) && !it.hasHistory(
+                        this@GdkSession
+                    )
+                }.forEach { account ->
+                    logger.d { "Archive ${account.name}" }
+                    updateAccount(
+                        account = account, isHidden = true, resetAccountName = account.type.title()
+                    )
+                }
             }
         }
     }
@@ -1977,7 +1979,7 @@ class GdkSession constructor(
         }
     }
 
-    private suspend fun getAccounts(network: Network? = null, refresh: Boolean = false): List<Account> {
+    suspend fun getAccounts(network: Network? = null, refresh: Boolean = false): List<Account> {
         return (network?.let { mapOf(it to networkBackend(network)) } ?: networkBackends).mapLoggedIn { backend ->
             backend.getAccounts(refresh = refresh)
         }.flatten().sorted()

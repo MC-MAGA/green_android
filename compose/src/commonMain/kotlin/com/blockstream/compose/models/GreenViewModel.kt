@@ -12,16 +12,15 @@ import blockstream_green.common.generated.resources.id_swap_is_in_progress
 import blockstream_green.common.generated.resources.id_unstable_internet_connection
 import blockstream_green.common.generated.resources.id_you_dont_have_a_lightning
 import blockstream_green.common.generated.resources.id_your_device_was_disconnected
-import com.blockstream.data.lightning.LightningInputType
 import com.blockstream.compose.events.Event
 import com.blockstream.compose.events.EventWithSideEffect
 import com.blockstream.compose.events.Events
 import com.blockstream.compose.extensions.launchIn
 import com.blockstream.compose.navigation.NavigateDestination
 import com.blockstream.compose.navigation.NavigateDestinations
+import com.blockstream.compose.sideeffects.OpenBrowserType
 import com.blockstream.compose.sideeffects.SideEffect
 import com.blockstream.compose.sideeffects.SideEffects
-import com.blockstream.compose.sideeffects.OpenBrowserType
 import com.blockstream.compose.utils.StringHolder
 import com.blockstream.data.AddressInputType
 import com.blockstream.data.CountlyBase
@@ -55,7 +54,6 @@ import com.blockstream.data.extensions.cleanup
 import com.blockstream.data.extensions.createLoginCredentials
 import com.blockstream.data.extensions.ifConnected
 import com.blockstream.data.extensions.isNotBlank
-import com.blockstream.data.extensions.logException
 import com.blockstream.data.extensions.objectId
 import com.blockstream.data.gdk.GdkSession
 import com.blockstream.data.gdk.TwoFactorResolver
@@ -66,6 +64,7 @@ import com.blockstream.data.gdk.data.Network
 import com.blockstream.data.gdk.device.DeviceResolver
 import com.blockstream.data.gdk.device.GdkHardwareWallet
 import com.blockstream.data.gdk.device.HardwareWalletInteraction
+import com.blockstream.data.lightning.LightningInputType
 import com.blockstream.data.managers.BluetoothManager
 import com.blockstream.data.managers.NotificationManager
 import com.blockstream.data.managers.PromoManager
@@ -81,6 +80,10 @@ import com.blockstream.jade.firmware.FirmwareUpdateState
 import com.blockstream.jade.firmware.FirmwareUpgradeRequest
 import com.blockstream.jade.firmware.HardwareQATester
 import com.blockstream.utils.Loggable
+import com.github.michaelbull.retry.policy.constantDelay
+import com.github.michaelbull.retry.policy.plus
+import com.github.michaelbull.retry.policy.stopAtAttempts
+import com.github.michaelbull.retry.retry
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Deferred
 import kotlinx.coroutines.Dispatchers
@@ -106,10 +109,6 @@ import org.koin.core.component.inject
 import kotlin.time.Duration
 import kotlin.time.Duration.Companion.minutes
 import kotlin.uuid.ExperimentalUuidApi
-import com.github.michaelbull.retry.retry
-import com.github.michaelbull.retry.policy.constantDelay
-import com.github.michaelbull.retry.policy.plus
-import com.github.michaelbull.retry.policy.stopAtAttempts
 
 open class SimpleGreenViewModel(
     greenWalletOrNull: GreenWallet? = null,
@@ -591,21 +590,6 @@ open class GreenViewModel constructor(
                             )
                         )
                     )
-                }
-            }
-
-            is Events.ChooseAccountType -> {
-                postSideEffect(
-                    SideEffects.NavigateTo(
-                        NavigateDestinations.ChooseAccountType(
-                            greenWallet = greenWallet,
-                            popTo = event.popTo
-                        )
-                    )
-                )
-
-                if (event.isFirstAccount) {
-                    countly.firstAccount(session)
                 }
             }
 

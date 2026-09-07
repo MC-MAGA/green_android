@@ -69,7 +69,7 @@ import com.blockstream.data.gdk.device.DeviceResolver
 import com.blockstream.data.gdk.params.LoginCredentialsParams
 import com.blockstream.data.lightning.GreenlightMnemonicAndCredentials
 import com.blockstream.data.managers.DeviceManager
-import com.blockstream.data.usecases.EnableHardwareWatchOnlyUseCase
+import com.blockstream.domain.hardware.EnableHardwareWatchOnlyUseCase
 import com.blockstream.domain.lightning.LightningNodeIdUseCase
 import com.blockstream.domain.wallet.SaveDerivedBoltzMnemonicUseCase
 import com.blockstream.domain.wallet.SaveGreenlightMnemonicAndCredentialsUseCase

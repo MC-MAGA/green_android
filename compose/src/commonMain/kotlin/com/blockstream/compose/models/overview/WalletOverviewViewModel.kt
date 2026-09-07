@@ -243,7 +243,6 @@ class WalletOverviewViewModel(
         object Refresh : Event
         object DenominationExchangeRate : Event
         object OpenOptionsMenu : Event
-        object MenuNewAccountClick : Event
     }
 
     class LocalSideEffects {
@@ -329,11 +328,6 @@ class WalletOverviewViewModel(
 
             is LocalEvents.OpenOptionsMenu -> {
                 postSideEffect(SideEffects.OpenDialog())
-            }
-
-            is LocalEvents.MenuNewAccountClick -> {
-                postEvent(Events.ChooseAccountType())
-                countly.accountNew(session)
             }
 
             is LocalEvents.Refresh -> {
