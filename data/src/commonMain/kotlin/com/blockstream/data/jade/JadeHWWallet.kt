@@ -15,6 +15,7 @@ import com.blockstream.data.gdk.device.HwWalletLogin
 import com.blockstream.data.gdk.device.SignMessageResult
 import com.blockstream.data.gdk.device.SignTransactionResult
 import com.blockstream.jade.JadeAPI
+import com.blockstream.jade.api.AssetInfo
 import com.blockstream.jade.api.TxInput
 import com.blockstream.jade.api.VersionInfo
 import com.blockstream.jade.data.ChangeOutput
@@ -237,7 +238,8 @@ class JadeHWWallet constructor(
         outputs: List<InputOutput>,
         transactions: Map<String, String>?,
         useAeProtocol: Boolean,
-        hwInteraction: HardwareWalletInteraction?
+        hwInteraction: HardwareWalletInteraction?,
+        assetInfo: List<AssetInfo>
     ): SignTransactionResult = runBlocking {
         mutex.withLock {
             logger.d { "signTransaction(network=${network.id}, inputs=${inputs.size}, outputs=${outputs.size})" }
@@ -286,7 +288,8 @@ class JadeHWWallet constructor(
                         txBytes,
                         txInputs,
                         trustedCommitments,
-                        change
+                        change,
+                        assetInfo
                     )
 
                     // Pivot data into return structure

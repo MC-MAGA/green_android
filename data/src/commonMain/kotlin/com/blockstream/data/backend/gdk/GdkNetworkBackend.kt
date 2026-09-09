@@ -513,6 +513,7 @@ open class GdkNetworkBackend constructor(
             gaAuthHandler = this,
             network = network,
             gdkHwWallet = gdkHwWallet,
+            assetsProvider = this@GdkNetworkBackend,
             gdk = gdk,
             getTwoFactorConfig = {
                 gdk.getTwoFactorConfig(gaSession)
@@ -533,6 +534,7 @@ open class GdkNetworkBackend constructor(
             gaAuthHandler = this,
             network = network,
             gdkHwWallet = gdkHwWallet,
+            assetsProvider = this@GdkNetworkBackend,
             gdk = gdk,
             getTwoFactorConfig = {
                 gdk.getTwoFactorConfig(gaSession)
