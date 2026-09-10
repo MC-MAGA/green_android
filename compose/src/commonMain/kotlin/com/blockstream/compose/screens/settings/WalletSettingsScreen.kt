@@ -72,6 +72,7 @@ import blockstream_green.common.generated.resources.id_there_is_already_an_archi
 import blockstream_green.common.generated.resources.id_touch_to_display
 import blockstream_green.common.generated.resources.id_verify_the_authenticity_of
 import blockstream_green.common.generated.resources.id_version
+import blockstream_green.common.generated.resources.id_wallet_details
 import blockstream_green.common.generated.resources.sign_out
 import com.adamglin.PhosphorIcons
 import com.adamglin.phosphoricons.Regular
@@ -403,6 +404,17 @@ fun WalletSettingsScreen(
                                 viewModel.postEvent(LocalEvents.DenominationExchangeRate)
                             },
                             testTag = "denomination"
+                        )
+                    }
+
+                    WalletSetting.WatchOnly -> {
+                        Setting(
+                            title = stringResource(Res.string.id_wallet_details),
+                            imageVector = PhosphorIcons.Regular.CaretRight,
+                            modifier = Modifier.clickable {
+                                viewModel.postEvent(LocalEvents.WatchOnly)
+                            },
+                            testTag = "wallet_details"
                         )
                     }
 

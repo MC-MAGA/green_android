@@ -136,6 +136,7 @@ class WalletSettingsViewModel(
 
     class LocalEvents {
         object DenominationExchangeRate : Events.EventSideEffect(sideEffect = SideEffects.OpenDenominationExchangeRate)
+        object WatchOnly : Event
         object ChangePin : Event
         object SetupEmailRecovery : Event
         object RequestRecoveryTransactions : Event
@@ -403,7 +404,8 @@ class WalletSettingsViewModel(
                         }
                     }
 
-                    accountSettings += listOf(
+                    accountSettings += listOfNotNull(
+                        WalletSetting.WatchOnly.takeIf { hasWatchOnlyDetails() },
                         WalletSetting.ArchivedAccounts,
                         WalletSetting.CreateNewAccount
                     )
@@ -427,12 +429,19 @@ class WalletSettingsViewModel(
         list
     } ?: emptyList()
 
+    private fun hasWatchOnlyDetails(): Boolean =
+        session.activeMultisig.isNotEmpty() || session.accounts.value.any { it.isSinglesig && !it.isLightning }
+
     override suspend fun handleEvent(event: Event) {
         super.handleEvent(event)
 
         when (event) {
             LocalEvents.OpenAmpAccount -> {
                 postSideEffect(SideEffects.NavigateTo(NavigateDestinations.AmpAccount(greenWallet = greenWallet)))
+            }
+
+            is LocalEvents.WatchOnly -> {
+                postSideEffect(SideEffects.NavigateTo(NavigateDestinations.WatchOnly(greenWallet = greenWallet)))
             }
 
             is LocalEvents.ChooseAccountType -> {
@@ -973,6 +982,7 @@ class WalletSettingsViewModelPreview(
             )
         } else {
             listOf(
+                WalletSetting.WatchOnly,
                 WalletSetting.Logout,
                 WalletSetting.Text(getString(Res.string.id_general)),
                 WalletSetting.DenominationExchangeRate(

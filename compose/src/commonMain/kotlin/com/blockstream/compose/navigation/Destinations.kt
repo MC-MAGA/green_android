@@ -93,6 +93,9 @@ sealed class NavigateDestinations : NavigateDestination() {
     data class WatchOnlyCredentialsSettings(val greenWallet: GreenWallet, val network: Network) : NavigateDestination()
 
     @Serializable
+    data class WatchOnly(val greenWallet: GreenWallet) : NavigateDestination()
+
+    @Serializable
     data class WalletSettings(
         val greenWallet: GreenWallet,
         val section: WalletSettingsSection = WalletSettingsSection.General,

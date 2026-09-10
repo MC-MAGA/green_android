@@ -90,6 +90,7 @@ import com.blockstream.compose.models.settings.TwoFactorSetupViewModel
 import com.blockstream.compose.models.settings.WalletSettingsSection
 import com.blockstream.compose.models.settings.WalletSettingsViewModel
 import com.blockstream.compose.models.settings.WatchOnlyCredentialsSettingsViewModel
+import com.blockstream.compose.models.settings.WatchOnlyViewModel
 import com.blockstream.compose.models.sheets.AnalyticsViewModel
 import com.blockstream.compose.models.sheets.AssetDetailsViewModel
 import com.blockstream.compose.models.sheets.CoinInfoViewModel
@@ -169,6 +170,7 @@ import com.blockstream.compose.screens.settings.SwapsSettingsScreen
 import com.blockstream.compose.screens.settings.TwoFactorAuthenticationScreen
 import com.blockstream.compose.screens.settings.TwoFactorSetupScreen
 import com.blockstream.compose.screens.settings.WalletSettingsScreen
+import com.blockstream.compose.screens.settings.WatchOnlyScreen
 import com.blockstream.compose.screens.support.SupportScreen
 import com.blockstream.compose.screens.swap.SwapScreen
 import com.blockstream.compose.screens.transaction.TransactionScreen
@@ -1038,6 +1040,14 @@ fun Router(
                             greenWallet = args.greenWallet,
                             accountAsset = args.accountAsset
                         )
+                    }
+                )
+            }
+            appComposable<NavigateDestinations.WatchOnly> {
+                val args = it.toRoute<NavigateDestinations.WatchOnly>()
+                WatchOnlyScreen(
+                    viewModel = viewModel {
+                        WatchOnlyViewModel(greenWallet = args.greenWallet)
                     }
                 )
             }
