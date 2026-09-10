@@ -940,6 +940,7 @@
     <string name="id_logging_in">Logging in…</string>
     <string name="id_login_failed">Login Failed</string>
     <string name="id_login_options">Login options</string>
+    <string name="id_login_taking_longer_than_usual">Login is taking longer than usual</string>
     <string name="id_logout">Logout</string>
     <string name="id_logout_and_switch">Logout and Switch</string>
     <string name="id_look_at_the_device_for_the">Look at the device for the number positions</string>
@@ -992,6 +993,7 @@
     <string name="id_more_actions">More actions</string>
     <string name="id_more_details">More Details</string>
     <string name="id_more_info">More Info</string>
+    <string name="id_more_information">More information:</string>
     <string name="id_more_options">More Options</string>
     <string name="id_move_across_accounts">Move across accounts</string>
     <string name="id_move_to_2fa_protected">Move to 2FA Protected</string>

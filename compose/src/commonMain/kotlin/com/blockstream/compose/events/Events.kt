@@ -10,15 +10,19 @@ import com.blockstream.data.gdk.data.Account
 import com.blockstream.data.gdk.data.AccountAsset
 import com.blockstream.data.gdk.data.Network
 import com.blockstream.compose.navigation.NavigateDestination
+import com.blockstream.compose.sideeffects.OpenBrowserType
 import com.blockstream.compose.sideeffects.SideEffect
 import com.blockstream.compose.sideeffects.SideEffects
+import com.blockstream.data.Urls
 
 object Events {
     open class EventSideEffect(override val sideEffect: SideEffect) : EventWithSideEffect
-    open class OpenBrowser(val url: String) : EventWithSideEffect {
+    open class OpenBrowser(val url: String, val type: OpenBrowserType = OpenBrowserType.IN_APP) : EventWithSideEffect {
         override val sideEffect
-            get() = SideEffects.OpenBrowser(url)
+            get() = SideEffects.OpenBrowser(url, type)
     }
+
+    object OpenStatusPage : OpenBrowser(Urls.STATUS_PAGE, type = OpenBrowserType.OPEN_SYSTEM)
 
     open class NavigateTo(val destination: NavigateDestination) : EventWithSideEffect {
         override val sideEffect

@@ -230,6 +230,9 @@ open class GreenViewModel constructor(
     private var _deviceRequest: CompletableDeferred<String>? = null
     private var _bootstrapped: Boolean = false
 
+    // excluded from slow-login timing
+    val isDeviceInteractionInProgress = MutableStateFlow(false)
+
     open val isLoginRequired: Boolean = greenWalletOrNull != null
 
     private var askForFirmwareUpgradeEmitter: CompletableDeferred<Int?>? = null
@@ -803,6 +806,16 @@ open class GreenViewModel constructor(
         isMasterBlindingKeyRequest: Boolean,
         completable: CompletableDeferred<Boolean>?
     ) {
+        isDeviceInteractionInProgress.value = true
+        if (completable != null) {
+            viewModelScope.launch {
+                runCatching { completable.await() }
+                isDeviceInteractionInProgress.value = false
+            }
+        } else {
+            isDeviceInteractionInProgress.value = false
+        }
+
         postSideEffect(
             SideEffects.RequestDeviceInteraction(
                 deviceId = sessionOrNull?.device?.connectionIdentifier,
@@ -814,18 +827,28 @@ open class GreenViewModel constructor(
     }
 
     final override fun requestPassphrase(deviceBrand: DeviceBrand?): String {
-        return CompletableDeferred<String>().let {
-            _deviceRequest = it
-            postSideEffect(SideEffects.NavigateTo(NavigateDestinations.DevicePassphrase))
-            runBlocking { it.await() }
+        isDeviceInteractionInProgress.value = true
+        return try {
+            CompletableDeferred<String>().let {
+                _deviceRequest = it
+                postSideEffect(SideEffects.NavigateTo(NavigateDestinations.DevicePassphrase))
+                runBlocking { it.await() }
+            }
+        } finally {
+            isDeviceInteractionInProgress.value = false
         }
     }
 
     final override fun requestPinMatrix(deviceBrand: DeviceBrand?): String? {
-        return CompletableDeferred<String>().let {
-            _deviceRequest = it
-            postSideEffect(SideEffects.NavigateTo(NavigateDestinations.DevicePin))
-            runBlocking { it.await() }
+        isDeviceInteractionInProgress.value = true
+        return try {
+            CompletableDeferred<String>().let {
+                _deviceRequest = it
+                postSideEffect(SideEffects.NavigateTo(NavigateDestinations.DevicePin))
+                runBlocking { it.await() }
+            }
+        } finally {
+            isDeviceInteractionInProgress.value = false
         }
     }
 
