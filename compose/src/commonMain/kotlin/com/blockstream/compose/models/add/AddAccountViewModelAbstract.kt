@@ -59,12 +59,17 @@ abstract class AddAccountViewModelAbstract(greenWallet: GreenWallet, val assetId
                 network = network,
                 mnemonic = mnemonic,
                 xpub = xpub,
-                hwInteraction = this
+                hwInteraction = this,
+                trackAnalytics = false
             )
         }, postAction = {
             onProgress.value = it == null
         }, onSuccess = {
             accountCreated = true
+
+            // Track the account type the user selected in this flow, regardless of whether
+            // it was newly created or an existing hidden account was reactivated.
+            countly.createAccount(session, it)
 
             val accountAsset = AccountAsset.fromAccountAsset(
                 account = it,

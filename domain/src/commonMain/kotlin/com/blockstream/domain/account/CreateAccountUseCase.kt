@@ -37,7 +37,8 @@ class CreateAccountUseCase(
         accountName: String? = null,
         mnemonic: String? = null,
         xpub: String? = null,
-        hwInteraction: HardwareWalletInteraction? = null
+        hwInteraction: HardwareWalletInteraction? = null,
+        trackAnalytics: Boolean = true
     ): Account {
         check(accountType != AccountType.AMP2_ACCOUNT || canCreateAmp2Account(session, network)) {
             "AMP2 account creation is only available for software testnet wallets"
@@ -70,7 +71,9 @@ class CreateAccountUseCase(
             lightningNodeIdUseCase.invoke(wallet = wallet, session = session)
 
             session.lightningAccount.also {
-                countly.createAccount(session, it)
+                if (trackAnalytics) {
+                    countly.createAccount(session, it)
+                }
             }
         } else {
 
@@ -135,7 +138,9 @@ class CreateAccountUseCase(
                         hwInteraction
                     )
                 ).also {
-                    countly.createAccount(session, it)
+                    if (trackAnalytics) {
+                        countly.createAccount(session, it)
+                    }
                 }
             }
         })
