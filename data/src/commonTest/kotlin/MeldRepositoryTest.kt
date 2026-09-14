@@ -43,7 +43,7 @@ class MeldRepositoryTest : KoinTest {
     }
 
     @Test
-    fun `Request CryptoQuoteRequest`() = runTest {
+    fun requestCryptoQuoteRequest() = runTest {
         meldRepository.createCryptoQuote(CryptoQuoteRequest()).also {
             logger.d { "$it" }
             assertNotNull(it.dataOrThrow().quotes)
@@ -51,7 +51,7 @@ class MeldRepositoryTest : KoinTest {
     }
 
     @Test
-    fun `Request CryptoWidgetRequest`() = runTest {
+    fun requestCryptoWidgetRequest() = runTest {
         meldRepository.createCryptoQuote(CryptoQuoteRequest())
             .dataOrThrow().quotes!!.first().let {
             it.toCryptoWidgetRequest("bc1qcr8ktl3nzwh8xm88225ysynt5zsdydae26thrg")
@@ -64,7 +64,7 @@ class MeldRepositoryTest : KoinTest {
     }
 
     @Test
-    fun `Request CryptoLimitsRequest`() = runTest {
+    fun requestCryptoLimitsRequest() = runTest {
         meldRepository.getCryptoLimits(fiatCurrency = "EUR").also {
             assertNotEquals(0.0, it.dataOrThrow().first().maxAmount)
         }
