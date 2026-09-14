@@ -157,7 +157,7 @@ class WalletOverviewViewModel(
         MutableStateFlow(showWalletOnboarding)
 
     override val assets: StateFlow<DataState<List<AssetBalance>>> =
-        combine(getWalletAssetsUseCase.observe(), hideAmounts) { assets, hideAmounts ->
+        combine(walletAssets, hideAmounts) { assets, hideAmounts ->
             assets.mapSuccess { assets ->
                 assets.assets.map {
                     AssetBalance.create(

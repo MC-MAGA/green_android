@@ -41,6 +41,10 @@ kotlin {
             implementation(libs.kotlinx.coroutines.test)
         }
 
+        jvmTest.dependencies {
+            implementation(libs.mockk)
+        }
+
         androidMain.dependencies {
             api(libs.koin.android)
         }

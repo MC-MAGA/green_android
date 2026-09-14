@@ -221,6 +221,7 @@ class GdkSession constructor(
     private var _walletTotalBalanceSharedFlow = MutableStateFlow(-1L)
     private val _accountsAndBalanceUpdatedSharedFlow = MutableSharedFlow<Unit>(replay = 0)
     private var _failedNetworksStateFlow: MutableStateFlow<List<Network>> = MutableStateFlow(listOf())
+    private val _isLightningLoadingStateFlow = MutableStateFlow(false)
 
     val networkBackendsStateFlow : StateFlow<Map<Network, NetworkBackend>>
         field = MutableStateFlow<Map<Network, NetworkBackend>>(emptyMap())
@@ -245,6 +246,8 @@ class GdkSession constructor(
     val accountsAndBalanceUpdated get() = _accountsAndBalanceUpdatedSharedFlow.asSharedFlow()
 
     val failedNetworks get() = _failedNetworksStateFlow.asStateFlow()
+
+    val isLightningLoading get() = _isLightningLoadingStateFlow.asStateFlow()
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val systemMessage: StateFlow<List<Pair<Network, String>>> =
@@ -774,6 +777,7 @@ class GdkSession constructor(
         // Clear Lightning
         hasLightning = false
         _lightningAccount = null
+        _isLightningLoadingStateFlow.value = false
 
         lightningManager.release(lightningSdkOrNull)
         lightningSdkOrNull = null
@@ -1547,6 +1551,8 @@ class GdkSession constructor(
 
                 // SmartDiscovery only for SW wallets, on HW ln mnemonic is not available
                 if (hasLightning || ((isRestore || (isSmartDiscovery && !isHardwareWallet)) && settingsManager.isLightningAvailable())) {
+                    _isLightningLoadingStateFlow.value = true
+
                     // Make it async to speed up login process
                     val job = scope.async {
                         try {
@@ -1572,6 +1578,8 @@ class GdkSession constructor(
                             if (!isRestore && !isSmartDiscovery) {
                                 _failedNetworksStateFlow.value += listOfNotNull(lightning)
                             }
+                        } finally {
+                            _isLightningLoadingStateFlow.value = false
                         }
                     }
 
