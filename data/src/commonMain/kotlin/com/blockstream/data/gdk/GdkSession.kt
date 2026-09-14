@@ -1752,6 +1752,15 @@ class GdkSession constructor(
         )
 
         updateSystemMessage()
+
+        // The block notification that also triggers this arrives before the 2FA config is cached.
+        scanExpired2FA()
+    }
+
+    private suspend fun scanExpired2FA() {
+        loggedInGdkNetworkBackends.filter { it.network.is2faNetwork }.forEach { backend ->
+            tryCatch { backend.scanExpired2FA() }
+        }
     }
 
     fun updateLiquidAssets() {
@@ -2052,6 +2061,8 @@ class GdkSession constructor(
                 updateAccountsAndBalances(refresh = true)
 
                 updateLiquidAssets()
+
+                scanExpired2FA()
             }
         }
     }
