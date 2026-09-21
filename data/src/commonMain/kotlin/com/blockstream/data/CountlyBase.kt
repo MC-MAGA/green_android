@@ -256,7 +256,7 @@ abstract class CountlyBase(
         device.deviceBrand.brand.let { segmentation[PARAM_BRAND] = it }
         device.gdkHardwareWallet?.also {
             segmentation[PARAM_FIRMWARE] = it.firmwareVersion ?: ""
-            segmentation[PARAM_MODEL] = it.model
+            segmentation[PARAM_MODEL] = it.analyticsModel
         }
         segmentation[PARAM_CONNECTION] = if (device.isUsb) USB else BLE
 

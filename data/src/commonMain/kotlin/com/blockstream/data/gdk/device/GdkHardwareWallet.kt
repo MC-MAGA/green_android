@@ -41,6 +41,9 @@ abstract class GdkHardwareWallet {
 
     abstract val model: DeviceModel
 
+    open val analyticsModel: String
+        get() = model.deviceModel
+
     abstract val device: Device
 
     // Return the base58check encoded xpubs for each path in paths

@@ -55,6 +55,9 @@ class JadeHWWallet constructor(
             }
         }
 
+    override val analyticsModel: String
+        get() = getVersionInfo(useCache = true).boardType
+
     val isMainnet: Boolean
         get() = getVersionInfo().jadeNetworks.let { it == JadeNetworks.MAIN || it == JadeNetworks.ALL }
 
